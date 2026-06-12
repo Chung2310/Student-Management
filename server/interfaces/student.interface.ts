@@ -1,0 +1,69 @@
+import { Document } from "mongoose";
+
+export type StudentStatus = 'Chờ KSK' | 'Đã KSK' | 'Đã nộp HS' | 'Đang học' | 'Đang thi' | 'Đã đậu' | 'Thi lại' | 'Nghỉ học' | 'Nợ học phí';
+
+export interface IHealthCheckFile {
+  name: string;
+  url: string;
+  type: string;
+  uploadedAt: Date | string;
+}
+
+export interface IStudentProgress {
+  theory: { completed: boolean; score?: number; lastDate?: string };
+  practice: { hoursDone: number; totalHours: number };
+  cabin: { hoursDone: number; totalHours: number };
+  dat: { kmDone: number; totalKm: number };
+  sim: { completed: boolean; lastDate?: string };
+}
+
+export interface IStudentExam {
+  id: string;
+  name: string;
+  date: string;
+  type: 'Tốt nghiệp' | 'Sát hạch';
+  status: 'Sắp thi' | 'Đã thi';
+  result?: {
+    theory: number | 'Đạt' | 'Không đạt';
+    practice: number | 'Đạt' | 'Không đạt';
+    simulation?: number | 'Đạt' | 'Không đạt';
+    overall: 'Đậu' | 'Trượt' | 'Chưa có';
+  };
+}
+
+export interface IStudentPayment {
+  id: string;
+  amount: number;
+  date: string;
+  method: 'Tiền mặt' | 'Chuyển khoản';
+  note?: string;
+  recipient: string;
+}
+
+export interface IStudent extends Document {
+  fullName: string;
+  email?: string;
+  phone: string;
+  referral?: string;
+  birthday: string;
+  idCard: string;
+  rank: 'A1' | 'A2' | 'B1' | 'B2' | 'C';
+  area: 'Nội thành' | 'Ngoại thành' | 'Tỉnh lân cận';
+  registrationDate: string;
+  fee: string;
+  paidAmount?: number;
+  address: string;
+  status: StudentStatus;
+  ownerId: string;
+  healthCheckDate?: string;
+  healthCheckNotes?: string;
+  healthCheckFiles?: IHealthCheckFile[];
+  progress?: IStudentProgress;
+  exams?: IStudentExam[];
+  paymentHistory?: IStudentPayment[];
+  examId?: string;
+  examName?: string;
+  examDate?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}

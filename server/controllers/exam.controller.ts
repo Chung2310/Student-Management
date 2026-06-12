@@ -1,0 +1,85 @@
+import { Response, NextFunction } from "express";
+import { ExamService } from "../services/exam.service";
+import { AuthRequest } from "../middlewares/auth.middleware";
+
+export class ExamController {
+  static async create(req: AuthRequest, res: Response, _next: NextFunction) {
+    try {
+      const ownerId = req.user!.uid;
+      const exam = await ExamService.createExam(ownerId, req.body);
+      res.status(201).json({ success: true, data: exam });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Lỗi không xác định.";
+      res.status(400).json({ success: false, error: msg });
+    }
+  }
+
+  static async getList(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const ownerId = req.user!.uid;
+      const result = await ExamService.getExams(ownerId, req.query);
+      res.json({ success: true, ...result });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  static async getDetail(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const ownerId = req.user!.uid;
+      const exam = await ExamService.getExamById(ownerId, req.params.id);
+      if (!exam) {
+        return res.status(404).json({ success: false, error: "Không tìm thấy kỳ thi." });
+      }
+      res.json({ success: true, data: exam });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  static async update(req: AuthRequest, res: Response, _next: NextFunction) {
+    try {
+      const ownerId = req.user!.uid;
+      const exam = await ExamService.updateExam(ownerId, req.params.id, req.body);
+      if (!exam) {
+        return res.status(404).json({ success: false, error: "Không tìm thấy kỳ thi để cập nhật." });
+      }
+      res.json({ success: true, data: exam });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Lỗi không xác định.";
+      res.status(400).json({ success: false, error: msg });
+    }
+  }
+
+  static async delete(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const ownerId = req.user!.uid;
+      const exam = await ExamService.deleteExam(ownerId, req.params.id);
+      if (!exam) {
+        return res.status(404).json({ success: false, error: "Không tìm thấy kỳ thi để xóa." });
+      }
+      res.json({ success: true, data: exam });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  static async assign(req: AuthRequest, res: Response, _next: NextFunction) {
+    try {
+      const ownerId = req.user!.uid;
+      const { studentId, studentIds } = req.body;
+      const examId = req.params.id;
+      const idsToAssign = studentIds || (studentId ? [studentId] : []);
+      
+      if (idsToAssign.length === 0) {
+        return res.status(400).json({ success: false, error: "Thiếu ID học viên." });
+      }
+
+      await ExamService.assignStudents(ownerId, examId, idsToAssign);
+      res.json({ success: true, message: "Đã thêm học viên vào kỳ thi thành công." });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Lỗi không xác định.";
+      res.status(400).json({ success: false, error: msg });
+    }
+  }
+}

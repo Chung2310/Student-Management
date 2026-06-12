@@ -1,0 +1,102 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
+@theme {
+  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  
+  --color-brand-primary: #4c489d;
+  --color-brand-sidebar: #1e1b4b;
+  --color-brand-bg: #f3f4f6;
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased text-slate-900 bg-brand-bg;
+  }
+}
+
+@media print {
+  /* Default: hide everything */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only the main content area and its required parents */
+  #root, 
+  #root * {
+    visibility: visible;
+  }
+
+  /* Specifically hide elements not relevant for printing list */
+  nav, 
+  aside,
+  header,
+  footer,
+  .no-print,
+  button,
+  select,
+  input,
+  .status-tabs,
+  .filters-bar,
+  .pagination-bar {
+    display: none !important;
+  }
+
+  /* Layout adjustments for printer */
+  .min-h-screen {
+    min-height: auto !important;
+    background: white !important;
+  }
+
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .bg-white {
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 10pt !important;
+  }
+
+  th, td {
+    border: 1px solid #ddd !important;
+    padding: 6px !important;
+  }
+
+  th {
+    background-color: #f8fafc !important;
+    color: #000 !important;
+  }
+
+  /* Expand hidden text/elements if needed */
+  .truncate {
+    white-space: normal !important;
+    overflow: visible !important;
+  }
+}
+
+/* Hide native date picker icon to avoid conflict with Lucide icons */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  background: transparent;
+  bottom: 0;
+  color: transparent;
+  cursor: pointer;
+  height: auto;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: auto;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

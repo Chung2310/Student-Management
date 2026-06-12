@@ -1,0 +1,55 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "Thông tin học viên lái xe",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string", "description": "Họ và tên học viên" },
+        "phone": { "type": "string", "description": "Số điện thoại" },
+        "referral": { "type": "string", "description": "Người giới thiệu" },
+        "birthday": { "type": "string", "description": "Ngày sinh" },
+        "idCard": { "type": "string", "description": "Số CCCD/CMND" },
+        "rank": { "type": "string", "enum": ["A1", "A2", "B1", "B2", "C"], "description": "Hạng bằng đăng ký" },
+        "area": { "type": "string", "enum": ["Nội thành", "Ngoại thành", "Tỉnh lân cận"], "description": "Khu vực cư trú" },
+        "registrationDate": { "type": "string", "description": "Ngày đăng ký hồ sơ" },
+        "fee": { "type": "string", "description": "Số tiền học phí đã nộp hoặc còn nợ" },
+        "status": { "type": "string", "enum": ["Chờ KSK", "Đã KSK", "Đã nộp HS", "Đang học", "Đang thi", "Đã đậu", "Thi lại", "Nợ học phí"], "description": "Trạng thái hồ sơ hiện tại" },
+        "address": { "type": "string", "description": "Địa chỉ thường trú" },
+        "ownerId": { "type": "string", "description": "UID của người dùng quản lý học viên này" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Thời gian tạo hồ sơ" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Thời gian cập nhật hồ sơ gần nhất" }
+      },
+      "required": ["fullName", "rank", "area", "status", "ownerId", "createdAt", "updatedAt"]
+    },
+    "ExamSession": {
+      "title": "ExamSession",
+      "description": "Thông tin về đợt thi sát hạch",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Tên đợt thi" },
+        "status": { "type": "string", "enum": ["Sắp diễn ra", "Đã xác nhận", "Đã hoàn thành", "Đã hủy"], "description": "Trạng thái đợt thi" },
+        "rank": { "type": "string", "enum": ["A1", "A2", "B1", "B2", "C"], "description": "Hạng bằng thi" },
+        "area": { "type": "string", "description": "Khu vực thi" },
+        "tentativeDate": { "type": "string", "description": "Ngày thi dự kiến" },
+        "officialDate": { "type": "string", "description": "Ngày thi chính thức" },
+        "location": { "type": "string", "description": "Địa điểm thi (Trung tâm sát hạch)" },
+        "studentCount": { "type": "number", "description": "Số lượng học viên tham gia" },
+        "passCount": { "type": "number", "description": "Số lượng học viên đậu" },
+        "failCount": { "type": "number", "description": "Số lượng học viên trượt" },
+        "ownerId": { "type": "string", "description": "UID người quản lý" }
+      },
+      "required": ["name", "status", "rank", "tentativeDate", "location", "ownerId"]
+    }
+  },
+  "firestore": {
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Bộ sưu tập quản lý hồ sơ học viên lái xe"
+    },
+    "/exams/{examId}": {
+      "schema": "ExamSession",
+      "description": "Bộ sưu tập quản lý đợt thi sát hạch"
+    }
+  }
+}
