@@ -1,10 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
 import { Student } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 export async function analyzeStudentPerformance(student: Student) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return "Cố vấn AI hiện chưa được cấu hình khóa API (GEMINI_API_KEY) trong cài đặt hệ thống.";
+  }
+
   try {
+    const ai = new GoogleGenAI({ apiKey });
     const prompt = `
       Bạn là một cố vấn đào tạo lái xe chuyên nghiệp. Hãy phân tích hồ sơ học viên sau và đưa ra tư vấn lộ trình học tập, thi sát hạch:
       

@@ -1,7 +1,6 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
-import { fileURLToPath } from "url";
 import { Resend } from "resend";
 import twilio from "twilio";
 import dotenv from "dotenv";
@@ -14,18 +13,20 @@ import { connectDB } from "./server/config/db";
 import apiRoutes from "./server/routes/index";
 import { swaggerSpec } from "./server/swagger";
 import { errorMiddleware } from "./server/middlewares/error.middleware";
+import { AuthService } from "./server/services/auth.service";
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 async function startServer() {
   // Connect to MongoDB
   await connectDB();
 
+  // Seed Admin Account
+  await AuthService.seedAdmin();
+
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 
   // CORS Configuration
   const allowedOrigins = process.env.LINK_COR ? process.env.LINK_COR.split(",") : ["http://localhost:3000"];
@@ -46,7 +47,8 @@ async function startServer() {
   app.use(cookieParser());
 
   // Swagger Documentation
-  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  app.use("/api-docs", swaggerUi.serve as any, swaggerUi.setup(swaggerSpec) as any);
 
   // Health Check Endpoint
   app.get("/api/v1/health", (req, res) => {
@@ -79,14 +81,14 @@ async function startServer() {
       }
 
       if (!apiKey) {
-        return res.status(400).json({ 
-          success: false, 
-          error: "Chưa cấu hình API Key trong Settings -> Secrets." 
+        return res.status(400).json({
+          success: false,
+          error: "Chưa cấu hình API Key trong Settings -> Secrets."
         });
       }
 
       const resend = new Resend(apiKey);
-      
+
       const targetEmail = to.trim();
 
       const { data, error } = await resend.emails.send({
@@ -99,8 +101,8 @@ async function startServer() {
       if (error) {
         console.error("Resend API Error:", error);
         if (error.name === 'validation_error') {
-          return res.status(400).json({ 
-            success: false, 
+          return res.status(400).json({
+            success: false,
             error: "Lỗi Validation: Tài khoản Resend Free/Trial chỉ cho phép gửi đến chính email bạn đã đăng ký tài khoản Resend. Vui lòng xác thực tên miền trên Resend để gửi cho học viên khác.",
             details: error
           });
@@ -109,9 +111,10 @@ async function startServer() {
       }
 
       res.json({ success: true, data });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Server email error:", error);
-      res.status(500).json({ success: false, error: error.message });
+      const msg = error instanceof Error ? error.message : 'Lỗi hệ thống';
+      res.status(500).json({ success: false, error: msg });
     }
   });
 
@@ -135,14 +138,14 @@ async function startServer() {
       }
 
       if (!sid || !token || !from) {
-        return res.status(400).json({ 
-          success: false, 
-          error: "Hệ thống chưa được cấu hình Twilio. Vui lòng thêm TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, và TWILIO_PHONE_NUMBER vào Secrets." 
+        return res.status(400).json({
+          success: false,
+          error: "Hệ thống chưa được cấu hình Twilio. Vui lòng thêm TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, và TWILIO_PHONE_NUMBER vào Secrets."
         });
       }
 
       const client = twilio(sid, token);
-      
+
       // Ensure phone number starts with + and country code
       let formattedTo = to.trim();
       if (formattedTo.startsWith('0')) {
@@ -158,9 +161,10 @@ async function startServer() {
       });
 
       res.json({ success: true, sid: result.sid });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Twilio SMS error:", error);
-      res.status(400).json({ success: false, error: error.message });
+      const msg = error instanceof Error ? error.message : 'Lỗi hệ thống';
+      res.status(400).json({ success: false, error: msg });
     }
   });
 

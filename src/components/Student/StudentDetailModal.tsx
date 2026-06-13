@@ -1,12 +1,12 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  X, Printer, User, FileText, Stethoscope, 
+  X, Printer, FileText, Stethoscope, 
   BarChart2, Calendar, CreditCard, History,
-  Sparkles, Loader2, Info, Upload, Check, Plus,
+  Sparkles, Loader2, Upload, Check, Plus,
   Trash2, File, AlertCircle, Bookmark, Save,
-  Clock, TrendingUp, Trophy, Target, ShieldCheck,
-  ChevronRight, Circle, Zap
+  Clock, TrendingUp, Trophy,
+  Zap
 } from 'lucide-react';
 import { Student } from '../../types';
 import { apiFetch } from '../../lib/api';
@@ -64,13 +64,17 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
   // Sync realtime data
   React.useEffect(() => {
     if (!initialStudent?.id) {
-      setStudent(null);
-      return;
+      const timer = setTimeout(() => {
+        setStudent(null);
+      }, 0);
+      return () => clearTimeout(timer);
     }
     
     // Set initially so it doesn't flicker
-    setStudent(initialStudent);
-    fetchStudentDetail();
+    const timer = setTimeout(() => {
+      setStudent(initialStudent);
+      fetchStudentDetail();
+    }, 0);
 
     const handleMutation = () => {
       fetchStudentDetail();
@@ -78,6 +82,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
 
     window.addEventListener("student-mutation", handleMutation);
     return () => {
+      clearTimeout(timer);
       window.removeEventListener("student-mutation", handleMutation);
     };
   }, [initialStudent, fetchStudentDetail]);
@@ -85,26 +90,29 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
   // Sync data to forms when student changes (only if not actively editing)
   React.useEffect(() => {
     if (student) {
-      if (!isUpdatingKSK) {
-        setKskData({
-          status: student.status === 'Chờ KSK' ? 'Pending' : 'Completed',
-          date: student.healthCheckDate || '',
-          notes: student.healthCheckNotes || '',
-          files: student.healthCheckFiles || []
-        });
-      }
-      if (!isEditingProgress && !isUpdatingProgress) {
-        setProgressData({
-          theory: student.progress?.theory || { completed: false, score: 0, lastDate: '' },
-          practice: student.progress?.practice || { hoursDone: 0, totalHours: 20 },
-          cabin: student.progress?.cabin || { hoursDone: 0, totalHours: 3 },
-          dat: student.progress?.dat || { kmDone: 0, totalKm: 810 },
-          sim: student.progress?.sim || { completed: false, lastDate: '' }
-        });
-      }
-      if (!isEditingExams && !isUpdatingExams) {
-        setExamData(student.exams || []);
-      }
+      const timer = setTimeout(() => {
+        if (!isUpdatingKSK) {
+          setKskData({
+            status: student.status === 'Chờ KSK' ? 'Pending' : 'Completed',
+            date: student.healthCheckDate || '',
+            notes: student.healthCheckNotes || '',
+            files: student.healthCheckFiles || []
+          });
+        }
+        if (!isEditingProgress && !isUpdatingProgress) {
+          setProgressData({
+            theory: student.progress?.theory || { completed: false, score: 0, lastDate: '' },
+            practice: student.progress?.practice || { hoursDone: 0, totalHours: 20 },
+            cabin: student.progress?.cabin || { hoursDone: 0, totalHours: 3 },
+            dat: student.progress?.dat || { kmDone: 0, totalKm: 810 },
+            sim: student.progress?.sim || { completed: false, lastDate: '' }
+          });
+        }
+        if (!isEditingExams && !isUpdatingExams) {
+          setExamData(student.exams || []);
+        }
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [student, isUpdatingKSK, isEditingProgress, isUpdatingProgress, isEditingExams, isUpdatingExams]);
 
@@ -130,13 +138,13 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
           let failCount = 0;
           let studentCount = 0;
 
-          allStudents.forEach((s: any) => {
+          allStudents.forEach((s: { _id: string; examId?: string; exams?: { id: string; result?: { overall?: string } }[] }) => {
             const studentExams = s._id === student.id ? examData : (s.exams || []);
-            const isAssigned = s._id === student.id ? (s.examId === exam.id) : (s.examId === exam.id);
+            const isAssigned = s.examId === exam.id;
             if (isAssigned) {
               studentCount++;
             }
-            const examEntry = studentExams.find((e: any) => e.id === exam.id);
+            const examEntry = studentExams.find((e: { id: string }) => e.id === exam.id);
             if (examEntry) {
               if (examEntry.result?.overall === 'Đậu') passCount++;
               else if (examEntry.result?.overall === 'Trượt') failCount++;
@@ -185,7 +193,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
     if (!student) return;
     setIsUpdatingKSK(true);
     try {
-      const updates: any = {
+      const updates: Record<string, string | { name: string; url: string; type: string; uploadedAt: string }[]> = {
         status: kskData.status === 'Completed' ? 'Đã KSK' : 'Chờ KSK',
         healthCheckDate: kskData.date,
         healthCheckNotes: kskData.notes,
@@ -254,15 +262,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
   const handleAnalyze = async () => {
     if (!student) return;
     setLoading(true);
-    const context = `
-      Học viên: ${student.fullName}
-      Hạng bằng: ${student.rank}
-      Khu vực: ${student.area}
-      Trạng thái: ${student.status}
-      Học phí: ${formatVND(student.fee)}
-      Ngày đăng ký: ${student.registrationDate}
-    `;
-    const result = await analyzeStudentPerformance({ bio: context } as any);
+    const result = await analyzeStudentPerformance(student);
     setAnalysis(result);
     setLoading(false);
   };
@@ -867,7 +867,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
                         <tbody className="divide-y divide-slate-100">
                           {examData.length === 0 ? (
                              <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400 text-xs italic">Chưa ghi nhận lịch sử thi.</td></tr>
-                          ) : examData.map((exam: any, idx: number) => (
+                          ) : examData.map((exam, idx: number) => (
                             <tr key={exam.id || idx} className="hover:bg-slate-50/50 transition-colors">
                               <td className="px-6 py-4">
                                 {isEditingExams ? (
@@ -1120,10 +1120,10 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
 interface ProgressControlCardProps {
   label: string;
   isEditing: boolean;
-  checked: boolean;
-  onCheck: () => void;
-  info: string;
-  progress?: { current: number; total: number };
+  checked?: boolean;
+  onCheck?: () => void;
+  info?: React.ReactNode;
+  progress?: { current: number; total: number; unit?: string };
   onValueChange?: (val: number) => void;
 }
 
@@ -1191,7 +1191,7 @@ function ProgressControlCard({ label, isEditing, checked, onCheck, info, progres
                   min="0"
                   max={progress.total}
                   value={progress.current}
-                  onChange={(e) => onValueChange(parseInt(e.target.value))}
+                  onChange={(e) => onValueChange?.(parseInt(e.target.value))}
                   className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 />
               )}
@@ -1209,55 +1209,6 @@ function ProgressControlCard({ label, isEditing, checked, onCheck, info, progres
   );
 }
 
-interface ProgressStatCardProps {
-  label: string;
-  value: string | number;
-  percent: number;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-}
-
-function ProgressStatCard({ label, value, percent, icon: Icon, color }: ProgressStatCardProps) {
-  return (
-    <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white", color)}>
-          <Icon className="w-5 h-5" />
-        </div>
-        <span className="text-xs font-black text-slate-400">{Math.round(percent)}%</span>
-      </div>
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
-      <p className="text-sm font-black text-slate-800 mt-1">{value}</p>
-      <div className="mt-3 h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
-        <div className={cn("h-full rounded-full transition-all duration-500", color)} style={{ width: `${percent}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function ProgressRow({ label, status, info }: { label: string, status: 'Done' | 'Doing' | 'Todo', info: string }) {
-  return (
-    <div className="flex items-start gap-4">
-      <div className="mt-1">
-        {status === 'Done' ? (
-          <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white">
-            <Check className="w-3 h-3" />
-          </div>
-        ) : status === 'Doing' ? (
-          <div className="w-5 h-5 rounded-full border-2 border-indigo-500 flex items-center justify-center">
-            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-          </div>
-        ) : (
-          <div className="w-5 h-5 rounded-full border-2 border-slate-200" />
-        )}
-      </div>
-      <div>
-        <p className={cn("text-sm font-bold", status === 'Todo' ? "text-slate-400" : "text-slate-700")}>{label}</p>
-        <p className="text-xs text-slate-400 mt-0.5">{info}</p>
-      </div>
-    </div>
-  );
-}
 
 interface FeeCardProps {
   label: string;

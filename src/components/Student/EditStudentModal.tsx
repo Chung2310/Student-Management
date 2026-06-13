@@ -13,7 +13,6 @@ interface EditStudentModalProps {
 
 export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditStudentModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -30,19 +29,22 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
 
   useEffect(() => {
     if (student) {
-      setFormData({
-        fullName: student.fullName || '',
-        email: student.email || '',
-        phone: student.phone || '',
-        referral: student.referral || '',
-        birthday: student.birthday || '',
-        idCard: student.idCard || '',
-        rank: student.rank || '',
-        area: student.area || '',
-        registrationDate: student.registrationDate || '',
-        fee: student.fee || '',
-        address: student.address || '',
-      });
+      const timer = setTimeout(() => {
+        setFormData({
+          fullName: student.fullName || '',
+          email: student.email || '',
+          phone: student.phone || '',
+          referral: student.referral || '',
+          birthday: student.birthday || '',
+          idCard: student.idCard || '',
+          rank: student.rank || '',
+          area: student.area || '',
+          registrationDate: student.registrationDate || '',
+          fee: student.fee || '',
+          address: student.address || '',
+        });
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [student]);
 
@@ -51,7 +53,6 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setErrorMsg(null);
 
     try {
       await apiFetch(`/students/${student.id}`, {
@@ -62,9 +63,10 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
       alert("Đã cập nhật thông tin học viên thành công!");
       onSuccess();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating student:", error);
-      setErrorMsg(error.message || "Có lỗi xảy ra khi cập nhật thông tin.");
+      const msg = error instanceof Error ? error.message : "Có lỗi xảy ra khi cập nhật thông tin.";
+      alert(msg);
     } finally {
       setIsSubmitting(false);
     }

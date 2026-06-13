@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
-  Plus, Search, Filter, Download, Printer, Calendar as CalendarIcon, 
-  ChevronDown, UserPlus, Edit3, Trash2, ChevronRight,
+  Plus, Download, Printer, Calendar as CalendarIcon, 
+  ChevronDown, UserPlus, Edit3, Trash2,
   ClipboardList, CheckCircle2, Clock, Users as UsersIcon,
   X, MapPin, Map
 } from 'lucide-react';
@@ -17,7 +17,7 @@ import { AssignStudentModal } from './AssignStudentModal';
 
 export function ExamManagement() {
   const { exams, loading: examsLoading } = useExams();
-  const { students, loading: studentsLoading } = useStudents();
+  const { students } = useStudents();
   const [activeTab, setActiveTab] = useState<'exams' | 'students'>('exams');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<ExamSession | null>(null);
@@ -71,9 +71,10 @@ export function ExamManagement() {
       await apiFetch(`/exams/${deleteModalExam.id}`, { method: 'DELETE' });
       window.dispatchEvent(new Event("exam-mutation"));
       setDeleteModalExam(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting exam:", error);
-      alert(error.message || "Có lỗi xảy ra khi xóa đợt thi.");
+      const msg = error instanceof Error ? error.message : "Có lỗi xảy ra khi xóa đợt thi.";
+      alert(msg);
     } finally {
       setIsDeleting(false);
     }
@@ -426,7 +427,15 @@ export function ExamManagement() {
   );
 }
 
-function StatCard({ label, value, icon: Icon, color, bgColor }: any) {
+interface StatCardProps {
+  label: string;
+  value: string | number;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  bgColor: string;
+}
+
+function StatCard({ label, value, icon: Icon, color, bgColor }: StatCardProps) {
   return (
     <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
       <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", bgColor)}>
@@ -440,7 +449,12 @@ function StatCard({ label, value, icon: Icon, color, bgColor }: any) {
   );
 }
 
-function FilterItem({ label, children }: any) {
+interface FilterItemProps {
+  label: string;
+  children: React.ReactNode;
+}
+
+function FilterItem({ label, children }: FilterItemProps) {
   return (
     <div className="space-y-1.5">
       <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</label>
@@ -451,7 +465,14 @@ function FilterItem({ label, children }: any) {
   );
 }
 
-function FilterSelect({ label, value, onChange, options }: any) {
+interface FilterSelectProps {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  options: string[];
+}
+
+function FilterSelect({ label, value, onChange, options }: FilterSelectProps) {
   return (
     <div className="space-y-1.5">
       <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</label>
@@ -470,11 +491,11 @@ function FilterSelect({ label, value, onChange, options }: any) {
 }
 
 interface ExamCardProps {
-  key?: any;
+  key?: string | number;
   exam: ExamSession;
   getStatusInfo: (status: ExamStatus) => { 
     color: string; 
-    icon: any; 
+    icon: React.ComponentType<{ className?: string }>; 
     label: string; 
   };
   onDelete: () => void;

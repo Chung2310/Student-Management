@@ -3,7 +3,7 @@ import { NotificationService } from "../services/notification.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
 
 export class NotificationController {
-  static async create(req: AuthRequest, res: Response, _next: NextFunction) {
+  static async create(req: AuthRequest, res: Response) {
     try {
       const ownerId = req.user!.uid;
       const notification = await NotificationService.createNotification(ownerId, req.body);
@@ -24,7 +24,7 @@ export class NotificationController {
     }
   }
 
-  static async delete(req: AuthRequest, res: Response, _next: NextFunction) {
+  static async delete(req: AuthRequest, res: Response) {
     try {
       const ownerId = req.user!.uid;
       const notification = await NotificationService.deleteNotification(ownerId, req.params.id);

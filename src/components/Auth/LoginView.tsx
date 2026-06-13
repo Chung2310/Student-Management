@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogIn, Car, CheckCircle2, ShieldCheck, Zap, RefreshCcw, Mail, Lock, UserPlus, ArrowLeft, Eye, EyeOff, AlertCircle, User, Link } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { cn } from '../../lib/utils';
 
 export function LoginView() {
-  const { login, loginWithEmail, registerWithEmail, isLoggingIn } = useAuth();
+  const { loginWithEmail, registerWithEmail, isLoggingIn, login } = useAuth();
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,8 +28,8 @@ export function LoginView() {
       } else {
         await loginWithEmail(email, password);
       }
-    } catch (error: any) {
-      setErrorMsg(error.message);
+    } catch (error: unknown) {
+      setErrorMsg(error instanceof Error ? error.message : "Đăng nhập/đăng ký thất bại.");
     }
   };
 
@@ -282,7 +281,7 @@ export function LoginView() {
   );
 }
 
-function FeatureItem({ icon: Icon, text }: { icon: any, text: string }) {
+function FeatureItem({ icon: Icon, text }: { icon: React.ComponentType<{ className?: string }>, text: string }) {
   return (
     <div className="flex items-center gap-3">
       <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">

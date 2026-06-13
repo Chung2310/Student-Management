@@ -1,0 +1,350 @@
+﻿yarn run v1.22.22
+$ eslint .
+
+D:\Igen Tech\Student-Management\scripts\migrate.ts
+   57:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  135:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  137:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  137:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Igen Tech\Student-Management\server.ts
+   21:7   error  '__dirname' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  112:21  error  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  161:21  error  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+D:\Igen Tech\Student-Management\server\config\cloudinary.ts
+  16:18  error  'req' is defined but never used   @typescript-eslint/no-unused-vars
+  16:23  error  'file' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\server\controllers\auth.controller.ts
+   6:54  error  '_next' is defined but never used  @typescript-eslint/no-unused-vars
+  24:51  error  '_next' is defined but never used  @typescript-eslint/no-unused-vars
+  49:58  error  '_next' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\server\controllers\exam.controller.ts
+   6:56  error  '_next' is defined but never used  @typescript-eslint/no-unused-vars
+  40:56  error  '_next' is defined but never used  @typescript-eslint/no-unused-vars
+  67:56  error  '_next' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\server\controllers\notification.controller.ts
+   6:56  error  '_next' is defined but never used  @typescript-eslint/no-unused-vars
+  27:56  error  '_next' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\server\controllers\payment.controller.ts
+   6:56  error  '_next' is defined but never used  @typescript-eslint/no-unused-vars
+  27:56  error  '_next' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\server\controllers\student.controller.ts
+   6:56  error  '_next' is defined but never used  @typescript-eslint/no-unused-vars
+  40:56  error  '_next' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\server\controllers\upload.controller.ts
+  5:60  error  '_next' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\server\middlewares\error.middleware.ts
+  13:78  error  '_next' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\src\App.tsx
+  22:10  error  'BusinessResults' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\src\components\Auth\LoginView.tsx
+    5:10  error  'cn' is defined but never used            @typescript-eslint/no-unused-vars
+   32:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  285:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Igen Tech\Student-Management\src\components\Dashboard\DrivingDashboardTables.tsx
+    3:27  error  'Clock' is defined but never used                          @typescript-eslint/no-unused-vars
+    3:34  error  'CheckCircle2' is defined but never used                   @typescript-eslint/no-unused-vars
+    3:48  error  'ClipboardList' is defined but never used                  @typescript-eslint/no-unused-vars
+    3:63  error  'X' is defined but never used                              @typescript-eslint/no-unused-vars
+   11:30  error  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   74:9   error  'displayRegistrations' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  184:54  error  'idx' is defined but never used                            @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\src\components\Dashboard\Sidebar.tsx
+   1:52  error  'TrendingUp' is defined but never used    @typescript-eslint/no-unused-vars
+   1:89  error  'UserCheck' is defined but never used     @typescript-eslint/no-unused-vars
+  21:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Igen Tech\Student-Management\src\components\Exams\AddExamModal.tsx
+  11:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Igen Tech\Student-Management\src\components\Exams\AssignStudentModal.tsx
+   3:21  error  'UserPlus' is defined but never used      @typescript-eslint/no-unused-vars
+  39:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  69:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Igen Tech\Student-Management\src\components\Exams\ExamManagement.tsx
+    4:9   error  'Search' is defined but never used                    @typescript-eslint/no-unused-vars
+    4:17  error  'Filter' is defined but never used                    @typescript-eslint/no-unused-vars
+    5:41  error  'ChevronRight' is defined but never used              @typescript-eslint/no-unused-vars
+   20:30  error  'studentsLoading' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   74:21  error  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+  429:65  error  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+  443:42  error  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+  454:60  error  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+  473:9   error  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+  477:11  error  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+
+D:\Igen Tech\Student-Management\src\components\Exams\ExamStatusModal.tsx
+  23:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Igen Tech\Student-Management\src\components\Exams\ExamStatusModal.tsx:23:7
+  21 |   React.useEffect(() => {
+  22 |     if (exam) {
+> 23 |       setSelectedStatus(exam.status);
+     |       ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  24 |       setOfficialDate(exam.officialDate || '');
+  25 |     }
+  26 |   }, [exam]);  react-hooks/set-state-in-effect
+
+D:\Igen Tech\Student-Management\src\components\Fees\AddPaymentModal.tsx
+   3:13  error  'DollarSign' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
+  27:9   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Igen Tech\Student-Management\src\components\Fees\AddPaymentModal.tsx:27:9
+  25 |       const remaining = totalFee - (student.paidAmount || 0);
+  26 |       if (remaining > 0) {
+> 27 |         setAmount(new Intl.NumberFormat('vi-VN').format(remaining));
+     |         ^^^^^^^^^ Avoid calling setState() directly within an effect
+  28 |       } else {
+  29 |         setAmount('');
+  30 |       }  react-hooks/set-state-in-effect
+  81:21  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+
+D:\Igen Tech\Student-Management\src\components\Fees\FeeManagement.tsx
+   4:3   error  'Plus' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+   4:17  error  'Filter' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+   4:35  error  'DollarSign' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
+   6:3   error  'X' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+   6:6   error  'ArrowUpRight' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+   6:20  error  'ArrowDownRight' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   6:36  error  'Eye' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   6:41  error  'MoreVertical' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+   7:3   error  'Wallet' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+   7:11  error  'PieChart' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+   7:43  error  'CalendarIcon' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+  71:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Igen Tech\Student-Management\src\components\Fees\FeeManagement.tsx:71:5
+  69 |   // Reset page when filters change
+  70 |   React.useEffect(() => {
+> 71 |     setCurrentPage(1);
+     |     ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  72 |   }, [searchQuery, areaFilter, debtFilter]);
+  73 |
+  74 |   return (  react-hooks/set-state-in-effect
+
+D:\Igen Tech\Student-Management\src\components\Notifications\NotificationBot.tsx
+    4:18  error  'MessageSquare' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+    5:32  error  'Eye' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+    5:37  error  'Info' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+    5:43  error  'Sparkles' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+  155:14  error  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  172:14  error  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  178:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Igen Tech\Student-Management\src\components\Notifications\NotificationBot.tsx:178:5
+  176 |
+  177 |   useEffect(() => {
+> 178 |     checkApiStatus();
+      |     ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  179 |     checkSmsApiStatus();
+  180 |   }, []);
+  181 |                       react-hooks/set-state-in-effect
+  200:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Igen Tech\Student-Management\src\components\Notifications\NotificationBot.tsx:200:5
+  198 |     if (!user) return;
+  199 |
+> 200 |     fetchHistory();
+      |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  201 |
+  202 |     const handleMutation = () => {
+  203 |       fetchHistory();  react-hooks/set-state-in-effect
+  297:20  error  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  319:20  error  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\src\components\Results\BusinessResults.tsx
+    4:3   error  'TrendingUp' is defined but never used                @typescript-eslint/no-unused-vars
+    6:3   error  'Calendar' is defined but never used                  @typescript-eslint/no-unused-vars
+    6:13  error  'MapPin' is defined but never used                    @typescript-eslint/no-unused-vars
+    6:21  error  'Award' is defined but never used                     @typescript-eslint/no-unused-vars
+    6:28  error  'Share2' is defined but never used                    @typescript-eslint/no-unused-vars
+    6:36  error  'Info' is defined but never used                      @typescript-eslint/no-unused-vars
+   15:30  error  'loadingStudents' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   18:10  error  'loadingPayments' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   33:46  error  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+   56:33  error  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+  310:67  error  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+  328:60  error  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+
+D:\Igen Tech\Student-Management\src\components\Settings\SettingsView.tsx
+    4:36  error  'Cloud' is defined but never used                    @typescript-eslint/no-unused-vars
+    5:3   error  'MapPin' is defined but never used                   @typescript-eslint/no-unused-vars
+    6:17  error  'Car' is defined but never used                      @typescript-eslint/no-unused-vars
+    6:22  error  'Bike' is defined but never used                     @typescript-eslint/no-unused-vars
+    7:36  error  'MessageSquareText' is defined but never used        @typescript-eslint/no-unused-vars
+    8:3   error  'Loader2' is defined but never used                  @typescript-eslint/no-unused-vars
+    8:12  error  'AlertCircle' is defined but never used              @typescript-eslint/no-unused-vars
+   28:40  error  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+   55:9   error  'triggerRestore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  124:21  error  'id' is assigned a value but never used              @typescript-eslint/no-unused-vars
+  124:25  error  '_id' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  124:30  error  'ownerId' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  124:39  error  'createdAt' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  124:50  error  'updatedAt' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  176:23  error  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  208:21  error  'id' is assigned a value but never used              @typescript-eslint/no-unused-vars
+  208:25  error  '_id' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  208:30  error  'ownerId' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  208:39  error  'createdAt' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  208:50  error  'updatedAt' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  259:23  error  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  267:14  error  'err' is defined but never used                      @typescript-eslint/no-unused-vars
+  599:90  error  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  600:19  error  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  606:22  error  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  631:10  error  'SettingsSection' is defined but never used          @typescript-eslint/no-unused-vars
+  631:77  error  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  644:27  error  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  672:10  error  'SectionRanks' is defined but never used             @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\src\components\Student\AddStudentModal.tsx
+  11:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  84:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Igen Tech\Student-Management\src\components\Student\EditStudentModal.tsx
+  16:10  error  'errorMsg' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+  33:7   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Igen Tech\Student-Management\src\components\Student\EditStudentModal.tsx:33:7
+  31 |   useEffect(() => {
+  32 |     if (student) {
+> 33 |       setFormData({
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  34 |         fullName: student.fullName || '',
+  35 |         email: student.email || '',
+  36 |         phone: student.phone || '',  react-hooks/set-state-in-effect
+  65:21  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-explicit-any
+
+D:\Igen Tech\Student-Management\src\components\Student\StudentDetailModal.tsx
+     4:15  error  'User' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+     6:22  error  'Info' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+     8:30  error  'Target' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+     8:38  error  'ShieldCheck' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+     9:3   error  'ChevronRight' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+     9:17  error  'Circle' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+    67:7   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Igen Tech\Student-Management\src\components\Student\StudentDetailModal.tsx:67:7
+  65 |   React.useEffect(() => {
+  66 |     if (!initialStudent?.id) {
+> 67 |       setStudent(null);
+     |       ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  68 |       return;
+  69 |     }
+  70 |                                                                                                                                             react-hooks/set-state-in-effect
+    89:9   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Igen Tech\Student-Management\src\components\Student\StudentDetailModal.tsx:89:9
+  87 |     if (student) {
+  88 |       if (!isUpdatingKSK) {
+> 89 |         setKskData({
+     |         ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  90 |           status: student.status === 'Chß╗¥ KSK' ? 'Pending' : 'Completed',
+  91 |           date: student.healthCheckDate || '',
+  92 |           notes: student.healthCheckNotes || '',  react-hooks/set-state-in-effect
+   133:35  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
+   139:53  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
+   188:22  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
+   265:72  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
+   870:51  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
+  1220:10  error  'ProgressStatCard' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+  1238:10  error  'ProgressRow' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\src\components\Student\StudentList.tsx
+   1:10  error  'motion' is defined but never used  @typescript-eslint/no-unused-vars
+  32:33  error  'idx' is defined but never used     @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\src\components\Student\StudentManagement.tsx
+    4:11  error  'Filter' is defined but never used               @typescript-eslint/no-unused-vars
+    5:3   error  'MoreHorizontal' is defined but never used       @typescript-eslint/no-unused-vars
+  487:34  error  'percentage' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\src\hooks\useAuth.ts
+  37:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Igen Tech\Student-Management\src\hooks\useAuth.ts:37:5
+  35 |
+  36 |   useEffect(() => {
+> 37 |     fetchMe();
+     |     ^^^^^^^ Avoid calling setState() directly within an effect
+  38 |
+  39 |     const handleUnauthorized = () => {
+  40 |       setUser(null);  react-hooks/set-state-in-effect
+
+Γ£û 144 problems (144 errors, 0 warnings)
+
+node.exe : error Command failed with exit code 1.
+At D:\nodejs\yarn.ps1:16 char:5
++     & "$basedir/node$exe"  "$basedir/node_modules/corepack/dist/yarn. ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (error Command failed with exit code 1.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.

@@ -1,0 +1,12 @@
+yarn run v1.22.22
+$ eslint .
+
+D:\Igen Tech\Student-Management\server\controllers\upload.controller.ts
+  1:20  error  'NextFunction' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Igen Tech\Student-Management\src\components\Settings\SettingsView.tsx
+  5:3  error  'Award' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (2 errors, 0 warnings)
+
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.

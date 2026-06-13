@@ -43,7 +43,7 @@ export function handleFirestoreError(error: unknown, operationType: FirestoreErr
       email: user?.email || '',
       emailVerified: user?.emailVerified || false,
       isAnonymous: user?.isAnonymous || false,
-      providerInfo: (user?.providerData || []) as Record<string, unknown>[],
+      providerInfo: (user?.providerData || []) as unknown as Record<string, unknown>[],
     },
   };
   throw new Error(JSON.stringify(errorInfo));

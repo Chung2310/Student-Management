@@ -93,4 +93,28 @@ export class AuthService {
       throw new Error("Refresh token không hợp lệ hoặc đã hết hạn.", { cause: error });
     }
   }
+
+  static async seedAdmin() {
+    const adminEmail = process.env.ADMIN_EMAIL || "admin@studentmanagement.com";
+    const adminPassword = process.env.ADMIN_PASSWORD || "AdminPass123";
+    const adminDisplayName = process.env.ADMIN_DISPLAY_NAME || "Admin Hệ Thống";
+
+    try {
+      const existingUser = await User.findOne({ email: adminEmail });
+      if (!existingUser) {
+        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+        const adminUser = new User({
+          email: adminEmail,
+          password: hashedPassword,
+          displayName: adminDisplayName,
+        });
+        await adminUser.save();
+        console.log(`>>> Seeded admin account successfully: ${adminEmail}`);
+      } else {
+        console.log(`>>> Admin account already exists: ${adminEmail}`);
+      }
+    } catch (error) {
+      console.error(">>> Error seeding admin account:", error);
+    }
+  }
 }

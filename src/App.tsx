@@ -19,7 +19,6 @@ import { ExamManagement } from './components/Exams/ExamManagement';
 import { FeeManagement } from './components/Fees/FeeManagement';
 import { NotificationBot } from './components/Notifications/NotificationBot';
 import { SettingsView } from './components/Settings/SettingsView';
-import { BusinessResults } from './components/Results/BusinessResults';
 import { useAuth } from './hooks/useAuth';
 import { LoginView } from './components/Auth/LoginView';
 import { Loader2 } from 'lucide-react';

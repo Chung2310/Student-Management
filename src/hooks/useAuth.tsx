@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import { apiFetch, setAccessToken } from '../lib/api';
 
 export interface AuthUser {
@@ -8,7 +9,19 @@ export interface AuthUser {
   gasUrl?: string;
 }
 
-export function useAuth() {
+interface AuthContextType {
+  user: AuthUser | null;
+  loading: boolean;
+  isLoggingIn: boolean;
+  login: () => Promise<void>;
+  loginWithEmail: (email: string, pass: string) => Promise<void>;
+  registerWithEmail: (email: string, pass: string, displayName: string, gasUrl: string) => Promise<void>;
+  logout: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -34,14 +47,19 @@ export function useAuth() {
   };
 
   useEffect(() => {
-    fetchMe();
+    const timer = setTimeout(() => {
+      fetchMe();
+    }, 0);
 
     const handleUnauthorized = () => {
       setUser(null);
     };
 
     window.addEventListener("unauthorized", handleUnauthorized);
-    return () => window.removeEventListener("unauthorized", handleUnauthorized);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("unauthorized", handleUnauthorized);
+    };
   }, []);
 
   const login = async () => {
@@ -96,5 +114,17 @@ export function useAuth() {
     }
   };
 
-  return { user, loading, login, loginWithEmail, registerWithEmail, logout, isLoggingIn };
+  return (
+    <AuthContext.Provider value={{ user, loading, isLoggingIn, login, loginWithEmail, registerWithEmail, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }

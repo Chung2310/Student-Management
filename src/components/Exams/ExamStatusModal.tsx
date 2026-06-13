@@ -17,11 +17,14 @@ export function ExamStatusModal({ exam, isOpen, onClose, onSuccess }: ExamStatus
   const [selectedStatus, setSelectedStatus] = useState<ExamStatus | ''>(exam?.status || '');
   const [officialDate, setOfficialDate] = useState(exam?.officialDate || '');
 
-  // Update local state when exam changes
+  // Update local state when exam changes - deferred to avoid synchronous setState in effect
   React.useEffect(() => {
     if (exam) {
-      setSelectedStatus(exam.status);
-      setOfficialDate(exam.officialDate || '');
+      const timer = setTimeout(() => {
+        setSelectedStatus(exam.status);
+        setOfficialDate(exam.officialDate || '');
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [exam]);
 

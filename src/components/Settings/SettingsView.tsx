@@ -1,11 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { 
-  Settings, QrCode, ClipboardList, Cloud, Database, 
-  MapPin, Award, CreditCard, Plus, Edit2, Trash2,
-  CheckCircle2, Car, Bike, Info, ShieldCheck, Download, Upload, 
-  FileJson, RotateCcw, ToggleLeft, MessageSquareText, Activity,
-  Loader2, AlertCircle
+  Settings, QrCode, ClipboardList, Database, 
+  CreditCard, Plus, Edit2, Trash2,
+  CheckCircle2, Info, ShieldCheck, Download, Upload, 
+  FileJson, RotateCcw, ToggleLeft, Activity
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
@@ -25,7 +24,7 @@ export function SettingsView() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const restoreInputRef = useRef<HTMLInputElement>(null);
 
-  const tabs: { id: SettingsTab; icon: any; label: string }[] = [
+  const tabs: { id: SettingsTab; icon: React.ComponentType<{ className?: string }>; label: string }[] = [
     { id: 'Cấu hình hệ thống', icon: Settings, label: 'Cấu hình hệ thống' },
     { id: 'Quản lý dữ liệu', icon: Database, label: 'Quản lý dữ liệu' },
     { id: 'Quản trị', icon: ShieldCheck, label: 'Quản trị' },
@@ -121,7 +120,12 @@ export function SettingsView() {
           let addedCount = 0;
 
           for (const item of jsonData) {
-            const { id, _id, ownerId, createdAt, updatedAt, ...cleanData } = item;
+            const cleanData = { ...item };
+            delete cleanData.id;
+            delete cleanData._id;
+            delete cleanData.ownerId;
+            delete cleanData.createdAt;
+            delete cleanData.updatedAt;
             
             const createFields = {
               fullName: cleanData.fullName || cleanData.name,
@@ -173,9 +177,10 @@ export function SettingsView() {
           console.log(`>>> [RESTORE] Successfully added ${addedCount} students.`);
           setShowResult({ show: true, count: addedCount, type: 'Restore' });
           window.dispatchEvent(new Event('student-mutation'));
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error(">>> [RESTORE ERROR]:", err);
-          alert("LỖI: " + err.message);
+          const msg = err instanceof Error ? err.message : "Đã xảy ra lỗi.";
+          alert("LỖI: " + msg);
         } finally {
           setIsProcessing(false);
           setRestoreFileName('');
@@ -205,7 +210,12 @@ export function SettingsView() {
           let addedCount = 0;
 
           for (const item of jsonData) {
-            const { id, _id, ownerId, createdAt, updatedAt, ...cleanData } = item;
+            const cleanData = { ...item };
+            delete cleanData.id;
+            delete cleanData._id;
+            delete cleanData.ownerId;
+            delete cleanData.createdAt;
+            delete cleanData.updatedAt;
             
             const createFields = {
               fullName: cleanData.fullName || cleanData.name,
@@ -256,15 +266,16 @@ export function SettingsView() {
           
           setShowResult({ show: true, count: addedCount, type: 'Import' });
           window.dispatchEvent(new Event('student-mutation'));
-        } catch (err: any) {
-          alert("Lỗi: " + err.message);
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : "Đã xảy ra lỗi.";
+          alert("Lỗi: " + msg);
         } finally {
           setIsProcessing(false);
           if (fileInputRef.current) fileInputRef.current.value = '';
         }
       };
       reader.readAsText(file);
-    } catch (err) {
+    } catch {
       setIsProcessing(false);
     }
   };
@@ -479,7 +490,7 @@ export function SettingsView() {
                 icon={RotateCcw}
                 actionLabel="Tiến hành Khôi phục"
                 color="rose"
-                onClick={() => restoreInputRef.current?.click()}
+                onClick={triggerRestore}
               />
               {restoreFileName && (
                 <div className="bg-rose-50 border border-rose-100 px-4 py-2 rounded-xl flex items-center justify-between">
@@ -596,14 +607,23 @@ function AdminToggle({ label, enabled = false, disabled = false }: { label: stri
   );
 }
 
-function DataActionCard({ title, description, icon: Icon, actionLabel, color, onClick }: any) {
-  const colorMap: any = {
+interface DataActionCardProps {
+  title: string;
+  description: string;
+  icon: React.ComponentType<{ size?: number }>;
+  actionLabel: string;
+  color: 'indigo' | 'blue' | 'rose';
+  onClick: () => void;
+}
+
+function DataActionCard({ title, description, icon: Icon, actionLabel, color, onClick }: DataActionCardProps) {
+  const colorMap: Record<'indigo' | 'blue' | 'rose', string> = {
     indigo: "text-indigo-600 bg-indigo-50 border-indigo-100",
     blue: "text-blue-600 bg-blue-50 border-blue-100",
     rose: "text-rose-600 bg-rose-50 border-rose-100"
   };
 
-  const btnColorMap: any = {
+  const btnColorMap: Record<'indigo' | 'blue' | 'rose', string> = {
     indigo: "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100",
     blue: "bg-blue-600 hover:bg-blue-700 shadow-blue-100",
     rose: "bg-rose-600 hover:bg-rose-700 shadow-rose-100"
@@ -624,152 +644,6 @@ function DataActionCard({ title, description, icon: Icon, actionLabel, color, on
       >
         {actionLabel}
       </button>
-    </div>
-  );
-}
-
-function SettingsSection({ title, icon: Icon, items, useOrderNum = false }: any) {
-  return (
-    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden flex flex-col h-full">
-      <div className="px-7 py-5 border-b border-slate-50 flex items-center justify-between bg-slate-50/20">
-        <div className="flex items-center gap-3">
-          <Icon className="w-4 h-4 text-indigo-600" />
-          <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">{title}</h3>
-        </div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[10px] font-black hover:bg-indigo-700 transition-all">
-          <Plus className="w-3 h-3" /> Thêm
-        </button>
-      </div>
-      <div className="p-5 space-y-3 overflow-y-auto max-h-[500px]">
-        {items.map((item: any) => (
-          <div 
-            key={item.id} 
-            className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-indigo-100 hover:bg-indigo-50/30 transition-all group"
-          >
-            <div>
-              <p className="text-sm font-bold text-slate-800">{item.name}</p>
-              {item.count !== undefined && (
-                <p className="text-[10px] font-bold text-slate-400 mt-0.5">{item.count} học viên</p>
-              )}
-            </div>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              {!useOrderNum && (
-                <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all">
-                  <Edit2 size={14} />
-                </button>
-              )}
-              <button className="p-2 text-slate-400 hover:text-rose-500 hover:bg-white rounded-lg transition-all">
-                <Trash2 size={14} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SectionRanks() {
-  const ranks = [
-    { 
-      id: '1', 
-      type: 'Xe máy', 
-      rank: 'A1', 
-      label: 'Hạng A1 (Xe máy <175cc)', 
-      fee: '3.500.000đ',
-      modules: ['Lý thuyết', 'Thực hành', 'Cabin', 'Sa hình', 'Mô phỏng', 'Đường trường'],
-      activeModules: ['Lý thuyết', 'Thực hành'] 
-    },
-    { 
-      id: '2', 
-      type: 'Xe máy', 
-      rank: 'A2', 
-      label: 'Hạng A2 (Xe máy ≥175cc)', 
-      fee: '4.000.000đ',
-      modules: ['Lý thuyết', 'Thực hành', 'Cabin', 'Sa hình', 'Mô phỏng', 'Đường trường'],
-      activeModules: ['Lý thuyết', 'Thực hành'] 
-    },
-    { 
-      id: '3', 
-      type: 'Ô tô', 
-      rank: 'B1', 
-      label: 'Hạng B1 (Ô tô - không KD)', 
-      fee: '10.000.000đ',
-      modules: ['Lý thuyết', 'Thực hành', 'Cabin', 'Sa hình', 'Mô phỏng', 'Đường trường'],
-      activeModules: ['Lý thuyết', 'Thực hành', 'Cabin', 'Sa hình', 'Mô phỏng', 'Đường trường'] 
-    },
-    { 
-      id: '4', 
-      type: 'Ô tô', 
-      rank: 'B2', 
-      label: 'Hạng B2 (Ô tô phổ thông)', 
-      fee: '12.000.000đ',
-      modules: ['Lý thuyết', 'Thực hành', 'Cabin', 'Sa hình', 'Mô phỏng', 'Đường trường'],
-      activeModules: ['Lý thuyết', 'Thực hành', 'Cabin', 'Sa hình', 'Mô phỏng', 'Đường trường'] 
-    },
-  ];
-
-  return (
-    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden flex flex-col h-full lg:col-span-1">
-      <div className="px-7 py-5 border-b border-slate-50 flex items-center justify-between bg-slate-50/20">
-        <div className="flex items-center gap-3">
-          <Award className="w-4 h-4 text-indigo-600" />
-          <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Hạng bằng lái</h3>
-        </div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[10px] font-black hover:bg-indigo-700 transition-all">
-          <Plus className="w-3 h-3" /> Thêm
-        </button>
-      </div>
-      <div className="p-5 space-y-4 overflow-y-auto max-h-[600px] scrollbar-thin scrollbar-thumb-slate-200">
-        {ranks.map((item) => (
-          <div 
-            key={item.id} 
-            className="p-5 bg-slate-50/50 rounded-[2rem] border border-slate-100 hover:border-indigo-100 hover:bg-indigo-50/30 transition-all group relative"
-          >
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className={cn(
-                  "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider",
-                  item.type === 'Xe máy' ? "bg-amber-50 text-amber-600 border border-amber-100" : "bg-blue-50 text-blue-600 border border-blue-100"
-                )}>
-                  {item.rank}
-                </span>
-                <span className="text-xs font-black text-slate-800 line-clamp-1">{item.label}</span>
-              </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all">
-                  <Edit2 size={12} />
-                </button>
-                <button className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-white rounded-lg transition-all">
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            </div>
-
-            <p className="text-[11px] font-bold text-slate-400 mb-3">Học phí: <span className="text-indigo-600 font-black tracking-tight">{item.fee}</span></p>
-
-            <div className="flex flex-wrap gap-1.5">
-              {item.modules.map(module => {
-                const isActive = item.activeModules.includes(module);
-                return (
-                  <div 
-                    key={module}
-                    className={cn(
-                      "flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9px] font-bold transition-all",
-                      isActive 
-                        ? "bg-indigo-50 border-indigo-100 text-indigo-600" 
-                        : "bg-white border-slate-100 text-slate-300 opacity-50"
-                    )}
-                  >
-                    {isActive ? <CheckCircle2 size={10} /> : <div className="w-2.5 h-2.5 rounded-full border border-slate-200" />}
-                    {module}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

@@ -13,7 +13,7 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: async (req, file) => {
+  params: async () => {
     return {
       folder: "student_management",
       allowed_formats: ["jpg", "png", "pdf", "jpeg"],
@@ -22,5 +22,6 @@ const storage = new CloudinaryStorage({
   },
 });
 
-export const upload = multer({ storage });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const upload = multer({ storage: storage as any });
 export { cloudinary };

@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
-  TrendingUp, Download, RefreshCcw, Users, 
-  Wallet, PiggyBank, AlertTriangle, ChevronDown,
-  Calendar, MapPin, Award, Share2, Info
+  Download, RefreshCcw, Users, 
+  Wallet, PiggyBank, AlertTriangle, ChevronDown
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
@@ -12,10 +11,9 @@ import { useAuth } from '../../hooks/useAuth';
 import { FeePayment } from '../../types';
 
 export function BusinessResults() {
-  const { students, loading: loadingStudents } = useStudents();
+  const { students } = useStudents();
   const { user } = useAuth();
   const [payments, setPayments] = useState<FeePayment[]>([]);
-  const [loadingPayments, setLoadingPayments] = useState(true);
   
   const [reportPeriod, setReportPeriod] = useState('Tháng này');
   const [sourceFilter, setSourceFilter] = useState('Mọi nguồn');
@@ -30,7 +28,7 @@ export function BusinessResults() {
       try {
         const res = await apiFetch("/payments");
         if (res.success && res.payments) {
-          const pData = res.payments.map((p: any) => ({
+          const pData = res.payments.map((p: Record<string, unknown>) => ({
             id: p._id,
             ...p,
           })) as FeePayment[];
@@ -38,8 +36,6 @@ export function BusinessResults() {
         }
       } catch (error) {
         console.error("Error fetching payments:", error);
-      } finally {
-        setLoadingPayments(false);
       }
     };
 
@@ -53,7 +49,7 @@ export function BusinessResults() {
 
   // Calculations
   const stats = useMemo(() => {
-    const parseCurrency = (val: any) => {
+    const parseCurrency = (val: string | number) => {
       if (typeof val === 'number') return val;
       if (!val) return 0;
       return parseInt(val.toString().replace(/[^\d]/g, '') || '0');
@@ -307,7 +303,15 @@ function GuideCard({ step, title, desc }: { step: string, title: string, desc: s
   );
 }
 
-function KPICard({ value, label, icon: Icon, iconBg, iconColor }: any) {
+interface KPICardProps {
+  value: string;
+  label: string;
+  icon: React.ElementType;
+  iconBg: string;
+  iconColor: string;
+}
+
+function KPICard({ value, label, icon: Icon, iconBg, iconColor }: KPICardProps) {
   return (
     <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/30 p-5 lg:p-6 flex flex-row items-center gap-4 group hover:shadow-2xl hover:shadow-indigo-100 transition-all min-w-0">
       <div className={cn("w-12 h-12 lg:w-16 lg:h-16 rounded-[1.2rem] lg:rounded-[1.5rem] flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 shadow-inner", iconBg)}>
@@ -325,7 +329,14 @@ function KPICard({ value, label, icon: Icon, iconBg, iconColor }: any) {
   );
 }
 
-function FilterSelect({ label, value, onChange, options }: any) {
+interface FilterSelectProps {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}
+
+function FilterSelect({ label, value, onChange, options }: FilterSelectProps) {
   return (
     <div className="space-y-2">
       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{label}</label>

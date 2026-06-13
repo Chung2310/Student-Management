@@ -3,7 +3,7 @@ import { ExamService } from "../services/exam.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
 
 export class ExamController {
-  static async create(req: AuthRequest, res: Response, _next: NextFunction) {
+  static async create(req: AuthRequest, res: Response) {
     try {
       const ownerId = req.user!.uid;
       const exam = await ExamService.createExam(ownerId, req.body);
@@ -37,7 +37,7 @@ export class ExamController {
     }
   }
 
-  static async update(req: AuthRequest, res: Response, _next: NextFunction) {
+  static async update(req: AuthRequest, res: Response) {
     try {
       const ownerId = req.user!.uid;
       const exam = await ExamService.updateExam(ownerId, req.params.id, req.body);
@@ -64,7 +64,7 @@ export class ExamController {
     }
   }
 
-  static async assign(req: AuthRequest, res: Response, _next: NextFunction) {
+  static async assign(req: AuthRequest, res: Response) {
     try {
       const ownerId = req.user!.uid;
       const { studentId, studentIds } = req.body;
