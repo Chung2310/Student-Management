@@ -349,6 +349,51 @@ const swaggerDefinition = {
         },
       },
     },
+    "/ai/analyze": {
+      post: {
+        summary: "Phân tích hồ sơ và lộ trình học viên bằng mô hình AI PiAPI",
+        tags: ["AI Advisor"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["fullName", "phone", "rank", "area", "registrationDate", "fee", "status"],
+                properties: {
+                  fullName: { type: "string", example: "Nguyễn Văn Học Viên" },
+                  phone: { type: "string", example: "0987654321" },
+                  rank: { type: "string", enum: ["A1", "A2", "B1", "B2", "C"] },
+                  area: { type: "string", enum: ["Nội thành", "Ngoại thành", "Tỉnh lân cận"] },
+                  registrationDate: { type: "string", example: "12/06/2026" },
+                  fee: { type: "string", example: "12.000.000" },
+                  status: { type: "string", example: "Chờ KSK" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Thành công",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    analysis: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: "Dữ liệu không hợp lệ" },
+          401: { description: "Chưa đăng nhập" },
+        },
+      },
+    },
     "/health": {
       get: {
         summary: "Health Check cho Server & DB",
