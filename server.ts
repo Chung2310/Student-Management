@@ -29,11 +29,14 @@ async function startServer() {
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 
   // CORS Configuration
-  const allowedOrigins = process.env.LINK_COR ? process.env.LINK_COR.split(",") : ["http://localhost:3000"];
+  const allowedOrigins = process.env.LINK_COR 
+    ? process.env.LINK_COR.split(",").map(o => o.trim().replace(/\/$/, "")) 
+    : ["http://localhost:3000"];
   app.use(
     cors({
       origin: (origin, callback) => {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes("*")) {
+        const cleanOrigin = origin ? origin.trim().replace(/\/$/, "") : "";
+        if (!origin || allowedOrigins.indexOf(cleanOrigin) !== -1 || allowedOrigins.includes("*")) {
           callback(null, true);
         } else {
           callback(new Error("Không được phép bởi CORS"));

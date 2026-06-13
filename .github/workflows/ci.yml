@@ -2,9 +2,9 @@ name: CI (Integration Test)
 
 on:
   push:
-    branches: [ develop, main, production ]
+    branches: [ develop, production ]
   pull_request:
-    branches: [ develop, main, production ]
+    branches: [ develop, production ]
 
 jobs:
   lint-and-typecheck:
