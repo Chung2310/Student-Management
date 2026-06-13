@@ -3,7 +3,7 @@ import { StudentService } from "../services/student.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
 
 export class StudentController {
-  static async create(req: AuthRequest, res: Response, _next: NextFunction) {
+  static async create(req: AuthRequest, res: Response) {
     try {
       const ownerId = req.user!.uid;
       const student = await StudentService.createStudent(ownerId, req.body);
@@ -37,7 +37,7 @@ export class StudentController {
     }
   }
 
-  static async update(req: AuthRequest, res: Response, _next: NextFunction) {
+  static async update(req: AuthRequest, res: Response) {
     try {
       const ownerId = req.user!.uid;
       const student = await StudentService.updateStudent(ownerId, req.params.id, req.body);

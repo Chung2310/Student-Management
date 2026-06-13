@@ -1,8 +1,8 @@
-import { Response, NextFunction } from "express";
+import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware";
 
 export class UploadController {
-  static async uploadFile(req: AuthRequest, res: Response, _next: NextFunction) {
+  static async uploadFile(req: AuthRequest, res: Response) {
     try {
       if (!req.file) {
         return res.status(400).json({ success: false, error: "Không tìm thấy tệp tin nào được gửi." });

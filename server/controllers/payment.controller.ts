@@ -3,7 +3,7 @@ import { PaymentService } from "../services/payment.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
 
 export class PaymentController {
-  static async create(req: AuthRequest, res: Response, _next: NextFunction) {
+  static async create(req: AuthRequest, res: Response) {
     try {
       const ownerId = req.user!.uid;
       const payment = await PaymentService.createPayment(ownerId, req.body);
@@ -24,7 +24,7 @@ export class PaymentController {
     }
   }
 
-  static async delete(req: AuthRequest, res: Response, _next: NextFunction) {
+  static async delete(req: AuthRequest, res: Response) {
     try {
       const ownerId = req.user!.uid;
       const payment = await PaymentService.deletePayment(ownerId, req.params.id);

@@ -1,14 +1,21 @@
 import { LuxuryCard } from '../ui/LuxuryCard';
 import { cn } from '../../lib/utils';
-import { Calendar, Users, Clock, CheckCircle2, ClipboardList, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStudents } from '../../hooks/useStudents';
 import { useAuth } from '../../hooks/useAuth';
 import { useExams } from '../../hooks/useExams';
-import { ExamStatus } from '../../types';
+import { ExamStatus, DrivingStudent } from '../../types';
 import React, { useState } from 'react';
 
+interface MockRegistration {
+  fullName: string;
+  rank: string;
+  area: string;
+  status: string;
+}
+
 interface DrivingDashboardTablesProps {
-  onSelectStudent: (student: any) => void;
+  onSelectStudent: (student: DrivingStudent | MockRegistration) => void;
 }
 
 const parseDateString = (dateStr: string) => {
@@ -71,7 +78,6 @@ export function DrivingDashboardTables({ onSelectStudent }: DrivingDashboardTabl
     return map[status] || 'bg-slate-100 text-slate-700';
   };
 
-  const displayRegistrations = user && students.length > 0 ? students.slice(0, 5) : mockRegistrations;
   const loading = studentsLoading || examsLoading;
 
   const recentStudents = students.filter(student => {
@@ -181,7 +187,7 @@ export function DrivingDashboardTables({ onSelectStudent }: DrivingDashboardTabl
                 <tr>
                   <td colSpan={4} className="px-6 py-8 text-center text-slate-400 text-xs italic">Không có học viên đăng ký trong 7 ngày qua.</td>
                 </tr>
-              ) : paginatedRecentStudents.map((item, idx) => (
+              ) : paginatedRecentStudents.map((item) => (
                 <tr 
                   key={item.id} 
                   className="hover:bg-slate-50/50 transition-colors cursor-pointer"

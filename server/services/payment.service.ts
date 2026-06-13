@@ -21,7 +21,7 @@ interface PaymentHistoryEntry {
   id: string;
   amount: number;
   date: string;
-  method: string;
+  method: "Tiền mặt" | "Chuyển khoản";
   note?: string;
   recipient: string;
 }

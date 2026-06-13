@@ -1,4 +1,3 @@
-import { motion } from 'motion/react';
 import { Search, Filter, GraduationCap, Phone } from 'lucide-react';
 import { Student } from '../../types';
 import { LuxuryCard } from '../ui/LuxuryCard';
@@ -29,7 +28,7 @@ export function StudentList({ students, onSelectStudent }: StudentListProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {students.map((student, idx) => {
+        {students.map((student) => {
           return (
             <LuxuryCard
               key={student.id}

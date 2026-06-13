@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Search, UserPlus, CheckCircle2, Loader2, Save } from 'lucide-react';
+import { X, Search, CheckCircle2, Loader2, Save } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { ExamSession } from '../../types';
 import { useStudents } from '../../hooks/useStudents';
@@ -36,7 +36,7 @@ export function AssignStudentModal({ exam, isOpen, onClose, onSuccess }: AssignS
     return { ...student, isFullyPaid };
   });
 
-  const toggleStudent = (student: any) => {
+  const toggleStudent = (student: { id: string; isFullyPaid: boolean }) => {
     if (!student.isFullyPaid) return;
     
     setSelectedStudentIds(prev => 
@@ -66,9 +66,9 @@ export function AssignStudentModal({ exam, isOpen, onClose, onSuccess }: AssignS
       onSuccess();
       onClose();
       setSelectedStudentIds([]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error assigning students:", error);
-      alert(error.message || "Lỗi gán học viên vào đợt thi.");
+      alert(error instanceof Error ? error.message : "Lỗi gán học viên vào đợt thi.");
     } finally {
       setIsSubmitting(false);
     }

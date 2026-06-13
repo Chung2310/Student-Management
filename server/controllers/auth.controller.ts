@@ -3,7 +3,7 @@ import { AuthService } from "../services/auth.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
 
 export class AuthController {
-  static async register(req: Request, res: Response, _next: NextFunction) {
+  static async register(req: Request, res: Response) {
     try {
       const user = await AuthService.register(req.body);
       res.status(201).json({
@@ -21,7 +21,7 @@ export class AuthController {
     }
   }
 
-  static async login(req: Request, res: Response, _next: NextFunction) {
+  static async login(req: Request, res: Response) {
     try {
       const { user, accessToken, refreshToken } = await AuthService.login(req.body);
       
@@ -46,7 +46,7 @@ export class AuthController {
     }
   }
 
-  static async refreshToken(req: Request, res: Response, _next: NextFunction) {
+  static async refreshToken(req: Request, res: Response) {
     try {
       const token = req.cookies.refreshToken;
       if (!token) {

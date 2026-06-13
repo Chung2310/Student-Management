@@ -8,6 +8,7 @@ const router = Router();
 router.use(authMiddleware);
 
 // Middleware upload.single("file") extracts the "file" field from multipart data
-router.post("/", upload.single("file"), UploadController.uploadFile);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.post("/", upload.single("file") as any, UploadController.uploadFile as any);
 
 export default router;

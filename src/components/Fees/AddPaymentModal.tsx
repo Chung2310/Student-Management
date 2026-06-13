@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, DollarSign, Calendar, FileText, Loader2, Save, CreditCard } from 'lucide-react';
+import { X, Calendar, FileText, Loader2, Save, CreditCard } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { Student } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
@@ -21,13 +21,16 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
 
   React.useEffect(() => {
     if (isOpen && student) {
-      const totalFee = parseInt(student.fee.replace(/\D/g, ''));
-      const remaining = totalFee - (student.paidAmount || 0);
-      if (remaining > 0) {
-        setAmount(new Intl.NumberFormat('vi-VN').format(remaining));
-      } else {
-        setAmount('');
-      }
+      const timer = setTimeout(() => {
+        const totalFee = parseInt(student.fee.replace(/\D/g, ''));
+        const remaining = totalFee - (student.paidAmount || 0);
+        if (remaining > 0) {
+          setAmount(new Intl.NumberFormat('vi-VN').format(remaining));
+        } else {
+          setAmount('');
+        }
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [isOpen, student]);
 
@@ -78,9 +81,9 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
       alert("Ghi nhận thanh toán thành công!");
       onSuccess();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Payment Submission Error:", error);
-      alert("Đã có lỗi xảy ra khi ghi nhận thanh toán: " + (error.message || "Lỗi không xác định"));
+      alert("Đã có lỗi xảy ra khi ghi nhận thanh toán: " + (error instanceof Error ? error.message : "Lỗi không xác định"));
     } finally {
       setIsSubmitting(false);
     }

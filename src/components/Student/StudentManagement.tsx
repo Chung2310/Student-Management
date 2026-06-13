@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
-  Search, Filter, Download, Printer, Plus, 
-  MoreHorizontal, Eye, ChevronRight, Trash2, Pencil,
+  Search, Download, Printer, Plus, 
+  Eye, ChevronRight, Trash2, Pencil,
   X, Calendar as CalendarIcon, ChevronDown,
   Users, Bike, Car, ChevronLeft
 } from 'lucide-react';
@@ -39,8 +39,10 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
 
   // Reset to first page when filtering
   React.useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCurrentPage(1);
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [category, status, searchQuery, startDate, endDate, rankFilter, areaFilter]);
 
   // Helper to parse DD/MM/YYYY to Date object
@@ -484,7 +486,6 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
                            const totalFeeNum = parseInt(String(student.fee).replace(/\D/g, ''), 10) || 0;
                            const paidSoFar = student.paidAmount || 0;
                            const remaining = totalFeeNum - paidSoFar;
-                           const percentage = totalFeeNum > 0 ? (paidSoFar / totalFeeNum) * 100 : 0;
                            return (
                              <>
                                {remaining > 0 ? (

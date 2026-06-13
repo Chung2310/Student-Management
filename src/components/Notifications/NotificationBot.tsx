@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Send, History, MessageSquare, UserCheck, 
-  ChevronDown, SendHorizontal, Eye, Info, Sparkles,
+  Send, History, UserCheck, 
+  ChevronDown, SendHorizontal,
   AlertCircle, MessageCircle, Smartphone, Mail,
   Inbox, Loader2, CheckCircle2, X, Trash2
 } from 'lucide-react';
@@ -29,8 +29,9 @@ function HistoryCard({ notification, onDelete }: HistoryCardProps) {
   
   let dateObj: Date | null = null;
   if (notification.createdAt) {
-    if (typeof notification.createdAt.toDate === 'function') {
-      dateObj = notification.createdAt.toDate();
+    const ca = notification.createdAt as unknown as { toDate?: () => Date };
+    if (ca && typeof ca.toDate === 'function') {
+      dateObj = ca.toDate();
     } else {
       dateObj = new Date(notification.createdAt);
     }
@@ -152,7 +153,7 @@ export function NotificationBot() {
       } else {
         setApiStatus('Ready');
       }
-    } catch (err) {
+    } catch {
       setApiStatus('Error');
     }
   };
@@ -169,14 +170,17 @@ export function NotificationBot() {
       } else {
         setSmsApiStatus('Error');
       }
-    } catch (err) {
+    } catch {
       setSmsApiStatus('Error');
     }
   };
 
   useEffect(() => {
-    checkApiStatus();
-    checkSmsApiStatus();
+    const timer = setTimeout(() => {
+      checkApiStatus();
+      checkSmsApiStatus();
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const fetchHistory = async () => {
@@ -197,7 +201,9 @@ export function NotificationBot() {
   useEffect(() => {
     if (!user) return;
 
-    fetchHistory();
+    const timer = setTimeout(() => {
+      fetchHistory();
+    }, 0);
 
     const handleMutation = () => {
       fetchHistory();
@@ -205,6 +211,7 @@ export function NotificationBot() {
 
     window.addEventListener('notification-mutation', handleMutation);
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('notification-mutation', handleMutation);
     };
   }, [user]);
@@ -294,7 +301,7 @@ export function NotificationBot() {
               isSuccess = false;
               errorMessage = data.error || 'Lỗi gửi mail';
             }
-          } catch (err) {
+          } catch {
             isSuccess = false;
             errorMessage = 'Lỗi kết nối server (Email)';
           }
@@ -316,7 +323,7 @@ export function NotificationBot() {
               isSuccess = false;
               errorMessage = (errorMessage ? errorMessage + ' & ' : '') + (data.error || 'Lỗi gửi SMS');
             }
-          } catch (err) {
+          } catch {
             isSuccess = false;
             errorMessage = (errorMessage ? errorMessage + ' & ' : '') + 'Lỗi kết nối server (SMS)';
           }

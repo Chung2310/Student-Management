@@ -54,8 +54,9 @@ async function runMigration() {
   try {
     userCredential = await signInWithEmailAndPassword(auth, email, password);
     console.log("Đăng nhập Firebase thành công. UID:", userCredential.user.uid);
-  } catch (error: any) {
-    console.error("Đăng nhập Firebase thất bại:", error.message);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Đăng nhập Firebase thất bại:", msg);
     await mongoose.disconnect();
     process.exit(1);
   }
@@ -132,9 +133,10 @@ async function runMigration() {
   // Helper to migrate other collections
   const migrateCollection = async (
     firebaseColName: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mongoModel: any,
     label: string,
-    transformFn: (docData: any) => any
+    transformFn: (docData: Record<string, unknown>) => Record<string, unknown>
   ) => {
     console.log(`Đang lấy dữ liệu từ bộ sưu tập Firebase [${firebaseColName}]...`);
     const q = query(collection(db, firebaseColName), where("ownerId", "==", firebaseUid));
@@ -175,7 +177,7 @@ async function runMigration() {
   // 7. Migrate Payments
   await migrateCollection("payments", Payment, "Thanh toán", (data) => {
     // Map the old Firebase studentId to the new MongoDB studentId
-    const mappedStudentId = studentIdMap.get(data.studentId) || data.studentId;
+    const mappedStudentId = studentIdMap.get(data.studentId as string) || (data.studentId as string);
     return {
       studentId: mappedStudentId,
       studentName: data.studentName,

@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
-  Plus, Search, Filter, Download, DollarSign, 
+  Download, Search,
   ChevronDown, CreditCard, Clock, Users as UsersIcon,
-  X, ArrowUpRight, ArrowDownRight, Eye, MoreVertical,
-  Wallet, PieChart, Banknote, Calendar as CalendarIcon
+  Banknote
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
@@ -66,9 +65,12 @@ export function FeeManagement() {
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
   const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  // Reset page when filters change
+  // Reset page when filters change - deferred to avoid synchronous setState in effect
   React.useEffect(() => {
-    setCurrentPage(1);
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [searchQuery, areaFilter, debtFilter]);
 
   return (

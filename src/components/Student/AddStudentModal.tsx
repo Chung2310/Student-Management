@@ -4,11 +4,12 @@ import { X, Save, ChevronDown, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { formatVND } from '../../lib/utils';
+import { DrivingStudent } from '../../types';
 
 interface AddStudentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (student: any) => void;
+  onSuccess: (student: DrivingStudent) => void;
 }
 
 export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalProps) {
@@ -81,9 +82,10 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
           email: '',
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving student:", error);
-      setErrorMsg(error.message || "Lỗi lưu hồ sơ học viên.");
+      const msg = error instanceof Error ? error.message : "Lỗi lưu hồ sơ học viên.";
+      setErrorMsg(msg);
     } finally {
       setIsSubmitting(false);
     }

@@ -8,7 +8,7 @@ import { ExamSession } from '../../types';
 interface AddExamModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (exam: any) => void;
+  onSuccess: (exam: ExamSession) => void;
   initialData?: ExamSession | null;
 }
 
