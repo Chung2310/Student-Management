@@ -16,6 +16,7 @@ interface MockRegistration {
 
 interface DrivingDashboardTablesProps {
   onSelectStudent: (student: DrivingStudent | MockRegistration) => void;
+  onNavigate: (view: 'Students' | 'Exams') => void;
 }
 
 const parseDateString = (dateStr: string) => {
@@ -24,7 +25,7 @@ const parseDateString = (dateStr: string) => {
   return new Date(year, month - 1, day);
 };
 
-export function DrivingDashboardTables({ onSelectStudent }: DrivingDashboardTablesProps) {
+export function DrivingDashboardTables({ onSelectStudent, onNavigate }: DrivingDashboardTablesProps) {
   const { students, loading: studentsLoading } = useStudents();
   const { exams, loading: examsLoading } = useExams();
   const { user } = useAuth();
@@ -103,7 +104,7 @@ export function DrivingDashboardTables({ onSelectStudent }: DrivingDashboardTabl
           <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800">
             <Calendar className="w-4 h-4 text-brand-primary" /> Lịch thi sắp tới (7 ngày)
           </h3>
-          <button className="text-xs text-slate-400 hover:text-slate-600 font-medium">Xem tất cả</button>
+          <button onClick={() => onNavigate('Exams')} className="text-xs text-slate-400 hover:text-slate-600 font-medium">Xem tất cả</button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -153,7 +154,7 @@ export function DrivingDashboardTables({ onSelectStudent }: DrivingDashboardTabl
           <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800">
             <Users className="w-4 h-4 text-brand-primary" /> Đăng ký gần đây (7 ngày) {user && `(${recentStudents.length})`}
           </h3>
-          <button className="text-xs text-slate-400 hover:text-slate-600 font-medium whitespace-nowrap ml-2">Xem tất cả</button>
+          <button onClick={() => onNavigate('Students')} className="text-xs text-slate-400 hover:text-slate-600 font-medium whitespace-nowrap ml-2">Xem tất cả</button>
         </div>
         <div className="overflow-x-auto flex-1">
           <table className="w-full text-left">

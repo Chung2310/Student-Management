@@ -70,7 +70,7 @@ export default function App() {
               </LuxuryButton>
             </section>
             <section><StatsGrid /></section>
-            <section><DrivingDashboardTables onSelectStudent={handleOpenProfile} /></section>
+            <section><DrivingDashboardTables onSelectStudent={handleOpenProfile} onNavigate={setCurrentView} /></section>
           </>
         );
       case 'Students':
