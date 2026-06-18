@@ -19,11 +19,12 @@ import { ExamManagement } from './components/Exams/ExamManagement';
 import { FeeManagement } from './components/Fees/FeeManagement';
 import { NotificationBot } from './components/Notifications/NotificationBot';
 import { SettingsView } from './components/Settings/SettingsView';
+import { BusinessResults } from './components/Results/BusinessResults';
 import { useAuth } from './hooks/useAuth';
 import { LoginView } from './components/Auth/LoginView';
 import { Loader2 } from 'lucide-react';
 
-export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'SettingsAdmin';
+export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Results' | 'Bot' | 'SettingsAdmin' | 'Admin';
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -62,7 +63,7 @@ export default function App() {
                 <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Tổng quan</h2>
                 <p className="text-slate-400 text-xs font-medium mt-1">Hôm nay: {formattedDate}</p>
               </div>
-              <LuxuryButton 
+              <LuxuryButton
                 onClick={() => setIsAddModalOpen(true)}
                 className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-lg shadow-purple-200"
               >
@@ -75,8 +76,8 @@ export default function App() {
         );
       case 'Students':
         return (
-          <StudentManagement 
-            onSelectStudent={handleOpenProfile} 
+          <StudentManagement
+            onSelectStudent={handleOpenProfile}
             onAddStudent={() => setIsAddModalOpen(true)}
           />
         );
@@ -84,9 +85,13 @@ export default function App() {
         return <ExamManagement />;
       case 'Fees':
         return <FeeManagement />;
+      case 'Results':
+        return <BusinessResults />;
       case 'Bot':
         return <NotificationBot />;
       case 'SettingsAdmin':
+        return <SettingsView />;
+      case 'Admin':
         return <SettingsView />;
       default:
         return (
@@ -100,19 +105,19 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen bg-brand-bg relative">
-      <Sidebar 
-        currentView={currentView} 
+      <Sidebar
+        currentView={currentView}
         onViewChange={(view) => {
           setCurrentView(view);
           setIsSidebarOpen(false);
-        }} 
+        }}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <Header 
-          currentView={currentView} 
+        <Header
+          currentView={currentView}
           onMenuClick={() => setIsSidebarOpen(true)}
         />
 
@@ -128,8 +133,8 @@ export default function App() {
       </div>
 
       {/* Add Student Modal */}
-      <AddStudentModal 
-        isOpen={isAddModalOpen} 
+      <AddStudentModal
+        isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={handleOpenProfile}
       />

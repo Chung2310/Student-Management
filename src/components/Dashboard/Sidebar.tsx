@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, Calendar, Wallet, MessageSquare, Settings, LogOut, Car, LogIn, RefreshCcw, X } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Wallet, TrendingUp, MessageSquare, Settings, UserCheck, LogOut, Car, LogIn, RefreshCcw, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
 import { useStudents } from '../../hooks/useStudents';
@@ -24,8 +24,10 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
     { icon: Users, label: 'Học viên', view: 'Students', count: user ? students.length : 0 },
     { icon: Calendar, label: 'Lịch thi', view: 'Exams', count: user ? exams.length : 0 },
     { icon: Wallet, label: 'Học phí', view: 'Fees' },
+    { icon: TrendingUp, label: 'Kết quả KD', view: 'Results' },
     { icon: MessageSquare, label: 'BOT Thông báo', view: 'Bot' },
-    { icon: Settings, label: 'Cài đặt & Quản trị', view: 'SettingsAdmin' },
+    { icon: Settings, label: 'Cài đặt', view: 'SettingsAdmin' },
+    { icon: UserCheck, label: 'Admin', view: 'Admin' },
   ];
 
   return (

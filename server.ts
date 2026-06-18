@@ -36,7 +36,11 @@ async function startServer() {
     cors({
       origin: (origin, callback) => {
         const cleanOrigin = origin ? origin.trim().replace(/\/$/, "") : "";
-        if (!origin || allowedOrigins.indexOf(cleanOrigin) !== -1 || allowedOrigins.includes("*")) {
+        const isLocalhost = cleanOrigin.startsWith("http://localhost:") || 
+                            cleanOrigin.startsWith("http://127.0.0.1:") || 
+                            cleanOrigin.startsWith("https://localhost:") || 
+                            cleanOrigin.startsWith("https://127.0.0.1:");
+        if (!origin || allowedOrigins.indexOf(cleanOrigin) !== -1 || allowedOrigins.includes("*") || isLocalhost) {
           callback(null, true);
         } else {
           callback(new Error("Không được phép bởi CORS"));

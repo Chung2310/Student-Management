@@ -23,7 +23,7 @@ export interface DrivingStudent {
   healthCheckDate?: string;
   healthCheckNotes?: string;
   healthCheckFiles?: { name: string; url: string; type: string; uploadedAt: string }[];
-  
+
   // Progress tracking
   progress?: {
     theory: { completed: boolean; score?: number; lastDate?: string };

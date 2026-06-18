@@ -13,8 +13,10 @@ export function Header({ currentView, onMenuClick }: HeaderProps) {
       Students: 'Học viên',
       Exams: 'Lịch thi',
       Fees: 'Học phí',
+      Results: 'Kết quả kinh doanh',
       Bot: 'BOT Thông báo',
-      SettingsAdmin: 'Cài đặt & Quản trị'
+      SettingsAdmin: 'Cài đặt',
+      Admin: 'Admin'
     };
     return names[view];
   };

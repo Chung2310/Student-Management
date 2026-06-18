@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
-import { 
-  Settings, QrCode, ClipboardList, Database, 
+import {
+  Settings, QrCode, ClipboardList, Database,
   CreditCard, Plus, Edit2, Trash2,
-  CheckCircle2, Info, ShieldCheck, Download, Upload, 
+  CheckCircle2, Info, ShieldCheck, Download, Upload,
   FileJson, RotateCcw, ToggleLeft, Activity
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -40,7 +40,7 @@ export function SettingsView() {
     const dataStr = JSON.stringify(students, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     link.download = `backup_hocvien_${new Date().toISOString().split('T')[0]}.json`;
@@ -69,10 +69,10 @@ export function SettingsView() {
     console.log(">>> [RESTORE] File selected:", file.name);
 
     setTimeout(async () => {
-      const confirmMsg = `XÁC NHẬN KHÔI PHỤC DỮ LIỆU\n\n` + 
-                        `Tên file: ${file.name}\n` +
-                        `Quy trình: Xóa sạch dữ liệu hiện có -> Nạp dữ liệu từ file này.\n\n` +
-                        `Bạn có chắc chắn muốn thực hiện không?`;
+      const confirmMsg = `XÁC NHẬN KHÔI PHỤC DỮ LIỆU\n\n` +
+        `Tên file: ${file.name}\n` +
+        `Quy trình: Xóa sạch dữ liệu hiện có -> Nạp dữ liệu từ file này.\n\n` +
+        `Bạn có chắc chắn muốn thực hiện không?`;
 
       if (!confirm(confirmMsg)) {
         setRestoreFileName('');
@@ -82,13 +82,13 @@ export function SettingsView() {
 
       setIsProcessing(true);
       setProgress({ current: 0, total: 0, message: 'Đang chuẩn bị file...' });
-      
+
       const reader = new FileReader();
       reader.onload = async (event) => {
         try {
           const content = event.target?.result as string;
           const jsonData = JSON.parse(content);
-          
+
           if (!Array.isArray(jsonData)) {
             throw new Error("Dữ liệu trong file không hợp lệ (phải là một danh sách học viên).");
           }
@@ -96,7 +96,7 @@ export function SettingsView() {
           if (jsonData.length > 0) {
             const first = jsonData[0];
             if (!first.fullName && !first.name) {
-               throw new Error("Cấu trúc học viên trong file không hợp lệ. Vui lòng kiểm tra lại file backup.");
+              throw new Error("Cấu trúc học viên trong file không hợp lệ. Vui lòng kiểm tra lại file backup.");
             }
           }
 
@@ -107,7 +107,7 @@ export function SettingsView() {
           // Bước 1: Xóa trắng toàn bộ học viên hiện có (của User hiện tại)
           const currentStudentsRes = await apiFetch('/students', { params: { limit: 1000 } });
           const currentStudents = currentStudentsRes.students || [];
-          
+
           let delCount = 0;
           for (const s of currentStudents) {
             await apiFetch(`/students/${s._id || s.id}`, { method: 'DELETE' });
@@ -126,7 +126,7 @@ export function SettingsView() {
             delete cleanData.ownerId;
             delete cleanData.createdAt;
             delete cleanData.updatedAt;
-            
+
             const createFields = {
               fullName: cleanData.fullName || cleanData.name,
               phone: cleanData.phone,
@@ -149,7 +149,7 @@ export function SettingsView() {
 
             if (createRes.success && createRes.data) {
               const newId = createRes.data._id || createRes.data.id;
-              
+
               const updateFields = {
                 healthCheckDate: cleanData.healthCheckDate || "",
                 healthCheckNotes: cleanData.healthCheckNotes || "",
@@ -216,7 +216,7 @@ export function SettingsView() {
             delete cleanData.ownerId;
             delete cleanData.createdAt;
             delete cleanData.updatedAt;
-            
+
             const createFields = {
               fullName: cleanData.fullName || cleanData.name,
               phone: cleanData.phone,
@@ -239,7 +239,7 @@ export function SettingsView() {
 
             if (createRes.success && createRes.data) {
               const newId = createRes.data._id || createRes.data.id;
-              
+
               const updateFields = {
                 healthCheckDate: cleanData.healthCheckDate || "",
                 healthCheckNotes: cleanData.healthCheckNotes || "",
@@ -263,7 +263,7 @@ export function SettingsView() {
               setProgress({ current: addedCount, total, message: `Đang nhập thêm: ${addedCount}/${total}` });
             }
           }
-          
+
           setShowResult({ show: true, count: addedCount, type: 'Import' });
           window.dispatchEvent(new Event('student-mutation'));
         } catch (err: unknown) {
@@ -297,8 +297,8 @@ export function SettingsView() {
             onClick={() => setActiveTab(tab.id)}
             className={cn(
               "flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-300",
-              activeTab === tab.id 
-                ? "bg-white text-indigo-600 shadow-sm shadow-indigo-100" 
+              activeTab === tab.id
+                ? "bg-white text-indigo-600 shadow-sm shadow-indigo-100"
                 : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
             )}
           >
@@ -371,7 +371,7 @@ export function SettingsView() {
                 </div>
                 <div className="md:col-span-2 space-y-4">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Nội dung chuyển khoản mặc định</label>
-                  <textarea 
+                  <textarea
                     className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600"
                     rows={4}
                     defaultValue="[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}"
@@ -387,7 +387,7 @@ export function SettingsView() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
             {isProcessing && (
               <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 px-10">
-                <motion.div 
+                <motion.div
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   className="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl flex flex-col items-center text-center space-y-6"
@@ -405,7 +405,7 @@ export function SettingsView() {
                   {progress.total > 0 && (
                     <div className="w-full space-y-2">
                       <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <motion.div 
+                        <motion.div
                           className="h-full bg-indigo-600"
                           initial={{ width: 0 }}
                           animate={{ width: `${(progress.current / progress.total) * 100}%` }}
@@ -423,7 +423,7 @@ export function SettingsView() {
 
             {showResult.show && (
               <div className="fixed inset-0 z-[10000] bg-slate-900/80 backdrop-blur-xl flex items-center justify-center p-6">
-                 <motion.div 
+                <motion.div
                   initial={{ scale: 0.9, opacity: 0, y: 20 }}
                   animate={{ scale: 1, opacity: 1, y: 0 }}
                   className="bg-white rounded-[3rem] p-12 max-w-sm w-full shadow-2xl flex flex-col items-center text-center space-y-8"
@@ -436,12 +436,12 @@ export function SettingsView() {
                       {showResult.type === 'Restore' ? 'Khôi phục Thành công!' : 'Nhập liệu Thành công!'}
                     </h4>
                     <p className="text-slate-500 font-medium text-sm leading-relaxed px-4">
-                      {showResult.type === 'Restore' 
-                        ? `Hệ thống đã được làm mới hoàn toàn với ${showResult.count} học viên từ bản sao.` 
+                      {showResult.type === 'Restore'
+                        ? `Hệ thống đã được làm mới hoàn toàn với ${showResult.count} học viên từ bản sao.`
                         : `Đã thêm thành công ${showResult.count} học viên vào danh sách hiện tại của bạn.`}
                     </p>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setShowResult({ ...showResult, show: false })}
                     className="w-full py-5 bg-slate-900 text-white rounded-2xl text-sm font-black shadow-xl shadow-slate-200 hover:bg-black transition-all active:scale-95"
                   >
@@ -450,25 +450,25 @@ export function SettingsView() {
                 </motion.div>
               </div>
             )}
-            
-            <DataActionCard 
-              title="Backup (Xuất JSON)" 
+
+            <DataActionCard
+              title="Backup (Xuất JSON)"
               description="Tải toàn bộ dữ liệu hiện tại về máy dưới dạng file .json để lưu trữ."
               icon={Download}
               actionLabel="Tải xuống Bản sao"
               color="indigo"
               onClick={handleBackup}
             />
-            
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept=".json" 
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept=".json"
               onChange={handleImport}
             />
-            <DataActionCard 
-              title="Import (Nhập dữ liệu)" 
+            <DataActionCard
+              title="Import (Nhập dữ liệu)"
               description="Tải lên file JSON để thêm mới học viên hoặc lịch thi hàng loạt."
               icon={Upload}
               actionLabel="Chọn file để Nhập"
@@ -476,16 +476,16 @@ export function SettingsView() {
               onClick={() => fileInputRef.current?.click()}
             />
 
-            <input 
-              type="file" 
-              ref={restoreInputRef} 
-              className="hidden" 
-              accept=".json" 
+            <input
+              type="file"
+              ref={restoreInputRef}
+              className="hidden"
+              accept=".json"
               onChange={handleRestore}
             />
             <div className="flex flex-col space-y-3">
-              <DataActionCard 
-                title="Restore (Khôi phục)" 
+              <DataActionCard
+                title="Restore (Khôi phục)"
                 description="Khôi phục hệ thống về trạng thái của một bản backup cũ. Lưu ý: Sẽ ghi đè dữ liệu hiện tại."
                 icon={RotateCcw}
                 actionLabel="Tiến hành Khôi phục"
@@ -498,7 +498,7 @@ export function SettingsView() {
                     <FileJson size={14} className="animate-pulse" />
                     <span className="text-[10px] font-black uppercase truncate max-w-[150px]">{restoreFileName}</span>
                   </div>
-                  <button 
+                  <button
                     onClick={() => {
                       setRestoreFileName('');
                       if (restoreInputRef.current) restoreInputRef.current.value = '';
@@ -559,7 +559,7 @@ export function SettingsView() {
             </div>
 
             <div className="space-y-6">
-               <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
+              <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
                   <ShieldCheck size={120} />
                 </div>
@@ -572,7 +572,7 @@ export function SettingsView() {
                     Xác thực quyền Admin
                   </button>
                 </div>
-               </div>
+              </div>
             </div>
           </div>
         )}
@@ -638,7 +638,7 @@ function DataActionCard({ title, description, icon: Icon, actionLabel, color, on
         <h3 className="text-base font-black text-slate-800 mb-2">{title}</h3>
         <p className="text-xs font-medium text-slate-400 leading-relaxed px-4">{description}</p>
       </div>
-      <button 
+      <button
         onClick={onClick}
         className={cn("w-full py-4 mt-4 text-white rounded-2xl text-xs font-black shadow-lg transition-all active:scale-95", btnColorMap[color])}
       >

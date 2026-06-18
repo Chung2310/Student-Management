@@ -59,14 +59,14 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
 
       if (res.success && res.data) {
         const studentWithId = { id: res.data._id, ...res.data };
-        
+
         // Dispatch global mutation event to refresh lists
         window.dispatchEvent(new Event("student-mutation"));
-        
+
         alert("Đã lưu hồ sơ học viên thành công!");
         onClose();
         onSuccess(studentWithId);
-        
+
         // Reset form
         setFormData({
           fullName: '',
@@ -93,7 +93,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
+
     if (name === 'fee') {
       const formatted = formatVND(value);
       setFormData(prev => ({ ...prev, [name]: formatted }));
@@ -112,7 +112,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
           onClick={onClose}
           className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]"
         />
-        
+
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -123,7 +123,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
             <h2 className="text-base font-bold text-slate-800">Thêm học viên mới</h2>
-            <button 
+            <button
               onClick={onClose}
               disabled={isSubmitting}
               className="p-1.5 rounded-full hover:bg-slate-100 transition-colors disabled:opacity-50"
@@ -135,7 +135,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
           {/* Form Content - Scrollable */}
           <form className="p-6 overflow-y-auto space-y-4" onSubmit={handleSubmit}>
             {errorMsg && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="p-3 mb-2 bg-rose-50 border border-rose-100 rounded-xl flex items-center justify-between"
@@ -146,8 +146,8 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
                   </div>
                   <span className="text-sm font-bold">{errorMsg}</span>
                 </div>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setErrorMsg(null)}
                   className="p-1 rounded-md hover:bg-rose-100/50 text-rose-400 transition-colors"
                 >
@@ -155,7 +155,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
                 </button>
               </motion.div>
             )}
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
               {/* Row 1 */}
               <div className="space-y-1">
@@ -250,7 +250,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
                   Hạng bằng <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
-                  <select 
+                  <select
                     name="rank"
                     value={formData.rank}
                     onChange={handleInputChange}
@@ -272,7 +272,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
                   Khu vực <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
-                  <select 
+                  <select
                     name="area"
                     value={formData.area}
                     onChange={handleInputChange}
@@ -327,7 +327,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
 
             {/* Footer Buttons */}
             <div className="flex items-center justify-end gap-4 pt-4 mt-2 border-t border-slate-50 flex-shrink-0">
-              <button 
+              <button
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
@@ -335,7 +335,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
               >
                 Hủy
               </button>
-              <button 
+              <button
                 type="submit"
                 disabled={isSubmitting}
                 className="flex items-center gap-2 px-6 py-2.5 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-xs font-bold shadow-lg shadow-purple-100 transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-70 disabled:hover:translate-y-0"
