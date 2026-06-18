@@ -1,3 +1,5 @@
+import { logger } from "../config/logger";
+
 export class AIService {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static async analyzeStudent(student: any): Promise<string> {
@@ -49,7 +51,7 @@ Hãy phản hồi bằng tiếng Việt, định dạng Markdown, phong cách ti
 
       if (!response.ok) {
         const errText = await response.text();
-        console.error("[PiAPI Error Response]:", errText);
+        logger.error("[PiAPI Error Response]: %s", errText);
         throw new Error(`Lỗi kết nối dịch vụ PiAPI AI (Mã lỗi: ${response.status} ${response.statusText}).`);
       }
 
@@ -64,7 +66,7 @@ Hãy phản hồi bằng tiếng Việt, định dạng Markdown, phong cách ti
 
       return content;
     } catch (error) {
-      console.error("[AIService Error]:", error);
+      logger.error("[AIService Error]: %o", error);
       throw error;
     }
   }

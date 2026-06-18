@@ -11,6 +11,7 @@ import { useStudents } from '../../hooks/useStudents';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../lib/api';
 import { BroadcastNotification, Student } from '../../types';
+import { useToast } from '../../hooks/useToast';
 
 interface HistoryCardProps {
   key?: string | number;
@@ -26,6 +27,7 @@ interface SendResult {
 
 function HistoryCard({ notification, onDelete }: HistoryCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
   
   let dateObj: Date | null = null;
   if (notification.createdAt) {
@@ -60,7 +62,7 @@ function HistoryCard({ notification, onDelete }: HistoryCardProps) {
     } catch (error) {
       console.error("Delete failed:", error);
       setIsDeleting(false);
-      alert("Lỗi khi xóa: " + (error instanceof Error ? error.message : "Không rõ nguyên nhân"));
+      toast.error("Lỗi khi xóa: " + (error instanceof Error ? error.message : "Không rõ nguyên nhân"));
     }
   };
 
@@ -116,6 +118,7 @@ function HistoryCard({ notification, onDelete }: HistoryCardProps) {
 export function NotificationBot() {
   const { students } = useStudents();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recipientFilter, setRecipientFilter] = useState('Tất cả học viên đang học');
   const [title, setTitle] = useState('');
@@ -261,7 +264,7 @@ export function NotificationBot() {
 
     const targetStudents = getTargetStudents();
     if (targetStudents.length === 0) {
-      alert("Không tìm thấy học viên phù hợp với bộ lọc này.");
+      toast.warning("Không tìm thấy học viên phù hợp với bộ lọc này.");
       return;
     }
 
@@ -373,7 +376,7 @@ export function NotificationBot() {
       setContent('');
     } catch (error) {
       console.error("Error sending notification:", error);
-      alert("Lỗi khi gửi thông báo: " + (error instanceof Error ? error.message : "Không rõ nguyên nhân"));
+      toast.error("Lỗi khi gửi thông báo: " + (error instanceof Error ? error.message : "Không rõ nguyên nhân"));
     } finally {
       setIsSubmitting(false);
     }
@@ -389,9 +392,10 @@ export function NotificationBot() {
         method: 'DELETE',
       });
       window.dispatchEvent(new Event('notification-mutation'));
+      toast.success("Đã xóa lịch sử thông báo!");
     } catch (error) {
       console.error("Error deleting notification:", error);
-      alert("Không thể xóa thông báo này. Vui lòng thử lại.");
+      toast.error("Không thể xóa thông báo này. Vui lòng thử lại.");
     }
   };
 

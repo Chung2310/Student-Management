@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, AlertTriangle, ArrowRight, Loader2 } from 'lucide-react';
 import { Student, StudentStatus } from '../../types';
 import { apiFetch } from '../../lib/api';
+import { useToast } from '../../hooks/useToast';
 
 interface StatusTransitionModalProps {
   student: Student | null;
@@ -24,6 +25,7 @@ const statusWorkflow: StudentStatus[] = [
 export function StatusTransitionModal({ student, isOpen, onClose }: StatusTransitionModalProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [feeError, setFeeError] = React.useState<string | null>(null);
+  const { toast } = useToast();
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -63,7 +65,7 @@ export function StatusTransitionModal({ student, isOpen, onClose }: StatusTransi
       onClose();
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("Có lỗi xảy ra khi cập nhật trạng thái.");
+      toast.error('Có lỗi xảy ra khi cập nhật trạng thái.');
     } finally {
       setIsSubmitting(false);
     }

@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import swaggerUi from "swagger-ui-express";
 import mongoose from "mongoose";
+import { logger } from "./server/config/logger";
 
 import { connectDB } from "./server/config/db";
 import apiRoutes from "./server/routes/index";
@@ -92,21 +93,28 @@ async function startServer() {
 
       const resend = new Resend(apiKey);
 
-      const targetEmail = to.trim();
+      let targetEmail = to.trim();
+      const sandboxEmail = process.env.RESEND_SANDBOX_EMAIL?.trim();
+      let finalSubject = subject.trim();
+
+      if (sandboxEmail) {
+        targetEmail = sandboxEmail;
+        finalSubject = `[SANDBOX - Học viên: ${to}] ${finalSubject}`;
+      }
 
       const { data, error } = await resend.emails.send({
         from: 'He thong <onboarding@resend.dev>',
         to: targetEmail,
-        subject: subject.trim(),
+        subject: finalSubject,
         html: html,
       });
 
       if (error) {
-        console.error("Resend API Error:", error);
+        logger.error("Resend API Error: %o", error);
         if (error.name === 'validation_error') {
           return res.status(400).json({
             success: false,
-            error: "Lỗi Validation: Tài khoản Resend Free/Trial chỉ cho phép gửi đến chính email bạn đã đăng ký tài khoản Resend. Vui lòng xác thực tên miền trên Resend để gửi cho học viên khác.",
+            error: "Lỗi Validation: Tài khoản Resend Free/Trial chỉ cho phép gửi đến chính email bạn đã đăng ký tài khoản Resend. Vui lòng xác thực tên miền trên Resend để gửi cho học viên khác, hoặc cấu hình biến môi trường `RESEND_SANDBOX_EMAIL` trong `.env` để chuyển hướng toàn bộ email kiểm thử về email của bạn.",
             details: error
           });
         }
@@ -115,7 +123,7 @@ async function startServer() {
 
       res.json({ success: true, data });
     } catch (error: unknown) {
-      console.error("Server email error:", error);
+      logger.error("Server email error: %o", error);
       const msg = error instanceof Error ? error.message : 'Lỗi hệ thống';
       res.status(500).json({ success: false, error: msg });
     }
@@ -165,7 +173,7 @@ async function startServer() {
 
       res.json({ success: true, sid: result.sid });
     } catch (error: unknown) {
-      console.error("Twilio SMS error:", error);
+      logger.error("Twilio SMS error: %o", error);
       const msg = error instanceof Error ? error.message : 'Lỗi hệ thống';
       res.status(400).json({ success: false, error: msg });
     }
@@ -190,7 +198,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    logger.info(`Server running on http://localhost:${PORT}`);
   });
 }
 

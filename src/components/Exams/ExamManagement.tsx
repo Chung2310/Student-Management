@@ -14,10 +14,12 @@ import { ExamSession, ExamStatus } from '../../types';
 import { AddExamModal } from './AddExamModal';
 import { ExamStatusModal } from './ExamStatusModal';
 import { AssignStudentModal } from './AssignStudentModal';
+import { useToast } from '../../hooks/useToast';
 
 export function ExamManagement() {
   const { exams, loading: examsLoading } = useExams();
   const { students } = useStudents();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'exams' | 'students'>('exams');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<ExamSession | null>(null);
@@ -71,10 +73,11 @@ export function ExamManagement() {
       await apiFetch(`/exams/${deleteModalExam.id}`, { method: 'DELETE' });
       window.dispatchEvent(new Event("exam-mutation"));
       setDeleteModalExam(null);
+      toast.success("Xóa đợt thi thành công!");
     } catch (error: unknown) {
       console.error("Error deleting exam:", error);
       const msg = error instanceof Error ? error.message : "Có lỗi xảy ra khi xóa đợt thi.";
-      alert(msg);
+      toast.error(msg);
     } finally {
       setIsDeleting(false);
     }
@@ -95,7 +98,7 @@ export function ExamManagement() {
 
   const handleExport = () => {
     if (filteredExams.length === 0) {
-      alert('Không có dữ liệu đợt thi để xuất.');
+      toast.warning('Không có dữ liệu đợt thi để xuất.');
       return;
     }
 
@@ -134,14 +137,14 @@ export function ExamManagement() {
 
   const handlePrint = () => {
     if (filteredExams.length === 0) {
-      alert('Không có dữ liệu đợt thi để in.');
+      toast.warning('Không có dữ liệu đợt thi để in.');
       return;
     }
 
     // Create a new window for printing
     const printWindow = window.open('', '_blank', 'width=1100,height=800');
     if (!printWindow) {
-      alert('Trình duyệt đã chặn cửa sổ bật lên. Vui lòng cho phép bật lên để in hoặc mở ứng dụng trong tab mới.');
+      toast.error('Trình duyệt đã chặn cửa sổ bật lên. Vui lòng cho phép bật lên để in hoặc mở ứng dụng trong tab mới.');
       return;
     }
 
