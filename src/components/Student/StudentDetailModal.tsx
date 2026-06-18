@@ -12,6 +12,7 @@ import { Student } from '../../types';
 import { apiFetch } from '../../lib/api';
 import { cn, formatVND, parseVND, formatDisplayDate } from '../../lib/utils';
 import { analyzeStudentPerformance } from '../../services/geminiService';
+import { useToast } from '../../hooks/useToast';
 
 interface StudentDetailModalProps {
   student: Student | null;
@@ -25,6 +26,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
   const [activeTab, setActiveTab] = React.useState<TabType>('Hồ sơ');
   const [analysis, setAnalysis] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const { toast } = useToast();
   const [isUpdatingKSK, setIsUpdatingKSK] = React.useState(false);
   const [isEditingProgress, setIsEditingProgress] = React.useState(false);
   const [isUpdatingProgress, setIsUpdatingProgress] = React.useState(false);
@@ -159,12 +161,12 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
       }
 
       setIsEditingExams(false);
-      alert('Cập nhật lịch sử và thống kê thi thành công!');
+      toast.success('Cập nhật lịch sử và thống kê thi thành công!');
       window.dispatchEvent(new Event('student-mutation'));
       window.dispatchEvent(new Event('exam-mutation'));
     } catch (error) {
       console.error("Exams Update failed:", error);
-      alert("Lỗi cập nhật lịch sử thi: " + (error instanceof Error ? error.message : "Không rõ nguyên nhân"));
+      toast.error("Lỗi cập nhật lịch sử thi: " + (error instanceof Error ? error.message : "Không rõ nguyên nhân"));
     } finally {
       setIsUpdatingExams(false);
     }
@@ -179,11 +181,11 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
         body: JSON.stringify({ progress: progressData })
       });
       setIsEditingProgress(false);
-      alert('Cập nhật tiến độ học tập thành công!');
+      toast.success('Cập nhật tiến độ học tập thành công!');
       window.dispatchEvent(new Event('student-mutation'));
     } catch (error) {
       console.error("Progress Update failed:", error);
-      alert("Lỗi cập nhật tiến độ học tập: " + (error instanceof Error ? error.message : "Không rõ nguyên nhân"));
+      toast.error("Lỗi cập nhật tiến độ học tập: " + (error instanceof Error ? error.message : "Không rõ nguyên nhân"));
     } finally {
       setIsUpdatingProgress(false);
     }
@@ -204,11 +206,11 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
         method: 'PATCH',
         body: JSON.stringify(updates)
       });
-      alert('Cập nhật thông tin khám sức khỏe thành công!');
+      toast.success('Cập nhật thông tin khám sức khỏe thành công!');
       window.dispatchEvent(new Event('student-mutation'));
     } catch (error) {
       console.error("KSK Update failed:", error);
-      alert("Lỗi cập nhật thông tin KSK: " + (error instanceof Error ? error.message : "Không rõ nguyên nhân"));
+      toast.error("Lỗi cập nhật thông tin KSK: " + (error instanceof Error ? error.message : "Không rõ nguyên nhân"));
     } finally {
       setIsUpdatingKSK(false);
     }
@@ -246,7 +248,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
       }));
     } catch (err) {
       console.error("Lỗi khi tải tệp lên:", err);
-      alert("Lỗi khi tải tệp lên: " + (err instanceof Error ? err.message : "Không rõ nguyên nhân"));
+      toast.error("Lỗi khi tải tệp lên: " + (err instanceof Error ? err.message : "Không rõ nguyên nhân"));
     } finally {
       setIsUploadingFile(false);
     }

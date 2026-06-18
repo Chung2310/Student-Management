@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Save, ChevronDown, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
 import { formatVND } from '../../lib/utils';
 import { DrivingStudent } from '../../types';
 
@@ -14,6 +15,7 @@ interface AddStudentModalProps {
 
 export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalProps) {
   const { user, login } = useAuth();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -63,7 +65,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
         // Dispatch global mutation event to refresh lists
         window.dispatchEvent(new Event("student-mutation"));
         
-        alert("Đã lưu hồ sơ học viên thành công!");
+        toast.success('Đã lưu hồ sơ học viên thành công!');
         onClose();
         onSuccess(studentWithId);
         

@@ -8,6 +8,7 @@ import paymentRoutes from "./payment.routes";
 import notificationRoutes from "./notification.routes";
 import uploadRoutes from "./upload.routes";
 import aiRoutes from "./ai.routes";
+import { logger } from "../config/logger";
 
 const router = Router();
 
@@ -25,8 +26,9 @@ router.post("/log-client-error", (req, res) => {
   const logMessage = `[${new Date().toISOString()}] CLIENT ERROR: ${error}\nINFO: ${JSON.stringify(info)}\n\n`;
   try {
     fs.appendFileSync(path.join(process.cwd(), "client_error.log"), logMessage);
+    logger.error(`Client crash reported: ${error} - Info: ${JSON.stringify(info)}`);
   } catch (err) {
-    console.error("Ghi log lỗi client thất bại:", err);
+    logger.error("Ghi log lỗi client thất bại: %o", err);
   }
   res.json({ success: true });
 });

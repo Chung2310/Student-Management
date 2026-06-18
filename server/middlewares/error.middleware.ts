@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { logger } from "../config/logger";
 
 interface JoiDetail {
   message: string;
@@ -11,7 +12,7 @@ interface JoiError extends Error {
 }
 
 export function errorMiddleware(err: JoiError, _req: Request, res: Response, _next: NextFunction) {
-  console.error("Global Error Handler:", err);
+  logger.error("Global Error Handler: %s", err.stack || err.message || err);
   
   if (err.isJoi) {
     // Return Joi validation errors in Vietnamese

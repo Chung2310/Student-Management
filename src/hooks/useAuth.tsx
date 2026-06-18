@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { apiFetch, setAccessToken } from '../lib/api';
+import { useToast } from './useToast';
 
 export interface AuthUser {
   uid: string;
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const { toast } = useToast();
 
   const fetchMe = async () => {
     try {
@@ -63,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async () => {
-    alert("Đăng nhập bằng Google đã bị loại bỏ. Vui lòng sử dụng Email và Mật khẩu.");
+    toast.warning("Đăng nhập bằng Google đã bị loại bỏ. Vui lòng sử dụng Email và Mật khẩu.");
   };
 
   const loginWithEmail = async (email: string, pass: string) => {
