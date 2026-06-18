@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { User } from "../models/user.model";
 import { IUser } from "../interfaces/user.interface";
+import { logger } from "../config/logger";
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "your_jwt_access_secret_key_should_be_long_and_secure_12345";
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "your_jwt_refresh_secret_key_should_be_long_and_secure_67890";
@@ -109,12 +110,12 @@ export class AuthService {
           displayName: adminDisplayName,
         });
         await adminUser.save();
-        console.log(`>>> Seeded admin account successfully: ${adminEmail}`);
+        logger.info(`>>> Seeded admin account successfully: ${adminEmail}`);
       } else {
-        console.log(`>>> Admin account already exists: ${adminEmail}`);
+        logger.info(`>>> Admin account already exists: ${adminEmail}`);
       }
     } catch (error) {
-      console.error(">>> Error seeding admin account:", error);
+      logger.error(">>> Error seeding admin account:", error);
     }
   }
 }

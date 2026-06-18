@@ -4,6 +4,7 @@ import { X, Calendar, FileText, Loader2, Save, CreditCard } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { Student } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
 
 interface AddPaymentModalProps {
   student: Student | null;
@@ -14,6 +15,7 @@ interface AddPaymentModalProps {
 
 export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaymentModalProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -52,12 +54,12 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
       const remaining = totalFee - paidSoFar;
       
       if (isNaN(payAmount) || payAmount <= 0) {
-        alert("Vui lòng nhập số tiền hợp lệ");
+        toast.warning('Vui lòng nhập số tiền hợp lệ');
         return;
       }
 
       if (payAmount > remaining) {
-        alert("Số tiền đóng vượt quá số tiền còn nợ. Vui lòng kiểm tra lại!");
+        toast.warning('Số tiền đóng vượt quá số tiền còn nợ. Vui lòng kiểm tra lại!');
         return;
       }
 
@@ -78,12 +80,12 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
       window.dispatchEvent(new Event("payment-mutation"));
       window.dispatchEvent(new Event("student-mutation"));
 
-      alert("Ghi nhận thanh toán thành công!");
+      toast.success('Ghi nhận thanh toán thành công!');
       onSuccess();
       onClose();
     } catch (error: unknown) {
       console.error("Payment Submission Error:", error);
-      alert("Đã có lỗi xảy ra khi ghi nhận thanh toán: " + (error instanceof Error ? error.message : "Lỗi không xác định"));
+      toast.error('Đã có lỗi xảy ra khi ghi nhận thanh toán: ' + (error instanceof Error ? error.message : 'Lỗi không xác định'));
     } finally {
       setIsSubmitting(false);
     }

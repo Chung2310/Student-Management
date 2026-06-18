@@ -3,6 +3,8 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { AuthProvider } from './hooks/useAuth.tsx';
+import { ToastProvider } from './hooks/useToast.tsx';
+import { ToastContainer } from './components/ui/ToastContainer.tsx';
 
 interface Props {
   children: ReactNode;
@@ -99,9 +101,12 @@ window.addEventListener("unhandledrejection", (event) => {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+        <ToastContainer />
+      </ToastProvider>
     </ErrorBoundary>
   </StrictMode>,
 );

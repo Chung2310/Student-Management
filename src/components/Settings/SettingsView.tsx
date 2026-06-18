@@ -10,6 +10,7 @@ import { cn } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../lib/api';
+import { useToast } from '../../hooks/useToast';
 
 type SettingsTab = 'Cấu hình hệ thống' | 'Quản lý dữ liệu' | 'Quản trị';
 
@@ -17,6 +18,7 @@ export function SettingsView() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('Cấu hình hệ thống');
   const { students } = useStudents();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, message: '' });
   const [restoreFileName, setRestoreFileName] = useState<string>('');
@@ -33,7 +35,7 @@ export function SettingsView() {
   // Backup data
   const handleBackup = () => {
     if (students.length === 0) {
-      alert("Không có dữ liệu học viên để xuất.");
+      toast.warning("Không có dữ liệu học viên để xuất.");
       return;
     }
 
@@ -53,7 +55,7 @@ export function SettingsView() {
   // Pre-confirm before opening file picker
   const triggerRestore = () => {
     if (!user) {
-      alert("Vui lòng đăng nhập để thực hiện chức năng này.");
+      toast.warning("Vui lòng đăng nhập để thực hiện chức năng này.");
       return;
     }
     // Mở folder chọn file trực tiếp để đảm bảo tính tương tác cao nhất
@@ -180,7 +182,7 @@ export function SettingsView() {
         } catch (err: unknown) {
           console.error(">>> [RESTORE ERROR]:", err);
           const msg = err instanceof Error ? err.message : "Đã xảy ra lỗi.";
-          alert("LỖI: " + msg);
+          toast.error("LỖI: " + msg);
         } finally {
           setIsProcessing(false);
           setRestoreFileName('');
@@ -268,7 +270,7 @@ export function SettingsView() {
           window.dispatchEvent(new Event('student-mutation'));
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : "Đã xảy ra lỗi.";
-          alert("Lỗi: " + msg);
+          toast.error("Lỗi: " + msg);
         } finally {
           setIsProcessing(false);
           if (fileInputRef.current) fileInputRef.current.value = '';

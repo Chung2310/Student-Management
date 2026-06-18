@@ -4,6 +4,7 @@ import { X, Save, ChevronDown, Loader2, Calendar } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { ExamSession } from '../../types';
+import { useToast } from '../../hooks/useToast';
 
 interface AddExamModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface AddExamModalProps {
 
 export function AddExamModal({ isOpen, onClose, onSuccess, initialData }: AddExamModalProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -60,12 +62,12 @@ export function AddExamModal({ isOpen, onClose, onSuccess, initialData }: AddExa
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      alert("Vui lòng đăng nhập để tạo đợt thi.");
+      toast.warning("Vui lòng đăng nhập để tạo đợt thi.");
       return;
     }
 
     if (!formData.name || !formData.rank || !formData.tentativeDate || !formData.location) {
-      alert("Vui lòng điền đầy đủ các trường bắt buộc (*)");
+      toast.warning("Vui lòng điền đầy đủ các trường bắt buộc (*)");
       return;
     }
 
@@ -90,7 +92,7 @@ export function AddExamModal({ isOpen, onClose, onSuccess, initialData }: AddExa
           body: JSON.stringify(updateData),
         });
 
-        alert("Đã cập nhật đợt thi thành công!");
+        toast.success("Đã cập nhật đợt thi thành công!");
         onSuccess({ ...initialData, ...updateData, id: res.data?._id || res.data?.id || initialData.id });
       } else {
         // Create new exam
@@ -105,7 +107,7 @@ export function AddExamModal({ isOpen, onClose, onSuccess, initialData }: AddExa
           body: JSON.stringify(examData),
         });
 
-        alert("Đã tạo đợt thi thành công!");
+        toast.success("Đã tạo đợt thi thành công!");
         onSuccess({ ...examData, id: res.data?._id || res.data?.id });
       }
       
@@ -122,7 +124,7 @@ export function AddExamModal({ isOpen, onClose, onSuccess, initialData }: AddExa
       });
     } catch (error) {
       console.error("Error creating/updating exam:", error);
-      alert("Lỗi khi xử lý đợt thi: " + (error instanceof Error ? error.message : "Không rõ nguyên nhân"));
+      toast.error("Lỗi khi xử lý đợt thi: " + (error instanceof Error ? error.message : "Không rõ nguyên nhân"));
     } finally {
       setIsSubmitting(false);
     }

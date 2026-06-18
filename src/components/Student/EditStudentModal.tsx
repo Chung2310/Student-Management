@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Save, ChevronDown, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
+import { useToast } from '../../hooks/useToast';
 import { Student } from '../../types';
 
 interface EditStudentModalProps {
@@ -13,6 +14,7 @@ interface EditStudentModalProps {
 
 export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditStudentModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -60,13 +62,13 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
         body: JSON.stringify(formData),
       });
       window.dispatchEvent(new Event("student-mutation"));
-      alert("Đã cập nhật thông tin học viên thành công!");
+      toast.success('Đã cập nhật thông tin học viên thành công!');
       onSuccess();
       onClose();
     } catch (error: unknown) {
       console.error("Error updating student:", error);
       const msg = error instanceof Error ? error.message : "Có lỗi xảy ra khi cập nhật thông tin.";
-      alert(msg);
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }

@@ -6,6 +6,7 @@ import { ExamSession } from '../../types';
 import { useStudents } from '../../hooks/useStudents';
 import { cn, parseVND } from '../../lib/utils';
 import { CreditCard, AlertCircle } from 'lucide-react';
+import { useToast } from '../../hooks/useToast';
 
 interface AssignStudentModalProps {
   exam: ExamSession | null;
@@ -19,6 +20,7 @@ export function AssignStudentModal({ exam, isOpen, onClose, onSuccess }: AssignS
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const { toast } = useToast();
 
   if (!isOpen || !exam) return null;
 
@@ -62,13 +64,13 @@ export function AssignStudentModal({ exam, isOpen, onClose, onSuccess }: AssignS
       window.dispatchEvent(new Event("student-mutation"));
       window.dispatchEvent(new Event("exam-mutation"));
 
-      alert(`Đã thêm ${selectedStudentIds.length} học viên vào đợt thi thành công!`);
+      toast.success(`Đã thêm ${selectedStudentIds.length} học viên vào đợt thi thành công!`);
       onSuccess();
       onClose();
       setSelectedStudentIds([]);
     } catch (error: unknown) {
       console.error("Error assigning students:", error);
-      alert(error instanceof Error ? error.message : "Lỗi gán học viên vào đợt thi.");
+      toast.error(error instanceof Error ? error.message : "Lỗi gán học viên vào đợt thi.");
     } finally {
       setIsSubmitting(false);
     }

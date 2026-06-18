@@ -1,5 +1,6 @@
 import "dotenv/config";
 import mongoose from "mongoose";
+import { logger } from "./logger";
 
 export async function connectDB() {
   let uri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/student_management";
@@ -20,13 +21,13 @@ export async function connectDB() {
 
   // Mask credentials in logs for security
   const maskedUri = uri.replace(/:([^@:]+)@/, ":******@");
-  console.log(`[Database] Connecting to MongoDB: ${maskedUri}`);
+  logger.info(`[Database] Connecting to MongoDB: ${maskedUri}`);
 
   try {
     await mongoose.connect(uri);
-    console.log("MongoDB connected successfully");
+    logger.info("MongoDB connected successfully");
   } catch (error) {
-    console.error("MongoDB connection error:", error);
+    logger.error("MongoDB connection error:", error);
     process.exit(1);
   }
 }

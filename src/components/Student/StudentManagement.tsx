@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { cn, formatVND, formatDisplayDate } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
+import { useToast } from '../../hooks/useToast';
 import { Student } from '../../types';
 import { apiFetch } from '../../lib/api';
 import { StatusTransitionModal } from './StatusTransitionModal';
@@ -23,6 +24,7 @@ type StatusFilter = 'Tất cả' | 'KSK' | 'Đã KSK' | 'Nộp HS' | 'Đang họ
 
 export function StudentManagement({ onSelectStudent, onAddStudent }: StudentManagementProps) {
   const { students, loading } = useStudents();
+  const { toast } = useToast();
   const [category, setCategory] = useState<CategoryFilter>('Tất cả');
   const [status, setStatus] = useState<StatusFilter>('Tất cả');
   const [searchQuery, setSearchQuery] = useState('');
@@ -138,7 +140,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
       setConfirmDeleteId(null);
     } catch (error) {
       console.error("Error deleting student:", error);
-      alert('Có lỗi xảy ra khi xóa học viên.');
+      toast.error('Có lỗi xảy ra khi xóa học viên.');
     } finally {
       setIsDeleting(null);
     }
@@ -146,7 +148,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
 
   const handleExport = () => {
     if (filteredStudents.length === 0) {
-      alert('Không có dữ liệu để xuất.');
+      toast.warning('Không có dữ liệu để xuất.');
       return;
     }
 
@@ -183,14 +185,14 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
 
   const handlePrint = () => {
     if (filteredStudents.length === 0) {
-      alert('Không có dữ liệu học viên để in.');
+      toast.warning('Không có dữ liệu học viên để in.');
       return;
     }
 
     // Create a new window for printing
     const printWindow = window.open('', '_blank', 'width=1000,height=800');
     if (!printWindow) {
-      alert('Trình duyệt đã chặn cửa sổ bật lên. Vui lòng cho phép bật lên để in hoặc mở ứng dụng trong tab mới.');
+      toast.warning('Trình duyệt đã chặn cửa sổ bật lên. Vui lòng cho phép bật lên để in hoặc mở ứng dụng trong tab mới.');
       return;
     }
 

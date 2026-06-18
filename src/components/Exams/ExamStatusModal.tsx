@@ -4,6 +4,7 @@ import { X, CheckCircle2, Clock, Save, Loader2, Calendar } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { ExamSession, ExamStatus } from '../../types';
 import { cn } from '../../lib/utils';
+import { useToast } from '../../hooks/useToast';
 
 interface ExamStatusModalProps {
   exam: ExamSession | null;
@@ -16,6 +17,7 @@ export function ExamStatusModal({ exam, isOpen, onClose, onSuccess }: ExamStatus
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<ExamStatus | ''>(exam?.status || '');
   const [officialDate, setOfficialDate] = useState(exam?.officialDate || '');
+  const { toast } = useToast();
 
   // Update local state when exam changes - deferred to avoid synchronous setState in effect
   React.useEffect(() => {
@@ -62,12 +64,12 @@ export function ExamStatusModal({ exam, isOpen, onClose, onSuccess }: ExamStatus
       });
 
       window.dispatchEvent(new Event("exam-mutation"));
-      alert("Cập nhật trạng thái đợt thi thành công!");
+      toast.success("Cập nhật trạng thái đợt thi thành công!");
       onSuccess();
       onClose();
     } catch (error: unknown) {
       console.error("Error updating exam status:", error);
-      alert(error instanceof Error ? error.message : "Lỗi cập nhật trạng thái đợt thi.");
+      toast.error(error instanceof Error ? error.message : "Lỗi cập nhật trạng thái đợt thi.");
     } finally {
       setIsSubmitting(false);
     }

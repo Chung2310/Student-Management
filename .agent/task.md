@@ -1,0 +1,10 @@
+# Alert Migration Tasks
+- [x] Identify all remaining raw `alert()` statements in the front-end codebase (Done)
+- [x] Replace alerts in `useAuth.tsx` (Done)
+- [x] Replace alerts in `ExamStatusModal.tsx` (Done)
+- [x] Replace alerts in `ExamManagement.tsx` (Done)
+- [x] Replace alerts in `AssignStudentModal.tsx` (Done)
+- [x] Replace alerts in `AddExamModal.tsx` (Done)
+- [x] Replace alerts in `SettingsView.tsx` (Done)
+- [x] Replace alerts in `NotificationBot.tsx` (Done)
+- [x] Verify frontend typecheck and build (Done)
