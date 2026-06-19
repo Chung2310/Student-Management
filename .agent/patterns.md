@@ -12,3 +12,9 @@
   toast.info("Message");
   ```
   Ensure `ToastProvider` is placed at the top level and `ToastContainer` is rendered.
+
+- **Form Validation**: Always perform matching checks (such as password confirmation) on the frontend first before sending requests to the backend, in order to avoid unnecessary network requests and ensure prompt user feedback. Toggling password/confirm password visibility should be independent.
+
+- **Logging & Security**: All HTTP requests should be logged. For any non-GET requests, request bodies should be logged under `debug` level. However, to prevent data leak, any sensitive properties (such as password, tokens, credentials, secrets) must be masked recursively before printing/writing to files.
+
+- **Configuration & Validation**: LocalStorage is used to synchronize UI settings (like form field required configuration) across independent views (Settings page, Add Student modal, Edit Student modal). Validation triggers should dynamically inspect the configuration instead of hardcoding HTML standard attributes like `required` to allow fully customized validation errors.

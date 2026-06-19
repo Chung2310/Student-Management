@@ -1,10 +1,6 @@
-# Alert Migration Tasks
-- [x] Identify all remaining raw `alert()` statements in the front-end codebase (Done)
-- [x] Replace alerts in `useAuth.tsx` (Done)
-- [x] Replace alerts in `ExamStatusModal.tsx` (Done)
-- [x] Replace alerts in `ExamManagement.tsx` (Done)
-- [x] Replace alerts in `AssignStudentModal.tsx` (Done)
-- [x] Replace alerts in `AddExamModal.tsx` (Done)
-- [x] Replace alerts in `SettingsView.tsx` (Done)
-- [x] Replace alerts in `NotificationBot.tsx` (Done)
-- [x] Verify frontend typecheck and build (Done)
+# Form Fields Required Settings Tasks
+- [x] Integrate ToggleRight and state handling in SettingsView.tsx (Done)
+- [x] Bind toggleRequiredField handler and save state in localStorage (Done)
+- [x] Read configuration inside AddStudentModal.tsx and apply validation (Done)
+- [x] Read configuration inside EditStudentModal.tsx and apply validation (Done)
+- [x] Compile typechecks & lint checks (Done)

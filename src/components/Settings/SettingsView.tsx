@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
-import { 
-  Settings, QrCode, ClipboardList, Database, 
+import {
+  Settings, QrCode, ClipboardList, Database,
   CreditCard, Plus, Edit2, Trash2,
-  CheckCircle2, Info, ShieldCheck, Download, Upload, 
-  FileJson, RotateCcw, ToggleLeft, Activity
+  CheckCircle2, Info, ShieldCheck, Download, Upload,
+  FileJson, RotateCcw, ToggleLeft, ToggleRight, Activity
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
@@ -22,9 +22,73 @@ export function SettingsView() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, message: '' });
   const [restoreFileName, setRestoreFileName] = useState<string>('');
+  const [restoreFileToConfirm, setRestoreFileToConfirm] = useState<File | null>(null);
   const [showResult, setShowResult] = useState<{ show: boolean, count: number, type: 'Restore' | 'Import' }>({ show: false, count: 0, type: 'Restore' });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const restoreInputRef = useRef<HTMLInputElement>(null);
+
+  const [requiredFields, setRequiredFields] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('requiredFieldsConfig');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Error parsing requiredFieldsConfig", e);
+      }
+    }
+    return {
+      fullName: true,
+      phone: true,
+      rank: true,
+      area: true,
+      birthday: false,
+      idCard: false,
+      email: false
+    };
+  });
+
+  const fieldMapping = [
+    { label: 'Họ và tên', key: 'fullName' },
+    { label: 'Số điện thoại', key: 'phone' },
+    { label: 'Hạng bằng', key: 'rank' },
+    { label: 'Khu vực', key: 'area' },
+    { label: 'Ngày sinh', key: 'birthday' },
+    { label: 'CCCD/CMND', key: 'idCard' },
+    { label: 'Email', key: 'email' }
+  ];
+
+  const toggleRequiredField = (key: string) => {
+    const updated = {
+      ...requiredFields,
+      [key]: !requiredFields[key]
+    };
+    setRequiredFields(updated);
+    localStorage.setItem('requiredFieldsConfig', JSON.stringify(updated));
+    toast.success(`Đã cập nhật cấu hình trường bắt buộc`);
+  };
+
+  const [vietqrConfig, setVietqrConfig] = useState(() => {
+    const saved = localStorage.getItem('vietqrConfig');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Error parsing vietqrConfig", e);
+      }
+    }
+    return {
+      enabled: true,
+      bankId: 'mbbank',
+      accountNo: '',
+      accountName: '',
+      template: '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}'
+    };
+  });
+
+  const saveVietqrConfig = (updated: typeof vietqrConfig) => {
+    setVietqrConfig(updated);
+    localStorage.setItem('vietqrConfig', JSON.stringify(updated));
+  };
 
   const tabs: { id: SettingsTab; icon: React.ComponentType<{ className?: string }>; label: string }[] = [
     { id: 'Cấu hình hệ thống', icon: Settings, label: 'Cấu hình hệ thống' },
@@ -33,23 +97,55 @@ export function SettingsView() {
   ];
 
   // Backup data
-  const handleBackup = () => {
-    if (students.length === 0) {
-      toast.warning("Không có dữ liệu học viên để xuất.");
-      return;
-    }
-
-    const dataStr = JSON.stringify(students, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
+  const handleBackup = async () => {
+    setIsProcessing(true);
+    setProgress({ current: 0, total: 3, message: 'Đang chuẩn bị sao lưu...' });
     
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `backup_hocvien_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    try {
+      // 1. Fetch all exams
+      setProgress({ current: 0, total: 3, message: 'Đang tải danh sách kỳ thi...' });
+      const examsRes = await apiFetch('/exams', { params: { limit: 1000 } });
+      const exams = examsRes.exams || [];
+
+      // 2. Fetch all payments
+      setProgress({ current: 1, total: 3, message: 'Đang tải danh sách giao dịch...' });
+      const paymentsRes = await apiFetch('/payments', { params: { limit: 1000 } });
+      const payments = paymentsRes.payments || [];
+
+      // 3. System configs
+      setProgress({ current: 2, total: 3, message: 'Đang chuẩn bị file backup...' });
+      
+      const backupData = {
+        version: "2.0",
+        timestamp: new Date().toISOString(),
+        students,
+        exams,
+        payments,
+        configs: {
+          requiredFieldsConfig: JSON.parse(localStorage.getItem('requiredFieldsConfig') || '{}'),
+          vietqrConfig: JSON.parse(localStorage.getItem('vietqrConfig') || '{}'),
+          tuitionStagesConfig: JSON.parse(localStorage.getItem('tuitionStagesConfig') || '{}')
+        }
+      };
+
+      const dataStr = JSON.stringify(backupData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `backup_toanbo_hethong_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success("Đã xuất bản sao lưu hệ thống toàn bộ thành công!");
+    } catch (e) {
+      console.error("Backup error:", e);
+      toast.error("Lỗi khi tạo bản sao lưu.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Pre-confirm before opening file picker
@@ -62,135 +158,303 @@ export function SettingsView() {
     restoreInputRef.current?.click();
   };
 
-  // Restore data
-  const handleRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Restore file selection
+  const handleRestoreFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+    setRestoreFileToConfirm(file);
+  };
 
+  // Restore data execution
+  const executeRestore = async (file: File) => {
+    setRestoreFileToConfirm(null);
     setRestoreFileName(file.name);
     console.log(">>> [RESTORE] File selected:", file.name);
 
-    setTimeout(async () => {
-      const confirmMsg = `XÁC NHẬN KHÔI PHỤC DỮ LIỆU\n\n` + 
-                        `Tên file: ${file.name}\n` +
-                        `Quy trình: Xóa sạch dữ liệu hiện có -> Nạp dữ liệu từ file này.\n\n` +
-                        `Bạn có chắc chắn muốn thực hiện không?`;
+    setIsProcessing(true);
+    setProgress({ current: 0, total: 0, message: 'Đang đọc file...' });
 
-      if (!confirm(confirmMsg)) {
-        setRestoreFileName('');
-        if (restoreInputRef.current) restoreInputRef.current.value = '';
-        return;
-      }
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const content = event.target?.result as string;
+        const jsonData = JSON.parse(content);
 
-      setIsProcessing(true);
-      setProgress({ current: 0, total: 0, message: 'Đang chuẩn bị file...' });
-      
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        try {
-          const content = event.target?.result as string;
-          const jsonData = JSON.parse(content);
-          
-          if (!Array.isArray(jsonData)) {
-            throw new Error("Dữ liệu trong file không hợp lệ (phải là một danh sách học viên).");
+        let studentsList = [];
+        let examsList = [];
+        let paymentsList: {
+          id?: string;
+          _id?: string;
+          studentId?: string;
+          studentName?: string;
+          amount?: number;
+          date?: string;
+          note?: string;
+          ownerId?: string;
+          createdAt?: string;
+          updatedAt?: string;
+        }[] = [];
+        let configsObj: {
+          requiredFieldsConfig?: Record<string, boolean>;
+          vietqrConfig?: {
+            enabled: boolean;
+            bankId: string;
+            accountNo: string;
+            accountName: string;
+            template: string;
+          };
+          tuitionStagesConfig?: unknown;
+        } | null = null;
+
+        if (Array.isArray(jsonData)) {
+          // Backward compatibility for old student-only array backup format
+          studentsList = jsonData;
+        } else if (jsonData && typeof jsonData === 'object') {
+          studentsList = jsonData.students || [];
+          examsList = jsonData.exams || [];
+          paymentsList = jsonData.payments || [];
+          configsObj = jsonData.configs || null;
+        } else {
+          throw new Error("Định dạng file backup không hợp lệ.");
+        }
+
+        if (studentsList.length > 0) {
+          const first = studentsList[0];
+          if (!first.fullName && !first.name) {
+            throw new Error("Cấu trúc học viên trong file không hợp lệ.");
           }
+        }
 
-          if (jsonData.length > 0) {
-            const first = jsonData[0];
-            if (!first.fullName && !first.name) {
-               throw new Error("Cấu trúc học viên trong file không hợp lệ. Vui lòng kiểm tra lại file backup.");
+        // Step 1: Delete all current payments
+        setProgress({ current: 0, total: 3, message: 'Đang xóa sạch giao dịch cũ...' });
+        const currentPaymentsRes = await apiFetch('/payments', { params: { limit: 1000 } });
+        const currentPayments = currentPaymentsRes.payments || [];
+        let delPayCount = 0;
+        for (const p of currentPayments) {
+          await apiFetch(`/payments/${p._id || p.id}`, { method: 'DELETE' });
+          delPayCount++;
+          setProgress({ current: delPayCount, total: currentPayments.length, message: `Xóa giao dịch cũ: ${delPayCount}/${currentPayments.length}` });
+        }
+
+        // Step 2: Delete all current exams
+        setProgress({ current: 0, total: 3, message: 'Đang xóa sạch kỳ thi cũ...' });
+        const currentExamsRes = await apiFetch('/exams', { params: { limit: 1000 } });
+        const currentExams = currentExamsRes.exams || [];
+        let delExamCount = 0;
+        for (const ex of currentExams) {
+          await apiFetch(`/exams/${ex._id || ex.id}`, { method: 'DELETE' });
+          delExamCount++;
+          setProgress({ current: delExamCount, total: currentExams.length, message: `Xóa kỳ thi cũ: ${delExamCount}/${currentExams.length}` });
+        }
+
+        // Step 3: Delete all current students
+        setProgress({ current: 0, total: 3, message: 'Đang xóa sạch học viên cũ...' });
+        const currentStudentsRes = await apiFetch('/students', { params: { limit: 1000 } });
+        const currentStudents = currentStudentsRes.students || [];
+        let delStudCount = 0;
+        for (const s of currentStudents) {
+          await apiFetch(`/students/${s._id || s.id}`, { method: 'DELETE' });
+          delStudCount++;
+          setProgress({ current: delStudCount, total: currentStudents.length, message: `Xóa học viên cũ: ${delStudCount}/${currentStudents.length}` });
+        }
+
+        // Step 4: Recreate exam sessions and map IDs
+        setProgress({ current: 0, total: examsList.length || 1, message: 'Đang khôi phục danh sách kỳ thi...' });
+        const examIdMap: Record<string, string> = {};
+        let addedExamCount = 0;
+        for (const examItem of examsList) {
+          const oldExamId = examItem._id || examItem.id;
+          const cleanExam = { ...examItem };
+          delete cleanExam.id;
+          delete cleanExam._id;
+          delete cleanExam.ownerId;
+          delete cleanExam.createdAt;
+          delete cleanExam.updatedAt;
+          delete cleanExam.__v;
+
+          const createExamRes = await apiFetch('/exams', {
+            method: 'POST',
+            body: JSON.stringify(cleanExam)
+          });
+
+          if (createExamRes.success && createExamRes.data) {
+            const newExamId = createExamRes.data._id || createExamRes.data.id;
+            if (oldExamId && newExamId) {
+              examIdMap[oldExamId] = newExamId;
             }
           }
+          addedExamCount++;
+          setProgress({ current: addedExamCount, total: examsList.length, message: `Khôi phục kỳ thi: ${addedExamCount}/${examsList.length}` });
+        }
 
-          const total = jsonData.length;
-          console.log(`>>> [RESTORE] Found ${total} students in JSON.`);
-          setProgress({ current: 0, total: 1, message: 'Đang xóa sạch dữ liệu cũ...' });
+        // Step 5: Recreate students and map IDs
+        setProgress({ current: 0, total: studentsList.length || 1, message: 'Đang khôi phục danh sách học viên...' });
+        const studentIdMap: Record<string, string> = {};
+        let addedStudCount = 0;
+        for (const studItem of studentsList) {
+          const oldStudentId = studItem._id || studItem.id;
+          const cleanData = { ...studItem };
+          delete cleanData.id;
+          delete cleanData._id;
+          delete cleanData.ownerId;
+          delete cleanData.createdAt;
+          delete cleanData.updatedAt;
 
-          // Bước 1: Xóa trắng toàn bộ học viên hiện có (của User hiện tại)
-          const currentStudentsRes = await apiFetch('/students', { params: { limit: 1000 } });
-          const currentStudents = currentStudentsRes.students || [];
-          
-          let delCount = 0;
-          for (const s of currentStudents) {
-            await apiFetch(`/students/${s._id || s.id}`, { method: 'DELETE' });
-            delCount++;
-            setProgress({ current: delCount, total: currentStudents.length, message: `Đang xóa cũ: ${delCount}/${currentStudents.length}` });
+          // Map old exam ID to new exam ID
+          if (cleanData.examId && examIdMap[cleanData.examId]) {
+            cleanData.examId = examIdMap[cleanData.examId];
+          }
+          if (Array.isArray(cleanData.exams)) {
+            cleanData.exams = cleanData.exams.map((exItem: { id: string; [key: string]: unknown }) => {
+              if (exItem.id && examIdMap[exItem.id]) {
+                return { ...exItem, id: examIdMap[exItem.id] };
+              }
+              return exItem;
+            });
           }
 
-          // Bước 2: Nạp dữ liệu mới
-          setProgress({ current: 0, total, message: 'Đang đồng bộ dữ liệu mới...' });
-          let addedCount = 0;
+          const createFields = {
+            fullName: cleanData.fullName || cleanData.name,
+            phone: cleanData.phone,
+            email: cleanData.email || "",
+            referral: cleanData.referral || "",
+            birthday: cleanData.birthday || "",
+            idCard: cleanData.idCard || "",
+            rank: cleanData.rank,
+            area: cleanData.area,
+            registrationDate: cleanData.registrationDate,
+            fee: cleanData.fee,
+            address: cleanData.address || "",
+            status: cleanData.status,
+          };
 
-          for (const item of jsonData) {
-            const cleanData = { ...item };
-            delete cleanData.id;
-            delete cleanData._id;
-            delete cleanData.ownerId;
-            delete cleanData.createdAt;
-            delete cleanData.updatedAt;
-            
-            const createFields = {
-              fullName: cleanData.fullName || cleanData.name,
-              phone: cleanData.phone,
-              email: cleanData.email || "",
-              referral: cleanData.referral || "",
-              birthday: cleanData.birthday || "",
-              idCard: cleanData.idCard || "",
-              rank: cleanData.rank,
-              area: cleanData.area,
-              registrationDate: cleanData.registrationDate,
-              fee: cleanData.fee,
-              address: cleanData.address || "",
-              status: cleanData.status,
-            };
+          const createRes = await apiFetch('/students', {
+            method: 'POST',
+            body: JSON.stringify(createFields),
+          });
 
-            const createRes = await apiFetch('/students', {
-              method: 'POST',
-              body: JSON.stringify(createFields),
-            });
+          if (createRes.success && createRes.data) {
+            const newId = createRes.data._id || createRes.data.id;
+            if (oldStudentId && newId) {
+              studentIdMap[oldStudentId] = newId;
+            }
 
-            if (createRes.success && createRes.data) {
-              const newId = createRes.data._id || createRes.data.id;
-              
-              const updateFields = {
-                healthCheckDate: cleanData.healthCheckDate || "",
-                healthCheckNotes: cleanData.healthCheckNotes || "",
-                healthCheckFiles: cleanData.healthCheckFiles || [],
-                progress: cleanData.progress,
-                exams: cleanData.exams,
-                paymentHistory: cleanData.paymentHistory,
-                examId: cleanData.examId || "",
-                examName: cleanData.examName || "",
-                examDate: cleanData.examDate || "",
-              };
+            // Clean progress (strip _id)
+            if (cleanData.progress && typeof cleanData.progress === 'object') {
+              const cleanProgress = { ...cleanData.progress } as Record<string, unknown>;
+              delete cleanProgress._id;
+              delete cleanProgress.id;
+              for (const key of ['theory', 'practice', 'cabin', 'dat', 'sim']) {
+                const subProgress = cleanProgress[key];
+                if (subProgress && typeof subProgress === 'object') {
+                  const cleanSub = { ...subProgress } as Record<string, unknown>;
+                  delete cleanSub._id;
+                  delete cleanSub.id;
+                  cleanProgress[key] = cleanSub;
+                }
+              }
+              cleanData.progress = cleanProgress;
+            }
 
-              await apiFetch(`/students/${newId}`, {
-                method: 'PATCH',
-                body: JSON.stringify(updateFields),
+            // Clean healthCheckFiles (strip _id)
+            if (Array.isArray(cleanData.healthCheckFiles)) {
+              cleanData.healthCheckFiles = cleanData.healthCheckFiles.map((file: unknown) => {
+                if (file && typeof file === 'object') {
+                  const cleanFile = { ...file } as Record<string, unknown>;
+                  delete cleanFile._id;
+                  delete cleanFile.id;
+                  return cleanFile;
+                }
+                return file;
               });
             }
 
-            addedCount++;
-            if (addedCount % 2 === 0 || addedCount === total) {
-              setProgress({ current: addedCount, total, message: `Tiến độ: ${addedCount}/${total}` });
-            }
-          }
+            // We patch other fields. Note: clear payment history initially
+            // so that step 6 (payments creation) can dynamically increment it correctly.
+            const updateFields = {
+              healthCheckDate: cleanData.healthCheckDate || "",
+              healthCheckNotes: cleanData.healthCheckNotes || "",
+              healthCheckFiles: cleanData.healthCheckFiles || [],
+              progress: cleanData.progress,
+              exams: cleanData.exams,
+              paymentHistory: [],
+              examId: cleanData.examId || "",
+              examName: cleanData.examName || "",
+              examDate: cleanData.examDate || "",
+            };
 
-          console.log(`>>> [RESTORE] Successfully added ${addedCount} students.`);
-          setShowResult({ show: true, count: addedCount, type: 'Restore' });
-          window.dispatchEvent(new Event('student-mutation'));
-        } catch (err: unknown) {
-          console.error(">>> [RESTORE ERROR]:", err);
-          const msg = err instanceof Error ? err.message : "Đã xảy ra lỗi.";
-          toast.error("LỖI: " + msg);
-        } finally {
-          setIsProcessing(false);
-          setRestoreFileName('');
-          if (restoreInputRef.current) restoreInputRef.current.value = '';
+            await apiFetch(`/students/${newId}`, {
+              method: 'PATCH',
+              body: JSON.stringify(updateFields),
+            });
+          }
+          addedStudCount++;
+          setProgress({ current: addedStudCount, total: studentsList.length, message: `Khôi phục học viên: ${addedStudCount}/${studentsList.length}` });
         }
-      };
-      reader.readAsText(file);
-    }, 100);
+
+        // Step 6: Recreate payments and link to new students
+        setProgress({ current: 0, total: paymentsList.length || 1, message: 'Đang khôi phục lịch sử giao dịch...' });
+        let addedPayCount = 0;
+        for (const payItem of paymentsList) {
+          const cleanPay = { ...payItem };
+          delete cleanPay.id;
+          delete cleanPay._id;
+          delete cleanPay.ownerId;
+          delete cleanPay.createdAt;
+          delete cleanPay.updatedAt;
+
+          // Map old studentId to new studentId
+          if (cleanPay.studentId && studentIdMap[cleanPay.studentId]) {
+            cleanPay.studentId = studentIdMap[cleanPay.studentId];
+
+            // Recreate the transaction record
+            await apiFetch('/payments', {
+              method: 'POST',
+              body: JSON.stringify({
+                studentId: cleanPay.studentId,
+                studentName: cleanPay.studentName,
+                amount: cleanPay.amount,
+                date: cleanPay.date,
+                note: cleanPay.note || ""
+              })
+            });
+          }
+          addedPayCount++;
+          setProgress({ current: addedPayCount, total: paymentsList.length, message: `Khôi phục giao dịch: ${addedPayCount}/${paymentsList.length}` });
+        }
+
+        // Step 7: Restore local configurations
+        if (configsObj) {
+          if (configsObj.requiredFieldsConfig) {
+            localStorage.setItem('requiredFieldsConfig', JSON.stringify(configsObj.requiredFieldsConfig));
+            setRequiredFields(configsObj.requiredFieldsConfig);
+          }
+          if (configsObj.vietqrConfig) {
+            localStorage.setItem('vietqrConfig', JSON.stringify(configsObj.vietqrConfig));
+            setVietqrConfig(configsObj.vietqrConfig);
+          }
+          if (configsObj.tuitionStagesConfig) {
+            localStorage.setItem('tuitionStagesConfig', JSON.stringify(configsObj.tuitionStagesConfig));
+          }
+          window.dispatchEvent(new Event('storage'));
+        }
+
+        console.log(`>>> [RESTORE] Successfully restored database.`);
+        setShowResult({ show: true, count: addedStudCount, type: 'Restore' });
+        window.dispatchEvent(new Event('student-mutation'));
+        window.dispatchEvent(new Event('payment-mutation'));
+        window.dispatchEvent(new Event('exam-mutation'));
+      } catch (err: unknown) {
+        console.error(">>> [RESTORE ERROR]:", err);
+        const msg = err instanceof Error ? err.message : "Đã xảy ra lỗi.";
+        toast.error("LỖI: " + msg);
+      } finally {
+        setIsProcessing(false);
+        setRestoreFileName('');
+        if (restoreInputRef.current) restoreInputRef.current.value = '';
+      }
+    };
+    reader.readAsText(file);
   };
 
   // Import data
@@ -206,19 +470,29 @@ export function SettingsView() {
       reader.onload = async (event) => {
         try {
           const jsonData = JSON.parse(event.target?.result as string);
-          if (!Array.isArray(jsonData)) throw new Error("File không đúng cấu hình mảng.");
+          
+          let studentsList = [];
+          if (Array.isArray(jsonData)) {
+            // Old format
+            studentsList = jsonData;
+          } else if (jsonData && typeof jsonData === 'object') {
+            // New format
+            studentsList = jsonData.students || [];
+          } else {
+            throw new Error("File không đúng cấu hình.");
+          }
 
-          const total = jsonData.length;
+          const total = studentsList.length;
           let addedCount = 0;
 
-          for (const item of jsonData) {
+          for (const item of studentsList) {
             const cleanData = { ...item };
             delete cleanData.id;
             delete cleanData._id;
             delete cleanData.ownerId;
             delete cleanData.createdAt;
             delete cleanData.updatedAt;
-            
+
             const createFields = {
               fullName: cleanData.fullName || cleanData.name,
               phone: cleanData.phone,
@@ -241,7 +515,37 @@ export function SettingsView() {
 
             if (createRes.success && createRes.data) {
               const newId = createRes.data._id || createRes.data.id;
-              
+
+              // Clean progress (strip _id)
+              if (cleanData.progress && typeof cleanData.progress === 'object') {
+                const cleanProgress = { ...cleanData.progress } as Record<string, unknown>;
+                delete cleanProgress._id;
+                delete cleanProgress.id;
+                for (const key of ['theory', 'practice', 'cabin', 'dat', 'sim']) {
+                  const subProgress = cleanProgress[key];
+                  if (subProgress && typeof subProgress === 'object') {
+                    const cleanSub = { ...subProgress } as Record<string, unknown>;
+                    delete cleanSub._id;
+                    delete cleanSub.id;
+                    cleanProgress[key] = cleanSub;
+                  }
+                }
+                cleanData.progress = cleanProgress;
+              }
+
+              // Clean healthCheckFiles (strip _id)
+              if (Array.isArray(cleanData.healthCheckFiles)) {
+                cleanData.healthCheckFiles = cleanData.healthCheckFiles.map((file: unknown) => {
+                  if (file && typeof file === 'object') {
+                    const cleanFile = { ...file } as Record<string, unknown>;
+                    delete cleanFile._id;
+                    delete cleanFile.id;
+                    return cleanFile;
+                  }
+                  return file;
+                });
+              }
+
               const updateFields = {
                 healthCheckDate: cleanData.healthCheckDate || "",
                 healthCheckNotes: cleanData.healthCheckNotes || "",
@@ -265,7 +569,7 @@ export function SettingsView() {
               setProgress({ current: addedCount, total, message: `Đang nhập thêm: ${addedCount}/${total}` });
             }
           }
-          
+
           setShowResult({ show: true, count: addedCount, type: 'Import' });
           window.dispatchEvent(new Event('student-mutation'));
         } catch (err: unknown) {
@@ -299,8 +603,8 @@ export function SettingsView() {
             onClick={() => setActiveTab(tab.id)}
             className={cn(
               "flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-300",
-              activeTab === tab.id 
-                ? "bg-white text-indigo-600 shadow-sm shadow-indigo-100" 
+              activeTab === tab.id
+                ? "bg-white text-indigo-600 shadow-sm shadow-indigo-100"
                 : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
             )}
           >
@@ -320,12 +624,24 @@ export function SettingsView() {
                 <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Trường bắt buộc trong Form</h3>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {['Họ và tên', 'Số điện thoại', 'Hạng bằng', 'Khu vực', 'Ngày sinh', 'CCCD/CMND', 'Email'].map((field) => (
-                  <div key={field} className="flex items-center justify-between p-3 bg-slate-50/50 rounded-xl border border-slate-100">
-                    <span className="text-xs font-bold text-slate-700">{field}</span>
-                    <button className="text-indigo-600"><ToggleLeft className="w-8 h-8 opacity-40" /></button>
-                  </div>
-                ))}
+                {fieldMapping.map(({ label, key }) => {
+                  const isRequired = requiredFields[key];
+                  return (
+                    <div key={key} className="flex items-center justify-between p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+                      <span className="text-xs font-bold text-slate-700">{label}</span>
+                      <button
+                        onClick={() => toggleRequiredField(key)}
+                        className="transition-all hover:scale-105 active:scale-95"
+                      >
+                        {isRequired ? (
+                          <ToggleRight className="w-8 h-8 text-indigo-600 animate-pulse" />
+                        ) : (
+                          <ToggleLeft className="w-8 h-8 text-slate-400 opacity-60" />
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -361,24 +677,86 @@ export function SettingsView() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-600">Trạng thái VietQR</label>
-                    <button className="text-emerald-500 font-bold text-xs flex items-center gap-1">
-                      <CheckCircle2 size={14} /> Đang bật
+                    <button 
+                      type="button"
+                      onClick={() => saveVietqrConfig({ ...vietqrConfig, enabled: !vietqrConfig.enabled })}
+                      className={cn(
+                        "font-bold text-xs flex items-center gap-1 transition-all",
+                        vietqrConfig.enabled ? "text-emerald-500" : "text-slate-400"
+                      )}
+                    >
+                      <CheckCircle2 size={14} /> {vietqrConfig.enabled ? "Đang bật" : "Đang tắt"}
                     </button>
                   </div>
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center">
-                    <div className="w-32 h-32 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-300">
-                      <QrCode size={48} />
-                    </div>
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center justify-center min-h-[160px]">
+                    {vietqrConfig.enabled && vietqrConfig.bankId && vietqrConfig.accountNo ? (
+                      <img 
+                        src={`https://img.vietqr.io/image/${vietqrConfig.bankId}-${vietqrConfig.accountNo}-compact2.png?amount=0&addInfo=TEST&accountName=${encodeURIComponent(vietqrConfig.accountName)}`} 
+                        alt="VietQR Code"
+                        className="w-32 h-32 object-contain rounded-lg shadow-sm bg-white"
+                      />
+                    ) : (
+                      <div className="w-32 h-32 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-300">
+                        <QrCode size={48} />
+                      </div>
+                    )}
                   </div>
                 </div>
+                
                 <div className="md:col-span-2 space-y-4">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Nội dung chuyển khoản mặc định</label>
-                  <textarea 
-                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600"
-                    rows={4}
-                    defaultValue="[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}"
-                  />
-                  <p className="text-[10px] text-slate-400 italic font-medium">* Sử dụng các biến tương tự BOT Thông báo để cá nhân hóa nội dung.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ngân hàng</label>
+                      <select 
+                        value={vietqrConfig.bankId}
+                        onChange={(e) => saveVietqrConfig({ ...vietqrConfig, bankId: e.target.value })}
+                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-indigo-600 transition-all"
+                      >
+                        <option value="mbbank">MBBank (MB)</option>
+                        <option value="vietcombank">Vietcombank (VCB)</option>
+                        <option value="techcombank">Techcombank (TCB)</option>
+                        <option value="vietinbank">Vietinbank (CTG)</option>
+                        <option value="bidv">BIDV</option>
+                        <option value="agribank">Agribank (VBA)</option>
+                        <option value="acb">ACB</option>
+                        <option value="sacombank">Sacombank (STB)</option>
+                        <option value="tpbank">TPBank (TPB)</option>
+                        <option value="vpbank">VPBank (VPB)</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Số tài khoản</label>
+                      <input 
+                        type="text"
+                        placeholder="Nhập số tài khoản..."
+                        value={vietqrConfig.accountNo}
+                        onChange={(e) => saveVietqrConfig({ ...vietqrConfig, accountNo: e.target.value.replace(/\D/g, '') })}
+                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-indigo-600 transition-all"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tên chủ tài khoản (Không dấu)</label>
+                    <input 
+                      type="text"
+                      placeholder="VD: NGUYEN VAN A"
+                      value={vietqrConfig.accountName}
+                      onChange={(e) => saveVietqrConfig({ ...vietqrConfig, accountName: e.target.value.toUpperCase() })}
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-indigo-600 transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Nội dung chuyển khoản mặc định</label>
+                    <textarea 
+                      className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600"
+                      rows={3}
+                      value={vietqrConfig.template}
+                      onChange={(e) => saveVietqrConfig({ ...vietqrConfig, template: e.target.value })}
+                    />
+                    <p className="text-[10px] text-slate-400 italic font-medium">* Sử dụng các biến tương tự BOT Thông báo để cá nhân hóa nội dung.</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -389,7 +767,7 @@ export function SettingsView() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
             {isProcessing && (
               <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 px-10">
-                <motion.div 
+                <motion.div
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   className="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl flex flex-col items-center text-center space-y-6"
@@ -407,7 +785,7 @@ export function SettingsView() {
                   {progress.total > 0 && (
                     <div className="w-full space-y-2">
                       <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <motion.div 
+                        <motion.div
                           className="h-full bg-indigo-600"
                           initial={{ width: 0 }}
                           animate={{ width: `${(progress.current / progress.total) * 100}%` }}
@@ -425,7 +803,7 @@ export function SettingsView() {
 
             {showResult.show && (
               <div className="fixed inset-0 z-[10000] bg-slate-900/80 backdrop-blur-xl flex items-center justify-center p-6">
-                 <motion.div 
+                <motion.div
                   initial={{ scale: 0.9, opacity: 0, y: 20 }}
                   animate={{ scale: 1, opacity: 1, y: 0 }}
                   className="bg-white rounded-[3rem] p-12 max-w-sm w-full shadow-2xl flex flex-col items-center text-center space-y-8"
@@ -438,12 +816,12 @@ export function SettingsView() {
                       {showResult.type === 'Restore' ? 'Khôi phục Thành công!' : 'Nhập liệu Thành công!'}
                     </h4>
                     <p className="text-slate-500 font-medium text-sm leading-relaxed px-4">
-                      {showResult.type === 'Restore' 
-                        ? `Hệ thống đã được làm mới hoàn toàn với ${showResult.count} học viên từ bản sao.` 
+                      {showResult.type === 'Restore'
+                        ? `Hệ thống đã được làm mới hoàn toàn với ${showResult.count} học viên từ bản sao.`
                         : `Đã thêm thành công ${showResult.count} học viên vào danh sách hiện tại của bạn.`}
                     </p>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setShowResult({ ...showResult, show: false })}
                     className="w-full py-5 bg-slate-900 text-white rounded-2xl text-sm font-black shadow-xl shadow-slate-200 hover:bg-black transition-all active:scale-95"
                   >
@@ -452,25 +830,85 @@ export function SettingsView() {
                 </motion.div>
               </div>
             )}
-            
-            <DataActionCard 
-              title="Backup (Xuất JSON)" 
+
+            {restoreFileToConfirm && (
+              <div className="fixed inset-0 z-[9990] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6">
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  className="bg-white rounded-[3rem] p-8 max-w-md w-full shadow-2xl border border-slate-100 flex flex-col space-y-6"
+                >
+                  <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
+                    <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500">
+                      <RotateCcw className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest text-left">Xác nhận khôi phục</h3>
+                      <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wider text-left">Hành động nguy hiểm</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 text-left">
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-2.5">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tên tệp tin backup</span>
+                        <p className="text-xs font-bold text-slate-800 break-all">{restoreFileToConfirm.name}</p>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dung lượng</span>
+                        <p className="text-xs font-bold text-slate-800">{(restoreFileToConfirm.size / 1024).toFixed(2)} KB</p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-rose-50 border border-rose-100/50 rounded-2xl space-y-1.5 text-xs text-left">
+                      <p className="font-extrabold text-rose-700 leading-snug">⚠️ QUY TRÌNH KHÔI PHỤC HỆ THỐNG:</p>
+                      <p className="font-medium text-rose-600/90 leading-relaxed">
+                        1. Xóa sạch toàn bộ giao dịch, phòng thi và học viên hiện có.<br />
+                        2. Nạp lại cấu hình và toàn bộ dữ liệu mới từ tệp tin này.
+                      </p>
+                      <p className="font-bold text-rose-700 mt-2 leading-snug">Hành động này không thể hoàn tác. Bạn có chắc chắn muốn tiếp tục?</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => {
+                        setRestoreFileToConfirm(null);
+                        if (restoreInputRef.current) restoreInputRef.current.value = '';
+                      }}
+                      className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl text-xs font-black transition-all active:scale-95"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      onClick={() => executeRestore(restoreFileToConfirm)}
+                      className="flex-1 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl text-xs font-black shadow-lg shadow-rose-100 transition-all active:scale-95"
+                    >
+                      Xác nhận khôi phục
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+
+            <DataActionCard
+              title="Backup (Xuất JSON)"
               description="Tải toàn bộ dữ liệu hiện tại về máy dưới dạng file .json để lưu trữ."
               icon={Download}
               actionLabel="Tải xuống Bản sao"
               color="indigo"
               onClick={handleBackup}
             />
-            
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept=".json" 
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept=".json"
               onChange={handleImport}
             />
-            <DataActionCard 
-              title="Import (Nhập dữ liệu)" 
+            <DataActionCard
+              title="Import (Nhập dữ liệu)"
               description="Tải lên file JSON để thêm mới học viên hoặc lịch thi hàng loạt."
               icon={Upload}
               actionLabel="Chọn file để Nhập"
@@ -478,16 +916,16 @@ export function SettingsView() {
               onClick={() => fileInputRef.current?.click()}
             />
 
-            <input 
-              type="file" 
-              ref={restoreInputRef} 
-              className="hidden" 
-              accept=".json" 
-              onChange={handleRestore}
+            <input
+              type="file"
+              ref={restoreInputRef}
+              className="hidden"
+              accept=".json"
+              onChange={handleRestoreFileSelected}
             />
             <div className="flex flex-col space-y-3">
-              <DataActionCard 
-                title="Restore (Khôi phục)" 
+              <DataActionCard
+                title="Restore (Khôi phục)"
                 description="Khôi phục hệ thống về trạng thái của một bản backup cũ. Lưu ý: Sẽ ghi đè dữ liệu hiện tại."
                 icon={RotateCcw}
                 actionLabel="Tiến hành Khôi phục"
@@ -500,7 +938,7 @@ export function SettingsView() {
                     <FileJson size={14} className="animate-pulse" />
                     <span className="text-[10px] font-black uppercase truncate max-w-[150px]">{restoreFileName}</span>
                   </div>
-                  <button 
+                  <button
                     onClick={() => {
                       setRestoreFileName('');
                       if (restoreInputRef.current) restoreInputRef.current.value = '';
@@ -561,7 +999,7 @@ export function SettingsView() {
             </div>
 
             <div className="space-y-6">
-               <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
+              <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
                   <ShieldCheck size={120} />
                 </div>
@@ -574,7 +1012,7 @@ export function SettingsView() {
                     Xác thực quyền Admin
                   </button>
                 </div>
-               </div>
+              </div>
             </div>
           </div>
         )}
@@ -640,7 +1078,7 @@ function DataActionCard({ title, description, icon: Icon, actionLabel, color, on
         <h3 className="text-base font-black text-slate-800 mb-2">{title}</h3>
         <p className="text-xs font-medium text-slate-400 leading-relaxed px-4">{description}</p>
       </div>
-      <button 
+      <button
         onClick={onClick}
         className={cn("w-full py-4 mt-4 text-white rounded-2xl text-xs font-black shadow-lg transition-all active:scale-95", btnColorMap[color])}
       >

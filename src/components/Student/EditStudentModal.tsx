@@ -50,10 +50,47 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
     }
   }, [student]);
 
+  const getRequiredFieldsConfig = () => {
+    const saved = localStorage.getItem('requiredFieldsConfig');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Error parsing requiredFieldsConfig", e);
+      }
+    }
+    return {
+      fullName: true,
+      phone: true,
+      rank: true,
+      area: true,
+      birthday: false,
+      idCard: false,
+      email: false
+    };
+  };
+
   if (!isOpen || !student) return null;
+
+  const requiredFields = getRequiredFieldsConfig();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const missingFields: string[] = [];
+    if (requiredFields.fullName && !formData.fullName) missingFields.push("Họ và tên");
+    if (requiredFields.phone && !formData.phone) missingFields.push("Số điện thoại");
+    if (requiredFields.rank && !formData.rank) missingFields.push("Hạng bằng");
+    if (requiredFields.area && !formData.area) missingFields.push("Khu vực");
+    if (requiredFields.birthday && !formData.birthday) missingFields.push("Ngày sinh");
+    if (requiredFields.idCard && !formData.idCard) missingFields.push("CCCD/CMND");
+    if (requiredFields.email && !formData.email) missingFields.push("Email");
+
+    if (missingFields.length > 0) {
+      toast.error(`Vui lòng điền đầy đủ các trường bắt buộc: ${missingFields.join(", ")}`);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -113,18 +150,21 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
               {/* Row 1 */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Họ và tên <span className="text-rose-500">*</span></label>
+                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                  Họ và tên {requiredFields.fullName && <span className="text-rose-500">*</span>}
+                </label>
                 <input 
                   type="text" 
                   name="fullName"
                   value={formData.fullName} 
                   onChange={handleInputChange} 
                   className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all" 
-                  required 
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Số điện thoại</label>
+                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                  Số điện thoại {requiredFields.phone && <span className="text-rose-500">*</span>}
+                </label>
                 <input 
                   type="text" 
                   name="phone"
@@ -136,7 +176,9 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
 
               {/* Email - New Field */}
               <div className="sm:col-span-2 space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Email học viên</label>
+                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                  Email học viên {requiredFields.email && <span className="text-rose-500">*</span>}
+                </label>
                 <input 
                   type="email" 
                   name="email"
@@ -161,7 +203,9 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
 
               {/* Row 3 */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Ngày sinh</label>
+                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                  Ngày sinh {requiredFields.birthday && <span className="text-rose-500">*</span>}
+                </label>
                 <input 
                   type="text" 
                   name="birthday"
@@ -172,7 +216,9 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">CCCD / CMND</label>
+                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                  CCCD / CMND {requiredFields.idCard && <span className="text-rose-500">*</span>}
+                </label>
                 <input 
                   type="text" 
                   name="idCard"
@@ -184,14 +230,15 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
 
               {/* Row 4 */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Hạng bằng <span className="text-rose-500">*</span></label>
+                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                  Hạng bằng {requiredFields.rank && <span className="text-rose-500">*</span>}
+                </label>
                 <div className="relative">
                   <select 
                     name="rank"
                     value={formData.rank} 
                     onChange={handleInputChange} 
                     className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all"
-                    required
                   >
                     <option value="">-- Chọn hạng --</option>
                     <option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option>
@@ -201,14 +248,15 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Khu vực <span className="text-rose-500">*</span></label>
+                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                  Khu vực {requiredFields.area && <span className="text-rose-500">*</span>}
+                </label>
                 <div className="relative">
                   <select 
                     name="area"
                     value={formData.area} 
                     onChange={handleInputChange} 
                     className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all"
-                    required
                   >
                     <option value="">-- Chọn khu vực --</option>
                     <option value="Nội thành">Nội thành</option>
