@@ -32,7 +32,29 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
     email: '',
   });
 
+  const getRequiredFieldsConfig = () => {
+    const saved = localStorage.getItem('requiredFieldsConfig');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Error parsing requiredFieldsConfig", e);
+      }
+    }
+    return {
+      fullName: true,
+      phone: true,
+      rank: true,
+      area: true,
+      birthday: false,
+      idCard: false,
+      email: false
+    };
+  };
+
   if (!isOpen) return null;
+
+  const requiredFields = getRequiredFieldsConfig();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,8 +65,17 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
       return;
     }
 
-    if (!formData.fullName || !formData.rank || !formData.area) {
-      setErrorMsg("Vui lòng điền đầy đủ các trường bắt buộc (*)");
+    const missingFields: string[] = [];
+    if (requiredFields.fullName && !formData.fullName) missingFields.push("Họ và tên");
+    if (requiredFields.phone && !formData.phone) missingFields.push("Số điện thoại");
+    if (requiredFields.rank && !formData.rank) missingFields.push("Hạng bằng");
+    if (requiredFields.area && !formData.area) missingFields.push("Khu vực");
+    if (requiredFields.birthday && !formData.birthday) missingFields.push("Ngày sinh");
+    if (requiredFields.idCard && !formData.idCard) missingFields.push("CCCD/CMND");
+    if (requiredFields.email && !formData.email) missingFields.push("Email");
+
+    if (missingFields.length > 0) {
+      setErrorMsg(`Vui lòng điền đầy đủ các trường bắt buộc: ${missingFields.join(", ")}`);
       return;
     }
 
@@ -162,20 +193,21 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
               {/* Row 1 */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                  Họ và tên <span className="text-rose-500">*</span>
+                  Họ và tên {requiredFields.fullName && <span className="text-rose-500">*</span>}
                 </label>
                 <input
                   type="text"
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleInputChange}
-                  required
                   placeholder="Nguyễn Văn A"
                   className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Số điện thoại</label>
+                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                  Số điện thoại {requiredFields.phone && <span className="text-rose-500">*</span>}
+                </label>
                 <input
                   type="text"
                   name="phone"
@@ -188,7 +220,9 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
 
               {/* Email - New Field */}
               <div className="sm:col-span-2 space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Email học viên</label>
+                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                  Email học viên {requiredFields.email && <span className="text-rose-500">*</span>}
+                </label>
                 <input
                   type="email"
                   name="email"
@@ -214,7 +248,9 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
 
               {/* Row 3 */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Ngày sinh</label>
+                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                  Ngày sinh {requiredFields.birthday && <span className="text-rose-500">*</span>}
+                </label>
                 <input
                   type="text"
                   name="birthday"
@@ -235,7 +271,9 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">CCCD / CMND</label>
+                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                  CCCD / CMND {requiredFields.idCard && <span className="text-rose-500">*</span>}
+                </label>
                 <input
                   type="text"
                   name="idCard"
@@ -249,14 +287,13 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
               {/* Row 4 */}
               <div className="space-y-1 relative">
                 <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                  Hạng bằng <span className="text-rose-500">*</span>
+                  Hạng bằng {requiredFields.rank && <span className="text-rose-500">*</span>}
                 </label>
                 <div className="relative">
                   <select 
                     name="rank"
                     value={formData.rank}
                     onChange={handleInputChange}
-                    required
                     className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
                   >
                     <option value="">-- Chọn hạng --</option>
@@ -271,14 +308,13 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                  Khu vực <span className="text-rose-500">*</span>
+                  Khu vực {requiredFields.area && <span className="text-rose-500">*</span>}
                 </label>
                 <div className="relative">
                   <select 
                     name="area"
                     value={formData.area}
                     onChange={handleInputChange}
-                    required
                     className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
                   >
                     <option value="">-- Chọn khu vực --</option>

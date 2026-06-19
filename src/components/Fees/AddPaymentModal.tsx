@@ -1,10 +1,33 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Calendar, FileText, Loader2, Save, CreditCard } from 'lucide-react';
+import { X, Calendar, FileText, Loader2, Save, CreditCard, QrCode } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { Student } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
+
+const BANK_NAMES: Record<string, string> = {
+  mbbank: 'MBBank',
+  vietcombank: 'Vietcombank',
+  techcombank: 'Techcombank',
+  vietinbank: 'Vietinbank',
+  bidv: 'BIDV',
+  agribank: 'Agribank',
+  acb: 'ACB',
+  sacombank: 'Sacombank',
+  tpbank: 'TPBank',
+  vpbank: 'VPBank'
+};
+
+function removeVietnameseTones(str: string): string {
+  let result = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  result = result.replace(/đ/g, "d").replace(/Đ/g, "D");
+  // Keep only alphanumeric, spaces, and hyphens/underscores/slashes/dots
+  result = result.replace(/[^a-zA-Z0-9\s-_/.]/g, "");
+  // Replace multiple spaces with a single space
+  result = result.replace(/\s+/g, " ");
+  return result.trim().toUpperCase();
+}
 
 interface AddPaymentModalProps {
   student: Student | null;
@@ -20,6 +43,39 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState('');
+  const [vietqrConfig, setVietqrConfig] = useState(() => {
+    const saved = localStorage.getItem('vietqrConfig');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Error parsing vietqrConfig in AddPaymentModal", e);
+      }
+    }
+    return {
+      enabled: false,
+      bankId: '',
+      accountNo: '',
+      accountName: '',
+      template: ''
+    };
+  });
+
+  React.useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        const saved = localStorage.getItem('vietqrConfig');
+        if (saved) {
+          try {
+            setVietqrConfig(JSON.parse(saved));
+          } catch (e) {
+            console.error("Error parsing vietqrConfig in AddPaymentModal", e);
+          }
+        }
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   React.useEffect(() => {
     if (isOpen && student) {
@@ -30,6 +86,29 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
           setAmount(new Intl.NumberFormat('vi-VN').format(remaining));
         } else {
           setAmount('');
+        }
+
+        // Set initial note from VietQR template if enabled
+        const saved = localStorage.getItem('vietqrConfig');
+        if (saved) {
+          try {
+            const config = JSON.parse(saved);
+            if (config && config.enabled && config.template) {
+              const compiled = config.template
+                .replace(/\[Mã HV\]|\[Ma HV\]/gi, student.id || student.idCard || '')
+                .replace(/\[Họ tên\]|\[Ho ten\]/gi, student.fullName || '')
+                .replace(/\{hang\}|\{rank\}/gi, student.rank || '');
+              const normalized = removeVietnameseTones(compiled);
+              setNote(normalized);
+            } else {
+              setNote('');
+            }
+          } catch (e) {
+            console.error("Error setting initial VietQR note", e);
+            setNote('');
+          }
+        } else {
+          setNote('');
         }
       }, 0);
       return () => clearTimeout(timer);
@@ -192,6 +271,37 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
                   <FileText className="absolute right-5 top-5 w-5 h-5 text-slate-400 pointer-events-none" />
                 </div>
               </div>
+
+              {vietqrConfig.enabled && vietqrConfig.bankId && vietqrConfig.accountNo && (
+                <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                      <QrCode className="w-3.5 h-3.5 text-indigo-600" /> Quét mã thanh toán (VietQR)
+                    </span>
+                    <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md">Tự động điền số tiền</span>
+                  </div>
+                  <div className="flex gap-4 items-center">
+                    <div className="bg-white p-2 border border-slate-100 rounded-xl shrink-0 flex items-center justify-center">
+                      <img
+                        src={`https://img.vietqr.io/image/${vietqrConfig.bankId}-${vietqrConfig.accountNo}-compact2.png?amount=${amount.replace(/\D/g, '') || '0'}&addInfo=${encodeURIComponent(note)}&accountName=${encodeURIComponent(vietqrConfig.accountName)}`}
+                        alt="VietQR Chuyển khoản"
+                        className="w-24 h-24 object-contain"
+                      />
+                    </div>
+                    <div className="text-xs space-y-1.5 select-all flex-1 min-w-0">
+                      <p className="font-medium text-slate-500">Ngân hàng: <span className="text-slate-800 font-bold uppercase">{BANK_NAMES[vietqrConfig.bankId] || vietqrConfig.bankId.toUpperCase()}</span></p>
+                      <p className="font-medium text-slate-500">Số tài khoản: <span className="text-slate-800 font-bold">{vietqrConfig.accountNo}</span></p>
+                      <p className="font-medium text-slate-500">Chủ tài khoản: <span className="text-slate-800 font-bold uppercase">{vietqrConfig.accountName}</span></p>
+                      <p className="font-medium text-slate-500 flex flex-col gap-0.5">
+                        <span>Nội dung:</span>
+                        <span className="bg-slate-200/80 text-slate-800 font-mono px-1.5 py-0.5 rounded text-[10px] font-semibold break-all inline-block select-all">
+                          {note || '(Trống)'}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-4 pt-2">

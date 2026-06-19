@@ -7,11 +7,13 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
+import { useToast } from '../../hooks/useToast';
 import { Student } from '../../types';
 import { AddPaymentModal } from './AddPaymentModal';
 
 export function FeeManagement() {
   const { students, loading } = useStudents();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [areaFilter, setAreaFilter] = useState('Tất cả');
   const [debtFilter, setDebtFilter] = useState('Tất cả');
@@ -34,6 +36,51 @@ export function FeeManagement() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+
+  const handleExport = () => {
+    if (filteredStudents.length === 0) {
+      toast.warning('Không có dữ liệu để xuất.');
+      return;
+    }
+
+    // Define CSV headers
+    const headers = ['Họ và tên', 'Số điện thoại', 'Hạng', 'Khu vực', 'Tổng học phí', 'Đã đóng', 'Còn nợ', 'Tiến độ (%)'];
+    
+    // Map data to CSV rows
+    const rows = filteredStudents.map(student => {
+      const total = parseCurrency(student.fee || '0');
+      const paid = student.paidAmount || 0;
+      const debt = total - paid;
+      const progress = total > 0 ? Math.round((paid / total) * 100) : 0;
+      
+      return [
+        student.fullName,
+        student.phone,
+        student.rank,
+        student.area,
+        total,
+        paid,
+        debt,
+        `${progress}%`
+      ];
+    });
+
+    // Construct CSV content
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    // Create a blob and download link
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `bao_cao_hoc_phi_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Stats calculation (computed from all students)
   const stats = students.reduce((acc, student) => {
@@ -82,7 +129,10 @@ export function FeeManagement() {
           <p className="text-slate-500 text-sm md:text-base font-medium mt-1 md:mt-2">Theo dõi thu, nợ học phí của tất cả học viên</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+          <button 
+            onClick={handleExport}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+          >
             <Download className="w-5 h-5" /> Xuất báo cáo
           </button>
         </div>

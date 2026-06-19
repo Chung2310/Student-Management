@@ -14,6 +14,7 @@ import { connectDB } from "./server/config/db";
 import apiRoutes from "./server/routes/index";
 import { swaggerSpec } from "./server/swagger";
 import { errorMiddleware } from "./server/middlewares/error.middleware";
+import { requestLoggerMiddleware } from "./server/middlewares/logger.middleware";
 import { AuthService } from "./server/services/auth.service";
 
 dotenv.config();
@@ -49,6 +50,7 @@ async function startServer() {
 
   app.use(express.json());
   app.use(cookieParser());
+  app.use(requestLoggerMiddleware);
 
   // Swagger Documentation
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

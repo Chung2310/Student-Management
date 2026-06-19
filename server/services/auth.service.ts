@@ -21,8 +21,10 @@ interface LoginData {
 
 export class AuthService {
   static async register(data: RegisterData): Promise<IUser> {
+    logger.info(`[Auth] Registration attempt for email: ${data.email}`);
     const existingUser = await User.findOne({ email: data.email });
     if (existingUser) {
+      logger.warn(`[Auth] Registration failed - Email already exists: ${data.email}`);
       throw new Error("Email này đã được sử dụng cho một tài khoản khác.");
     }
     const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -30,16 +32,21 @@ export class AuthService {
       ...data,
       password: hashedPassword,
     });
-    return await newUser.save();
+    const savedUser = await newUser.save();
+    logger.info(`[Auth] User registered successfully: email=${savedUser.email}, uid=${savedUser._id}`);
+    return savedUser;
   }
 
   static async login(data: LoginData) {
+    logger.info(`[Auth] Login attempt for email: ${data.email}`);
     const user = await User.findOne({ email: data.email });
     if (!user) {
+      logger.warn(`[Auth] Login failed - User not found: ${data.email}`);
       throw new Error("Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.");
     }
     const isPasswordValid = await bcrypt.compare(data.password, user.password!);
     if (!isPasswordValid) {
+      logger.warn(`[Auth] Login failed - Invalid password for email: ${data.email}`);
       throw new Error("Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.");
     }
 
@@ -54,6 +61,8 @@ export class AuthService {
       REFRESH_SECRET,
       { expiresIn: "7d" }
     );
+
+    logger.info(`[Auth] User logged in successfully: email=${user.email}, uid=${user._id}`);
 
     return {
       user: {
@@ -70,8 +79,10 @@ export class AuthService {
   static async verifyRefreshToken(token: string) {
     try {
       const decoded = jwt.verify(token, REFRESH_SECRET) as { uid: string; email: string };
+      logger.info(`[Auth] Verifying refresh token for email: ${decoded.email}`);
       const user = await User.findById(decoded.uid);
       if (!user) {
+        logger.warn(`[Auth] Refresh token verification failed - User not found for uid: ${decoded.uid}`);
         throw new Error("Người dùng không tồn tại.");
       }
 
@@ -80,6 +91,8 @@ export class AuthService {
         ACCESS_SECRET,
         { expiresIn: "15m" }
       );
+
+      logger.info(`[Auth] Refresh token verified successfully for email: ${user.email}`);
 
       return {
         accessToken,
@@ -91,6 +104,7 @@ export class AuthService {
         }
       };
     } catch (error) {
+      logger.error(`[Auth] Refresh token verification failed: ${error instanceof Error ? error.message : error}`);
       throw new Error("Refresh token không hợp lệ hoặc đã hết hạn.", { cause: error });
     }
   }
