@@ -42,11 +42,45 @@ export function ExamManagement() {
   const [rankFilter, setRankFilter] = useState('Tất cả hạng');
   const [areaFilter, setAreaFilter] = useState('Tất cả khu vực');
   const [statusFilter, setStatusFilter] = useState('Tất cả');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+
+  // Helper to parse DD/MM/YYYY to Date object
+  const parseDateString = (dateStr: string): Date | null => {
+    if (!dateStr) return null;
+    const parts = dateStr.split('/').map(Number);
+    if (parts.length === 3) {
+      return new Date(parts[2], parts[1] - 1, parts[0]);
+    }
+    const parsed = new Date(dateStr);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  };
 
   const filteredExams = exams.filter(exam => {
     if (rankFilter !== 'Tất cả hạng' && exam.rank !== rankFilter) return false;
+    if (areaFilter !== 'Tất cả khu vực' && exam.area !== areaFilter) return false;
     if (statusFilter !== 'Tất cả' && exam.status !== statusFilter) return false;
     if (searchQuery && !exam.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+
+    // Date filter
+    const examDateStr = exam.officialDate || exam.tentativeDate;
+    if (examDateStr) {
+      const examDate = parseDateString(examDateStr);
+      if (examDate) {
+        if (fromDate) {
+          const from = new Date(fromDate);
+          from.setHours(0, 0, 0, 0);
+          examDate.setHours(0, 0, 0, 0);
+          if (examDate < from) return false;
+        }
+        if (toDate) {
+          const to = new Date(toDate);
+          to.setHours(23, 59, 59, 999);
+          examDate.setHours(0, 0, 0, 0);
+          if (examDate > to) return false;
+        }
+      }
+    }
     return true;
   });
 
@@ -286,42 +320,18 @@ export function ExamManagement() {
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 bg-white p-3 sm:p-4 rounded-3xl border border-slate-100 shadow-sm no-print">
             <FilterItem label="Từ ngày">
               <input 
-                type="text" 
-                placeholder="DD/MM/YYYY"
-                maxLength={10}
-                onFocus={(e) => e.target.type = 'date'}
-                onBlur={(e) => e.target.type = 'text'}
+                type="date" 
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
                 className="w-full bg-transparent outline-none text-xs font-bold" 
-                onChange={(e) => {
-                  let val = e.target.value.replace(/\D/g, '');
-                  if (val.length > 8) val = val.substring(0, 8);
-                  if (val.length > 4) {
-                    val = val.substring(0, 2) + '/' + val.substring(2, 4) + '/' + val.substring(4);
-                  } else if (val.length > 2) {
-                    val = val.substring(0, 2) + '/' + val.substring(2);
-                  }
-                  e.target.value = val;
-                }}
               />
             </FilterItem>
             <FilterItem label="Đến ngày">
               <input 
-                type="text" 
-                placeholder="DD/MM/YYYY"
-                maxLength={10}
-                onFocus={(e) => e.target.type = 'date'}
-                onBlur={(e) => e.target.type = 'text'}
+                type="date" 
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
                 className="w-full bg-transparent outline-none text-xs font-bold" 
-                onChange={(e) => {
-                  let val = e.target.value.replace(/\D/g, '');
-                  if (val.length > 8) val = val.substring(0, 8);
-                  if (val.length > 4) {
-                    val = val.substring(0, 2) + '/' + val.substring(2, 4) + '/' + val.substring(4);
-                  } else if (val.length > 2) {
-                    val = val.substring(0, 2) + '/' + val.substring(2);
-                  }
-                  e.target.value = val;
-                }}
               />
             </FilterItem>
             <FilterSelect label="Hạng bằng" value={rankFilter} onChange={setRankFilter} options={['Tất cả hạng', 'A1', 'A2', 'B1', 'B2', 'C']} />
@@ -329,7 +339,14 @@ export function ExamManagement() {
             <FilterSelect label="Trạng thái" value={statusFilter} onChange={setStatusFilter} options={['Tất cả', 'Sắp diễn ra', 'Đã xác nhận', 'Đã hoàn thành']} />
             <div className="flex items-end pb-2 col-span-2 sm:col-span-1">
               <button 
-                onClick={() => {setRankFilter('Tất cả hạng'); setAreaFilter('Tất cả khu vực'); setStatusFilter('Tất cả'); setSearchQuery('');}}
+                onClick={() => {
+                  setRankFilter('Tất cả hạng'); 
+                  setAreaFilter('Tất cả khu vực'); 
+                  setStatusFilter('Tất cả'); 
+                  setSearchQuery('');
+                  setFromDate('');
+                  setToDate('');
+                }}
                 className="text-xs font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors"
               >
                 <X className="w-3.5 h-3.5" /> Xóa lọc
