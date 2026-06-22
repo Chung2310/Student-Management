@@ -201,14 +201,14 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto no-scrollbar">
-            <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100/50 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100">
+            <div className="p-4 bg-cyan-50 rounded-2xl border border-cyan-100/50 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-cyan-600 shadow-sm border border-cyan-100">
                 <CreditCard className="w-6 h-6" />
               </div>
               <div>
                 <p className="text-sm font-black text-slate-900 leading-none">{student.fullName}</p>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-1.5 ">
-                  <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Học phí: {student.fee}đ</p>
+                  <p className="text-[10px] font-bold text-cyan-500 uppercase tracking-wider">Học phí: {student.fee}đ</p>
                   <div className="hidden sm:block w-1 h-1 rounded-full bg-slate-300" />
                   <p className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">
                     Còn nợ: {new Intl.NumberFormat('vi-VN').format(parseInt(student.fee.replace(/\D/g, '')) - (student.paidAmount || 0))}đ
@@ -227,7 +227,7 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
                     value={amount}
                     onChange={(e) => setAmount(formatInputCurrency(e.target.value))}
                     placeholder="VD: 5.000.000"
-                    className="w-full h-14 bg-slate-50 px-5 rounded-2xl border border-slate-200 text-lg font-black text-indigo-600 outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 transition-all"
+                    className="w-full h-14 bg-slate-50 px-5 rounded-2xl border border-slate-200 text-lg font-black text-cyan-600 outline-none focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/5 transition-all"
                   />
                   <span className="absolute right-5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">VNĐ</span>
                 </div>
@@ -252,7 +252,7 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
                       }
                       setDate(val);
                     }}
-                    className="w-full h-14 bg-slate-50 px-5 rounded-2xl border border-slate-200 text-base font-bold text-slate-800 outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 transition-all"
+                    className="w-full h-14 bg-slate-50 px-5 rounded-2xl border border-slate-200 text-base font-bold text-slate-800 outline-none focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/5 transition-all"
                   />
                   <Calendar className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                 </div>
@@ -266,7 +266,7 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     placeholder="VD: Đóng đợt 1, chuyển khoản..."
-                    className="w-full p-5 bg-slate-50 rounded-2xl border border-slate-200 text-sm font-medium text-slate-800 outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 transition-all resize-none"
+                    className="w-full p-5 bg-slate-50 rounded-2xl border border-slate-200 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/5 transition-all resize-none"
                   />
                   <FileText className="absolute right-5 top-5 w-5 h-5 text-slate-400 pointer-events-none" />
                 </div>
@@ -276,7 +276,7 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
                 <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                      <QrCode className="w-3.5 h-3.5 text-indigo-600" /> Quét mã thanh toán (VietQR)
+                      <QrCode className="w-3.5 h-3.5 text-cyan-600" /> Quét mã thanh toán (VietQR)
                     </span>
                     <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md">Tự động điền số tiền</span>
                   </div>
@@ -315,7 +315,7 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-[2] flex items-center justify-center gap-3 h-14 bg-indigo-600 text-white rounded-2xl text-base font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all disabled:opacity-50"
+                className="flex-[2] flex items-center justify-center gap-3 h-14 bg-cyan-600 text-white rounded-2xl text-base font-black shadow-xl shadow-cyan-100 hover:bg-cyan-700 transition-all disabled:opacity-50"
               >
                 {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                 Xác nhận

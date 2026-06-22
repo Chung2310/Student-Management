@@ -119,13 +119,13 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
 
   const getStatusBadgeClass = (status: string) => {
     const map: Record<string, string> = {
-      'Đang thi': 'bg-purple-100 text-purple-700 border-purple-200',
+      'Đang thi': 'bg-teal-100 text-teal-700 border-teal-200',
       'Đã đậu': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-      'Đang học': 'bg-blue-100 text-blue-700 border-blue-200',
+      'Đang học': 'bg-sky-100 text-sky-700 border-sky-200',
       'Chờ KSK': 'bg-amber-100 text-amber-700 border-amber-200',
       'Thi lại': 'bg-rose-100 text-rose-700 border-rose-200',
       'Đã KSK': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-      'Đã nộp HS': 'bg-blue-100 text-blue-700 border-blue-200',
+      'Đã nộp HS': 'bg-cyan-100 text-cyan-700 border-cyan-200',
       'Nợ học phí': 'bg-orange-100 text-orange-700 border-orange-200',
       'Nghỉ học': 'bg-slate-200 text-slate-600 border-slate-300',
     };
@@ -281,7 +281,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
           </button>
           <button 
             onClick={onAddStudent}
-            className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
+            className="flex items-center gap-2 px-6 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-cyan-100 hover:bg-brand-primary/95 transition-all"
           >
             <Plus className="w-4 h-4" /> Thêm
           </button>
@@ -300,13 +300,13 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
             onClick={() => setCategory(item.id as CategoryFilter)}
             className={cn(
               "flex items-center gap-2 px-3 sm:px-4 py-3 text-base sm:text-lg font-bold transition-all relative whitespace-nowrap",
-              category === item.id ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
+              category === item.id ? "text-cyan-600" : "text-slate-400 hover:text-slate-600"
             )}
           >
-            <item.icon className={cn("w-5 h-5", category === item.id ? "text-indigo-600" : "text-slate-400")} />
+            <item.icon className={cn("w-5 h-5", category === item.id ? "text-cyan-600" : "text-slate-400")} />
             {item.id}
             {category === item.id && (
-              <motion.div layoutId="catLine" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />
+              <motion.div layoutId="catLine" className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-600" />
             )}
           </button>
         ))}
@@ -347,7 +347,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
               type="date" 
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-indigo-600 transition-all" 
+              className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-cyan-600 transition-all" 
             />
             <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
@@ -359,7 +359,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
               type="date" 
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-indigo-600 transition-all" 
+              className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-cyan-600 transition-all" 
             />
             <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
@@ -370,7 +370,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
             <select 
               value={rankFilter}
               onChange={(e) => setRankFilter(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-indigo-600"
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-cyan-600"
             >
               <option>Tất cả hạng</option>
               <option>A1</option>
@@ -389,7 +389,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
             <select 
               value={areaFilter}
               onChange={(e) => setAreaFilter(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-indigo-600"
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-cyan-600"
             >
               <option>Tất cả khu vực</option>
               <option>Nội thành</option>
@@ -407,7 +407,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
               placeholder="Tên / SĐT / CCCD..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-10 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-600" 
+              className="w-full px-10 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-cyan-600" 
             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             {searchQuery && (
@@ -429,7 +429,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
                 <th className="px-6 py-4 w-10 no-print">
-                  <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600" />
+                  <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-600" />
                 </th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Họ và tên</th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Hạng</th>
@@ -449,7 +449,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
               ) : paginatedStudents.map((student) => (
                 <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4 no-print">
-                    <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600" />
+                    <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-600" />
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex flex-col">
@@ -458,7 +458,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
                     </div>
                   </td>
                   <td className="px-4 py-4 text-center">
-                    <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded text-xs font-bold border border-indigo-100">
+                    <span className="px-3 py-1 bg-cyan-50 text-cyan-700 rounded text-xs font-bold border border-cyan-100">
                       {student.rank}
                     </span>
                   </td>
@@ -491,9 +491,9 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
                            return (
                              <>
                                {remaining > 0 ? (
-                                 <span className="text-rose-500">-{formatVND(remaining)}đ</span>
+                                 <span className="text-rose-500 whitespace-nowrap">-{formatVND(remaining)}đ</span>
                                ) : (
-                                 <span className="text-emerald-600">Đã hoàn tất</span>
+                                 <span className="text-emerald-600 whitespace-nowrap">Đã hoàn tất</span>
                                )}
                              </>
                            );
@@ -506,7 +506,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
                            const percentage = totalFeeNum > 0 ? (paidSoFar / totalFeeNum) * 100 : 0;
                            return (
                              <div 
-                               className="h-full bg-indigo-600 transition-all duration-500 ease-in-out" 
+                               className="h-full bg-cyan-600 transition-all duration-500 ease-in-out" 
                                style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }} 
                              />
                            );
@@ -516,7 +516,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
                   </td>
                   <td className="px-4 py-4 text-center">
                     <span className={cn(
-                      "px-4 py-1.5 rounded-full text-xs font-bold border shadow-sm whitespace-nowrap",
+                       "px-4 py-1.5 rounded-full text-xs font-bold border shadow-sm whitespace-nowrap",
                       getStatusBadgeClass(student.status)
                     )}>
                       {student.status}
@@ -536,7 +536,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
                         className={cn(
                           "p-1.5 rounded-lg transition-colors",
                           (student.status === 'Chờ KSK' || student.status === 'Đã KSK')
-                            ? "text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
+                            ? "text-slate-400 hover:text-cyan-600 hover:bg-cyan-50"
                             : "text-slate-300 opacity-50 cursor-not-allowed"
                         )}
                       >
@@ -544,7 +544,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
                       </button>
                       <button 
                         onClick={() => onSelectStudent(student)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 transition-colors"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
@@ -599,11 +599,11 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 bg-slate-50/50 border-t border-slate-100 pagination-bar">
-            <div className="text-xs font-medium text-slate-400">
+          <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 bg-slate-50/50 border-t border-slate-100 pagination-bar gap-4 sm:gap-0">
+            <div className="text-xs font-medium text-slate-400 order-2 sm:order-1">
               Hiển thị {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, filteredStudents.length)} của {filteredStudents.length} học viên
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 order-1 sm:order-2">
               <button 
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
@@ -612,20 +612,26 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
                 <ChevronLeft className="w-4 h-4" />
               </button>
               
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={cn(
-                    "w-8 h-8 rounded-lg text-xs font-bold transition-all",
-                    currentPage === page 
-                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-100" 
-                      : "bg-white border border-slate-200 text-slate-600 hover:border-indigo-600 hover:text-indigo-600"
-                  )}
-                >
-                  {page}
-                </button>
-              ))}
+              <div className="hidden sm:flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={cn(
+                      "w-8 h-8 rounded-lg text-xs font-bold transition-all",
+                      currentPage === page 
+                        ? "bg-cyan-600 text-white shadow-md shadow-cyan-100" 
+                        : "bg-white border border-slate-200 text-slate-600 hover:border-cyan-600 hover:text-cyan-600"
+                    )}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <span className="sm:hidden text-xs font-bold text-slate-600 px-3">
+                Trang {currentPage} / {totalPages}
+              </span>
 
               <button 
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}

@@ -307,13 +307,13 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
           <div className="bg-white px-4 py-4 sm:px-8 sm:py-6 border-b border-slate-100 flex-shrink-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4 sm:gap-6">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg shadow-indigo-100 shrink-0">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-cyan-600 flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg shadow-cyan-100 shrink-0">
                   {student.fullName.charAt(0)}
                 </div>
                 <div className="min-w-0">
                   <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight truncate">{student.fullName}</h2>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1 sm:mt-2">
-                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[10px] sm:text-xs font-bold border border-indigo-100">
+                    <span className="px-2 py-0.5 bg-cyan-50 text-cyan-700 rounded text-[10px] sm:text-xs font-bold border border-cyan-100">
                       {student.rank}
                     </span>
                     <span className="text-slate-400 text-[10px] sm:text-xs font-medium">{student.area}</span>
@@ -410,7 +410,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
                   <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
                       <h3 className="text-sm font-bold text-slate-800 mb-6 flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-indigo-500" /> Trạng thái KSK
+                        <AlertCircle className="w-4 h-4 text-cyan-500" /> Trạng thái KSK
                       </h3>
                       
                       <div className="space-y-4">
@@ -470,7 +470,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
                             type="text"
                             placeholder="DD/MM/YYYY"
                             maxLength={10}
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all"
+                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:ring-4 focus:ring-cyan-500/5 focus:border-cyan-500 transition-all"
                             value={kskData.date}
                             onChange={(e) => {
                               let val = e.target.value.replace(/\D/g, '');
@@ -488,7 +488,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
                           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ghi chú sức khỏe</label>
                           <textarea 
                             rows={3}
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all resize-none"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-cyan-500/5 focus:border-cyan-500 transition-all resize-none"
                             placeholder="Tình trạng thị lực, thính lực..."
                             value={kskData.notes}
                             onChange={(e) => setKskData(prev => ({ ...prev, notes: e.target.value }))}
@@ -499,7 +499,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
                       <button 
                         onClick={handleUpdateKSK}
                         disabled={isUpdatingKSK}
-                        className="w-full mt-6 py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full mt-6 py-3 bg-cyan-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-cyan-100 hover:bg-cyan-700 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                       >
                         {isUpdatingKSK ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Lưu thông tin KSK
@@ -512,9 +512,9 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
                     <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex-1 flex flex-col">
                       <div className="flex items-center justify-between mb-6">
                         <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-indigo-500" /> Tài liệu & Giấy tờ khám
+                          <FileText className="w-4 h-4 text-cyan-500" /> Tài liệu & Giấy tờ khám
                         </h3>
-                        <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">
+                        <span className="text-[10px] font-bold text-cyan-600 bg-cyan-50 px-2 py-1 rounded-md">
                           {kskData.files.length} Tệp tin
                         </span>
                       </div>
@@ -524,9 +524,9 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
                         <input type="file" multiple disabled={isUploadingFile} className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileUpload} />
                         <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                           {isUploadingFile ? (
-                            <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+                            <Loader2 className="w-6 h-6 text-cyan-500 animate-spin" />
                           ) : (
-                            <Upload className="w-6 h-6 text-indigo-500" />
+                            <Upload className="w-6 h-6 text-cyan-500" />
                           )}
                         </div>
                         <p className="text-sm font-bold text-slate-700">
@@ -552,7 +552,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
                                   {file.type.includes('image') ? (
                                     <img src={file.url} alt="" className="w-full h-full object-cover rounded-xl" />
                                   ) : (
-                                    <File className="w-5 h-5 text-indigo-400" />
+                                    <File className="w-5 h-5 text-cyan-400" />
                                   )}
                                 </div>
                                 <div className="min-w-0 flex-1">
@@ -569,7 +569,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
                                   href={file.url} 
                                   target="_blank" 
                                   rel="noreferrer"
-                                  className="absolute inset-0 ring-offset-2 focus:ring-2 ring-indigo-500 rounded-2xl outline-none"
+                                  className="absolute inset-0 ring-offset-2 focus:ring-2 ring-cyan-500 rounded-2xl outline-none"
                                 />
                               </div>
                             ))}
@@ -748,13 +748,13 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
                     </div>
 
                     {/* AI Suggestions for Progress */}
-                    <div className="bg-indigo-600 p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden group">
+                    <div className="bg-cyan-600 p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden group">
                       <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 group-hover:scale-110 transition-transform">
                         <Sparkles className="w-24 h-24 text-white" />
                       </div>
                       <div className="relative z-10">
                         <h4 className="text-white font-bold mb-2">Đề xuất lộ trình tiếp theo</h4>
-                        <p className="text-indigo-100 text-xs leading-relaxed opacity-80 mb-6">
+                        <p className="text-cyan-100 text-xs leading-relaxed opacity-80 mb-6">
                           {student.status === 'Đang học' 
                             ? "Dựa trên tiến độ hiện tại, học viên cần tập trung chạy đủ km DAT để kịp tiến độ khóa thi tháng sau."
                             : "Vui lòng hoàn tất khám sức khỏe để nộp hồ sơ đăng ký thi."}
@@ -1042,7 +1042,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
                     {/* Payment History */}
                     <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
                       <h3 className="text-sm font-bold text-slate-800 mb-6 flex items-center gap-2">
-                        <History className="w-4 h-4 text-indigo-500" /> Nhật ký đóng phí
+                        <History className="w-4 h-4 text-cyan-500" /> Nhật ký đóng phí
                       </h3>
                       <div className="space-y-3">
                         {(student.paymentHistory || []).length > 0 ? (
@@ -1074,7 +1074,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
 
                     {/* Quick Payment Info */}
                     <div className="lg:col-span-1 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center text-center">
-                      <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500 mb-4 shadow-inner shadow-indigo-100/50">
+                      <div className="w-16 h-16 rounded-2xl bg-cyan-50 flex items-center justify-center text-cyan-500 mb-4 shadow-inner shadow-cyan-100/50">
                         <Zap className="w-8 h-8" />
                       </div>
                       <h4 className="text-sm font-bold text-slate-800">Thông tin đóng phí</h4>
@@ -1087,7 +1087,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
                             {(student.paidAmount || 0) >= parseInt(parseVND(student.fee)) ? 'Đã hoàn thành' : 'Chưa hoàn thành'}
                           </p>
                         </div>
-                        <button className="w-full py-3 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-100 mt-2">
+                        <button className="w-full py-3 bg-cyan-600 text-white rounded-xl text-xs font-bold hover:bg-cyan-700 transition-all active:scale-95 shadow-lg shadow-cyan-100 mt-2">
                           Nhắc nhở đóng phí
                         </button>
                       </div>
@@ -1141,7 +1141,7 @@ function ProgressControlCard({ label, isEditing, checked, onCheck, info, progres
             animate={{ width: `${percent}%` }}
             className={cn(
               "h-full transition-all duration-1000",
-              percent >= 100 ? "bg-emerald-500" : "bg-indigo-500"
+              percent >= 100 ? "bg-emerald-500" : "bg-cyan-500"
             )}
           />
         </div>
@@ -1194,7 +1194,7 @@ function ProgressControlCard({ label, isEditing, checked, onCheck, info, progres
                   max={progress.total}
                   value={progress.current}
                   onChange={(e) => onValueChange?.(parseInt(e.target.value))}
-                  className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                  className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-cyan-600"
                 />
               )}
             </div>
@@ -1235,10 +1235,10 @@ function FeeCard({ label, amount, icon: Icon, color, isPaid, isWarning }: FeeCar
         )}>
           <Icon className="w-5 h-5" />
         </div>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">{label}</p>
       </div>
-      <p className={cn("text-2xl font-black tracking-tight", color)}>
-        {formatVND(amount)}
+      <p className={cn("text-2xl font-black tracking-tight whitespace-nowrap", color)}>
+        {formatVND(amount)}đ
       </p>
     </div>
   );

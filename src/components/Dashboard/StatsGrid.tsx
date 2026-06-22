@@ -11,9 +11,9 @@ export function StatsGrid() {
     { label: 'Tổng học viên', value: 15, icon: Users, color: 'text-brand-primary', bg: 'bg-brand-primary/10' },
     { label: 'Chờ KSK', value: 2, icon: Stethoscope, color: 'text-amber-500', bg: 'bg-amber-50' },
     { label: 'Đã KSK', value: 2, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { label: 'Đã nộp HS', value: 2, icon: FolderIcon, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { label: 'Đang học', value: 4, icon: BookOpen, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-    { label: 'Đang thi', value: 2, icon: GraduationCap, color: 'text-purple-500', bg: 'bg-purple-50' },
+    { label: 'Đã nộp HS', value: 2, icon: FolderIcon, color: 'text-cyan-500', bg: 'bg-cyan-50' },
+    { label: 'Đang học', value: 4, icon: BookOpen, color: 'text-sky-500', bg: 'bg-sky-50' },
+    { label: 'Đang thi', value: 2, icon: GraduationCap, color: 'text-teal-500', bg: 'bg-teal-50' },
     { label: 'Đã đậu', value: 1, icon: Trophy, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: 'Thi lại', value: 1, icon: RotateCcw, color: 'text-rose-500', bg: 'bg-rose-50' },
     { label: 'Còn nợ học phí', value: 15, icon: Wallet, color: 'text-amber-600', bg: 'bg-amber-50' },
@@ -43,7 +43,7 @@ export function StatsGrid() {
   const displayStats = getRealStats();
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-9 gap-4">
       {displayStats.map((stat, idx) => (
         <LuxuryCard key={idx} padding="sm" className="flex items-center gap-4 hover:shadow-md transition-shadow group">
           <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color} transition-transform group-hover:scale-105`}>

@@ -1,6 +1,5 @@
-# AI Migration Tasks (Remove OpenRouter & PiAPI)
-- [x] Migrate `server/services/ai.service.ts` to Google Gemini API (Done)
-- [x] Update summaries for `/ai/analyze` and `/chatbot/chat` in `server/swagger.ts` (Done)
-- [x] Remove old environment variables from `.env` and `.env.example` (Done)
-- [x] Update frontend footer branding in `src/components/Chatbot/ChatbotWidget.tsx` (Done)
-- [x] Run linting (`yarn lint`) and typechecking (`yarn typecheck`) validations (Done)
+# Cyan Rebranding & Responsive Tasks
+- [x] Configure brand cyan theme and map indigo/purple/blue classes in `src/index.css` (Done)
+- [x] Update `public/favicon.svg` stop colors (Done)
+- [x] Rebrand toast, stats grid, lists, paginations, and modals to cyan/teal/sky (Done)
+- [/] Run linting (`yarn lint`) and typechecking (`yarn typecheck`) validations (In Progress)

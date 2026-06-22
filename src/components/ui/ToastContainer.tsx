@@ -47,10 +47,10 @@ const STYLES: Record<ToastType, { bar: string; icon: string; bg: string; border:
     text: 'text-slate-700 dark:text-slate-200',
   },
   info: {
-    bar: 'bg-blue-500',
-    icon: 'text-blue-500',
+    bar: 'bg-cyan-500',
+    icon: 'text-cyan-500',
     bg: 'bg-white/95 dark:bg-slate-800/95',
-    border: 'border-blue-200 dark:border-blue-700/50',
+    border: 'border-cyan-200 dark:border-cyan-700/50',
     text: 'text-slate-700 dark:text-slate-200',
   },
 };

@@ -138,13 +138,13 @@ export function BusinessResults() {
       {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-1">Phân tích tuyển sinh & dòng tiền</p>
+          <p className="text-[10px] font-black text-cyan-600 uppercase tracking-[0.2em] mb-1">Phân tích tuyển sinh & dòng tiền</p>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Kết quả kinh doanh</h1>
           <p className="text-slate-400 text-xs font-medium mt-1 leading-relaxed max-w-2xl">
             Đo lường theo học viên có một trong kỳ (ngày đăng ký hồ sơ, hoặc ngày tạo nếu chưa có đăng ký).
           </p>
         </div>
-        <button className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-black shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all self-start md:self-auto">
+        <button className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 text-white rounded-xl text-sm font-black shadow-lg shadow-cyan-100 hover:bg-cyan-700 transition-all self-start md:self-auto">
           <Download className="w-4 h-4" /> Xuất CSV
         </button>
       </div>
@@ -199,7 +199,7 @@ export function BusinessResults() {
 
         <div className="flex items-center justify-between pt-4 border-t border-slate-50">
           <div className="flex flex-wrap gap-2">
-            <span className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-xs font-black">
+            <span className="flex items-center gap-2 px-4 py-2 bg-cyan-50 text-cyan-600 rounded-full text-xs font-black">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               {reportPeriod === 'Tháng này' ? `Tháng ${(new Date()).getMonth() + 1}/${(new Date()).getFullYear()}` : 
                reportPeriod === 'Tháng trước' ? `Tháng ${(new Date()).getMonth() || 12}/${(new Date()).getMonth() === 0 ? (new Date()).getFullYear() - 1 : (new Date()).getFullYear()}` : 
@@ -233,8 +233,8 @@ export function BusinessResults() {
           value={formatCurrency(stats.totalFee)} 
           label="Học phí đăng ký (hồ sơ)" 
           icon={Wallet} 
-          iconBg="bg-indigo-50"
-          iconColor="text-indigo-600"
+          iconBg="bg-cyan-50"
+          iconColor="text-cyan-600"
         />
         <KPICard 
           value={formatCurrency(stats.totalPaid)} 
@@ -262,11 +262,11 @@ export function BusinessResults() {
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${stats.collectionRate}%` }}
-              className="h-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-emerald-500 rounded-full"
+              className="h-full bg-gradient-to-r from-cyan-500 via-cyan-600 to-emerald-500 rounded-full"
             />
           </div>
           <p className="text-xs font-bold text-slate-500">
-            Đã thu được <span className="text-indigo-600 font-black">{stats.collectionRate}%</span> học phí ghi trên hồ sơ trong phạm vi đang xem.
+            Đã thu được <span className="text-cyan-600 font-black">{stats.collectionRate}%</span> học phí ghi trên hồ sơ trong phạm vi đang xem.
           </p>
         </div>
       </div>
@@ -288,15 +288,15 @@ export function BusinessResults() {
 
 function GuideCard({ step, title, desc }: { step: string, title: string, desc: string }) {
   return (
-    <div className="bg-white rounded-[2rem] border border-slate-50 p-6 relative group hover:border-indigo-100 transition-all cursor-default">
+    <div className="bg-white rounded-[2rem] border border-slate-50 p-6 relative group hover:border-cyan-100 transition-all cursor-default">
       <div className="flex items-center gap-4 mb-3">
-        <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-xs font-black text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all">
+        <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-xs font-black text-slate-400 group-hover:bg-cyan-50 group-hover:text-cyan-600 transition-all">
           {step}
         </div>
         <h4 className="text-sm font-black text-slate-800 tracking-tight">{title}</h4>
       </div>
       <p className="text-[11px] leading-relaxed text-slate-400 font-medium">{desc}</p>
-      <div className="absolute top-6 right-6 text-slate-200 group-hover:text-indigo-100 transition-colors">
+      <div className="absolute top-6 right-6 text-slate-200 group-hover:text-cyan-100 transition-colors">
         <ChevronDown size={16} />
       </div>
     </div>
@@ -313,7 +313,7 @@ interface KPICardProps {
 
 function KPICard({ value, label, icon: Icon, iconBg, iconColor }: KPICardProps) {
   return (
-    <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/30 p-5 lg:p-6 flex flex-row items-center gap-4 group hover:shadow-2xl hover:shadow-indigo-100 transition-all min-w-0">
+    <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/30 p-5 lg:p-6 flex flex-row items-center gap-4 group hover:shadow-2xl hover:shadow-cyan-100 transition-all min-w-0">
       <div className={cn("w-12 h-12 lg:w-16 lg:h-16 rounded-[1.2rem] lg:rounded-[1.5rem] flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 shadow-inner", iconBg)}>
         <Icon className={cn("w-6 h-6 lg:w-8 lg:h-8", iconColor)} />
       </div>
@@ -344,13 +344,13 @@ function FilterSelect({ label, value, onChange, options }: FilterSelectProps) {
         <select 
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full h-12 bg-slate-50 border border-slate-100 rounded-2xl px-5 pr-12 text-sm font-bold text-slate-700 outline-none appearance-none focus:border-indigo-600 focus:bg-white transition-all cursor-pointer"
+          className="w-full h-12 bg-slate-50 border border-slate-100 rounded-2xl px-5 pr-12 text-sm font-bold text-slate-700 outline-none appearance-none focus:border-cyan-600 focus:bg-white transition-all cursor-pointer"
         >
           {options.map((opt: string) => (
             <option key={opt}>{opt}</option>
           ))}
         </select>
-        <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-hover:text-indigo-600 pointer-events-none transition-all" />
+        <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-hover:text-cyan-600 pointer-events-none transition-all" />
       </div>
     </div>
   );

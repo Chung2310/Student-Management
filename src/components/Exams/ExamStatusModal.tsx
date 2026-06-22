@@ -111,7 +111,7 @@ export function ExamStatusModal({ exam, isOpen, onClose, onSuccess }: ExamStatus
                     className={cn(
                       "flex items-center justify-between p-5 rounded-3xl border-2 transition-all text-left group",
                       selectedStatus === item.value 
-                        ? "bg-white border-indigo-600 shadow-xl shadow-indigo-100/50" 
+                        ? "bg-white border-cyan-600 shadow-xl shadow-cyan-100/50" 
                         : "bg-white border-slate-50 hover:border-slate-200"
                     )}
                   >
@@ -120,14 +120,14 @@ export function ExamStatusModal({ exam, isOpen, onClose, onSuccess }: ExamStatus
                         <item.icon className="w-6 h-6" />
                       </div>
                       <div>
-                        <p className={cn("text-base font-extrabold", selectedStatus === item.value ? "text-indigo-600" : "text-slate-700")}>
+                        <p className={cn("text-base font-extrabold", selectedStatus === item.value ? "text-cyan-600" : "text-slate-700")}>
                           {item.label}
                         </p>
                         <p className="text-xs font-bold text-slate-400 mt-1">Thay đổi tiến độ đợt thi</p>
                       </div>
                     </div>
                     {selectedStatus === item.value && (
-                      <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center animate-in zoom-in duration-300">
+                      <div className="w-6 h-6 rounded-full bg-cyan-600 flex items-center justify-center animate-in zoom-in duration-300">
                         <CheckCircle2 className="w-4 h-4 text-white" />
                       </div>
                     )}
@@ -143,7 +143,7 @@ export function ExamStatusModal({ exam, isOpen, onClose, onSuccess }: ExamStatus
                   type="date"
                   value={officialDate.includes('/') ? officialDate.split('/').reverse().join('-') : officialDate}
                   onChange={(e) => setOfficialDate(e.target.value)}
-                  className="w-full h-14 bg-slate-50 px-5 rounded-2xl border border-slate-100 text-base font-bold text-slate-800 outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 transition-all appearance-none"
+                  className="w-full h-14 bg-slate-50 px-5 rounded-2xl border border-slate-100 text-base font-bold text-slate-800 outline-none focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/5 transition-all appearance-none"
                 />
                 <Calendar className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
               </div>
@@ -160,7 +160,7 @@ export function ExamStatusModal({ exam, isOpen, onClose, onSuccess }: ExamStatus
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-[2] flex items-center justify-center gap-3 h-14 bg-indigo-600 text-white rounded-2xl text-base font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50"
+                className="flex-[2] flex items-center justify-center gap-3 h-14 bg-cyan-600 text-white rounded-2xl text-base font-black shadow-xl shadow-cyan-100 hover:bg-cyan-700 transition-all active:scale-95 disabled:opacity-50"
               >
                 {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                 Lưu thay đổi

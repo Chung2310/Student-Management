@@ -37,7 +37,7 @@ export function DrivingDashboardTables({ onSelectStudent, onNavigate }: DrivingD
     switch (status) {
       case 'Đã hoàn thành': return 'text-emerald-500';
       case 'Sắp diễn ra': return 'text-amber-500';
-      case 'Đã xác nhận': return 'text-blue-500';
+      case 'Đã xác nhận': return 'text-cyan-500';
       case 'Đã hủy': return 'text-rose-500';
       default: return 'text-slate-500';
     }
@@ -67,13 +67,13 @@ export function DrivingDashboardTables({ onSelectStudent, onNavigate }: DrivingD
 
   const getStatusInfo = (status: string) => {
     const map: Record<string, string> = {
-      'Đang thi': 'bg-purple-100 text-purple-700',
+      'Đang thi': 'bg-teal-100 text-teal-700',
       'Đã đậu': 'bg-emerald-100 text-emerald-700',
-      'Đang học': 'bg-blue-100 text-blue-700',
+      'Đang học': 'bg-sky-100 text-sky-700',
       'Chờ KSK': 'bg-amber-100 text-amber-700',
       'Thi lại': 'bg-rose-100 text-rose-700',
       'Đã KSK': 'bg-emerald-100 text-emerald-700',
-      'Đã nộp HS': 'bg-blue-100 text-blue-700',
+      'Đã nộp HS': 'bg-cyan-100 text-cyan-700',
       'Nợ học phí': 'bg-orange-100 text-orange-700',
     };
     return map[status] || 'bg-slate-100 text-slate-700';
@@ -134,7 +134,7 @@ export function DrivingDashboardTables({ onSelectStudent, onNavigate }: DrivingD
                     </p>
                   </td>
                   <td className="px-4 py-4 text-center">
-                    <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold border border-indigo-100">
+                    <span className="px-2 py-1 bg-cyan-50 text-cyan-700 rounded text-[10px] font-bold border border-cyan-100">
                       {exam.rank}
                     </span>
                   </td>
@@ -176,7 +176,7 @@ export function DrivingDashboardTables({ onSelectStudent, onNavigate }: DrivingD
                   <tr key={idx} className="hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => onSelectStudent(item)}>
                     <td className="px-5 py-3 text-sm font-bold text-slate-800">{item.fullName}</td>
                     <td className="px-3 py-3 text-center">
-                      <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold border border-indigo-100">{item.rank}</span>
+                      <span className="px-2 py-1 bg-cyan-50 text-cyan-700 rounded text-[10px] font-bold border border-cyan-100">{item.rank}</span>
                     </td>
                     <td className="px-3 py-3 text-center text-[10px] text-slate-400 font-medium">-</td>
                     <td className="px-3 py-3 text-center">
@@ -199,7 +199,7 @@ export function DrivingDashboardTables({ onSelectStudent, onNavigate }: DrivingD
                     <p className="text-[10px] text-slate-400 font-medium">{item.phone}</p>
                   </td>
                   <td className="px-3 py-3 text-center">
-                    <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold border border-indigo-100">
+                    <span className="px-2 py-1 bg-cyan-50 text-cyan-700 rounded text-[10px] font-bold border border-cyan-100">
                       {item.rank}
                     </span>
                   </td>
@@ -225,14 +225,14 @@ export function DrivingDashboardTables({ onSelectStudent, onNavigate }: DrivingD
               <button 
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-cyan-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-cyan-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>

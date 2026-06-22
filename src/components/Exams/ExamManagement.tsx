@@ -42,11 +42,45 @@ export function ExamManagement() {
   const [rankFilter, setRankFilter] = useState('Tất cả hạng');
   const [areaFilter, setAreaFilter] = useState('Tất cả khu vực');
   const [statusFilter, setStatusFilter] = useState('Tất cả');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+
+  // Helper to parse DD/MM/YYYY to Date object
+  const parseDateString = (dateStr: string): Date | null => {
+    if (!dateStr) return null;
+    const parts = dateStr.split('/').map(Number);
+    if (parts.length === 3) {
+      return new Date(parts[2], parts[1] - 1, parts[0]);
+    }
+    const parsed = new Date(dateStr);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  };
 
   const filteredExams = exams.filter(exam => {
     if (rankFilter !== 'Tất cả hạng' && exam.rank !== rankFilter) return false;
+    if (areaFilter !== 'Tất cả khu vực' && exam.area !== areaFilter) return false;
     if (statusFilter !== 'Tất cả' && exam.status !== statusFilter) return false;
     if (searchQuery && !exam.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+
+    // Date filter
+    const examDateStr = exam.officialDate || exam.tentativeDate;
+    if (examDateStr) {
+      const examDate = parseDateString(examDateStr);
+      if (examDate) {
+        if (fromDate) {
+          const from = new Date(fromDate);
+          from.setHours(0, 0, 0, 0);
+          examDate.setHours(0, 0, 0, 0);
+          if (examDate < from) return false;
+        }
+        if (toDate) {
+          const to = new Date(toDate);
+          to.setHours(23, 59, 59, 999);
+          examDate.setHours(0, 0, 0, 0);
+          if (examDate > to) return false;
+        }
+      }
+    }
     return true;
   });
 
@@ -239,7 +273,7 @@ export function ExamManagement() {
           </button>
           <button 
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-8 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
+            className="flex items-center gap-2 px-8 py-2.5 bg-cyan-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-cyan-100 hover:bg-cyan-700 transition-all"
           >
             <Plus className="w-5 h-5" /> Tạo đợt thi
           </button>
@@ -248,7 +282,7 @@ export function ExamManagement() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 no-print">
-        <StatCard label="Tổng đợt thi" value={stats.totalExams} icon={ClipboardList} color="text-indigo-600" bgColor="bg-indigo-50" />
+        <StatCard label="Tổng đợt thi" value={stats.totalExams} icon={ClipboardList} color="text-cyan-600" bgColor="bg-cyan-50" />
         <StatCard label="Sắp diễn ra" value={stats.upcoming} icon={Clock} color="text-orange-500" bgColor="bg-orange-50" />
         <StatCard label="Đã xác nhận" value={stats.confirmed} icon={CheckCircle2} color="text-emerald-500" bgColor="bg-emerald-50" />
         <StatCard label="Đã hoàn thành" value={stats.completed} icon={CheckCircle2} color="text-sky-500" bgColor="bg-sky-50" />
@@ -261,22 +295,22 @@ export function ExamManagement() {
           onClick={() => setActiveTab('exams')}
           className={cn(
             "flex items-center gap-2 px-3 sm:px-4 py-4 sm:py-5 text-sm sm:text-base font-bold transition-all relative whitespace-nowrap",
-            activeTab === 'exams' ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
+            activeTab === 'exams' ? "text-cyan-600" : "text-slate-400 hover:text-slate-600"
           )}
         >
           <ClipboardList className="w-4 h-4 sm:w-5 h-5" /> Đợt thi
-          {activeTab === 'exams' && <motion.div layoutId="tabLine" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
+          {activeTab === 'exams' && <motion.div layoutId="tabLine" className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-600" />}
         </button>
         <button 
           onClick={() => setActiveTab('students')}
           className={cn(
             "flex items-center gap-2 px-3 sm:px-4 py-4 sm:py-5 text-sm sm:text-base font-bold transition-all relative whitespace-nowrap",
-            activeTab === 'students' ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
+            activeTab === 'students' ? "text-cyan-600" : "text-slate-400 hover:text-slate-600"
           )}
         >
           <UsersIcon className="w-4 h-4 sm:w-5 h-5" /> HV chưa có lịch
           <span className="hidden xs:inline px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-bold ml-1">{stats.unassignedStudents}</span>
-          {activeTab === 'students' && <motion.div layoutId="tabLine" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
+          {activeTab === 'students' && <motion.div layoutId="tabLine" className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-600" />}
         </button>
       </div>
 
@@ -286,42 +320,18 @@ export function ExamManagement() {
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 bg-white p-3 sm:p-4 rounded-3xl border border-slate-100 shadow-sm no-print">
             <FilterItem label="Từ ngày">
               <input 
-                type="text" 
-                placeholder="DD/MM/YYYY"
-                maxLength={10}
-                onFocus={(e) => e.target.type = 'date'}
-                onBlur={(e) => e.target.type = 'text'}
-                className="w-full bg-transparent outline-none text-xs font-bold" 
-                onChange={(e) => {
-                  let val = e.target.value.replace(/\D/g, '');
-                  if (val.length > 8) val = val.substring(0, 8);
-                  if (val.length > 4) {
-                    val = val.substring(0, 2) + '/' + val.substring(2, 4) + '/' + val.substring(4);
-                  } else if (val.length > 2) {
-                    val = val.substring(0, 2) + '/' + val.substring(2);
-                  }
-                  e.target.value = val;
-                }}
+                type="date" 
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="w-full bg-transparent outline-none text-xs font-bold relative" 
               />
             </FilterItem>
             <FilterItem label="Đến ngày">
               <input 
-                type="text" 
-                placeholder="DD/MM/YYYY"
-                maxLength={10}
-                onFocus={(e) => e.target.type = 'date'}
-                onBlur={(e) => e.target.type = 'text'}
-                className="w-full bg-transparent outline-none text-xs font-bold" 
-                onChange={(e) => {
-                  let val = e.target.value.replace(/\D/g, '');
-                  if (val.length > 8) val = val.substring(0, 8);
-                  if (val.length > 4) {
-                    val = val.substring(0, 2) + '/' + val.substring(2, 4) + '/' + val.substring(4);
-                  } else if (val.length > 2) {
-                    val = val.substring(0, 2) + '/' + val.substring(2);
-                  }
-                  e.target.value = val;
-                }}
+                type="date" 
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="w-full bg-transparent outline-none text-xs font-bold relative" 
               />
             </FilterItem>
             <FilterSelect label="Hạng bằng" value={rankFilter} onChange={setRankFilter} options={['Tất cả hạng', 'A1', 'A2', 'B1', 'B2', 'C']} />
@@ -329,7 +339,14 @@ export function ExamManagement() {
             <FilterSelect label="Trạng thái" value={statusFilter} onChange={setStatusFilter} options={['Tất cả', 'Sắp diễn ra', 'Đã xác nhận', 'Đã hoàn thành']} />
             <div className="flex items-end pb-2 col-span-2 sm:col-span-1">
               <button 
-                onClick={() => {setRankFilter('Tất cả hạng'); setAreaFilter('Tất cả khu vực'); setStatusFilter('Tất cả'); setSearchQuery('');}}
+                onClick={() => {
+                  setRankFilter('Tất cả hạng'); 
+                  setAreaFilter('Tất cả khu vực'); 
+                  setStatusFilter('Tất cả'); 
+                  setSearchQuery('');
+                  setFromDate('');
+                  setToDate('');
+                }}
                 className="text-xs font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors"
               >
                 <X className="w-3.5 h-3.5" /> Xóa lọc
@@ -461,7 +478,7 @@ function FilterItem({ label, children }: FilterItemProps) {
   return (
     <div className="space-y-1.5">
       <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</label>
-      <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 h-11 flex items-center">
+      <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 h-11 flex items-center relative">
         {children}
       </div>
     </div>
@@ -483,7 +500,7 @@ function FilterSelect({ label, value, onChange, options }: FilterSelectProps) {
         <select 
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full h-11 bg-slate-50 px-4 pr-10 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 outline-none appearance-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 transition-all"
+          className="w-full h-11 bg-slate-50 px-4 pr-10 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 outline-none appearance-none focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/5 transition-all"
         >
           {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
         </select>
@@ -525,7 +542,7 @@ function ExamCard({ exam, getStatusInfo, onDelete, onEdit, onStatusClick, onAssi
               <span className={cn("flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold border", status.color)}>
                 <status.icon className="w-3 h-3 sm:w-4 h-4" /> {status.label}
               </span>
-              <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] sm:text-xs font-bold border border-indigo-100">
+              <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-cyan-50 text-cyan-700 rounded-lg text-[10px] sm:text-xs font-bold border border-cyan-100">
                 {exam.rank}
               </span>
               <span className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -588,7 +605,7 @@ function ExamCard({ exam, getStatusInfo, onDelete, onEdit, onStatusClick, onAssi
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end no-print">
             <button 
               onClick={(e) => { e.stopPropagation(); onAssignClick(); }}
-              className="p-2 sm:p-2.5 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all border border-slate-200 bg-white shadow-sm active:scale-95"
+              className="p-2 sm:p-2.5 rounded-xl text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 transition-all border border-slate-200 bg-white shadow-sm active:scale-95"
             >
               <UserPlus className="w-5 h-5" />
             </button>

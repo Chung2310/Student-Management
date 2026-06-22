@@ -604,11 +604,11 @@ export function SettingsView() {
             className={cn(
               "flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-300",
               activeTab === tab.id
-                ? "bg-white text-indigo-600 shadow-sm shadow-indigo-100"
+                ? "bg-white text-cyan-600 shadow-sm shadow-cyan-100"
                 : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
             )}
           >
-            <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? "text-indigo-600" : "text-slate-400")} />
+            <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? "text-cyan-600" : "text-slate-400")} />
             {tab.label}
           </button>
         ))}
@@ -620,7 +620,7 @@ export function SettingsView() {
             {/* Form Fields Required Settings */}
             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 p-6 space-y-6">
               <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
-                <ClipboardList className="w-5 h-5 text-indigo-600" />
+                <ClipboardList className="w-5 h-5 text-cyan-600" />
                 <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Trường bắt buộc trong Form</h3>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -634,7 +634,7 @@ export function SettingsView() {
                         className="transition-all hover:scale-105 active:scale-95"
                       >
                         {isRequired ? (
-                          <ToggleRight className="w-8 h-8 text-indigo-600 animate-pulse" />
+                          <ToggleRight className="w-8 h-8 text-cyan-600 animate-pulse" />
                         ) : (
                           <ToggleLeft className="w-8 h-8 text-slate-400 opacity-60" />
                         )}
@@ -648,7 +648,7 @@ export function SettingsView() {
             {/* Tuition Stages */}
             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 p-6 space-y-6">
               <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
-                <CreditCard className="w-5 h-5 text-indigo-600" />
+                <CreditCard className="w-5 h-5 text-cyan-600" />
                 <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Giai đoạn học phí</h3>
               </div>
               <div className="space-y-2">
@@ -656,12 +656,12 @@ export function SettingsView() {
                   <div key={stage} className="flex items-center justify-between p-3 bg-slate-50/50 rounded-xl border border-slate-100 group">
                     <span className="text-xs font-bold text-slate-700">{stage}</span>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1.5 text-slate-400 hover:text-indigo-600"><Edit2 size={12} /></button>
+                      <button className="p-1.5 text-slate-400 hover:text-cyan-600"><Edit2 size={12} /></button>
                       <button className="p-1.5 text-slate-400 hover:text-rose-500"><Trash2 size={12} /></button>
                     </div>
                   </div>
                 ))}
-                <button className="w-full py-3 border-2 border-dashed border-slate-100 rounded-xl text-xs font-black text-slate-400 hover:border-indigo-200 hover:text-indigo-500 transition-all flex items-center justify-center gap-2">
+                <button className="w-full py-3 border-2 border-dashed border-slate-100 rounded-xl text-xs font-black text-slate-400 hover:border-cyan-200 hover:text-cyan-500 transition-all flex items-center justify-center gap-2">
                   <Plus size={14} /> Thêm giai đoạn mới
                 </button>
               </div>
@@ -670,7 +670,7 @@ export function SettingsView() {
             {/* VietQR Settings */}
             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 p-6 space-y-6 lg:col-span-2">
               <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
-                <QrCode className="w-5 h-5 text-indigo-600" />
+                <QrCode className="w-5 h-5 text-cyan-600" />
                 <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Cấu hình VietQR & Chuyển khoản</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -710,7 +710,7 @@ export function SettingsView() {
                       <select 
                         value={vietqrConfig.bankId}
                         onChange={(e) => saveVietqrConfig({ ...vietqrConfig, bankId: e.target.value })}
-                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-indigo-600 transition-all"
+                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all"
                       >
                         <option value="mbbank">MBBank (MB)</option>
                         <option value="vietcombank">Vietcombank (VCB)</option>
@@ -731,7 +731,7 @@ export function SettingsView() {
                         placeholder="Nhập số tài khoản..."
                         value={vietqrConfig.accountNo}
                         onChange={(e) => saveVietqrConfig({ ...vietqrConfig, accountNo: e.target.value.replace(/\D/g, '') })}
-                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-indigo-600 transition-all"
+                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all"
                       />
                     </div>
                   </div>
@@ -743,14 +743,14 @@ export function SettingsView() {
                       placeholder="VD: NGUYEN VAN A"
                       value={vietqrConfig.accountName}
                       onChange={(e) => saveVietqrConfig({ ...vietqrConfig, accountName: e.target.value.toUpperCase() })}
-                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-indigo-600 transition-all"
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all"
                     />
                   </div>
 
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Nội dung chuyển khoản mặc định</label>
                     <textarea 
-                      className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600"
+                      className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600"
                       rows={3}
                       value={vietqrConfig.template}
                       onChange={(e) => saveVietqrConfig({ ...vietqrConfig, template: e.target.value })}
@@ -773,9 +773,9 @@ export function SettingsView() {
                   className="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl flex flex-col items-center text-center space-y-6"
                 >
                   <div className="relative">
-                    <div className="w-24 h-24 rounded-full border-4 border-slate-100 border-t-indigo-600 animate-spin" />
+                    <div className="w-24 h-24 rounded-full border-4 border-slate-100 border-t-cyan-600 animate-spin" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Database className="w-8 h-8 text-indigo-600 animate-pulse" />
+                      <Database className="w-8 h-8 text-cyan-600 animate-pulse" />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -786,13 +786,13 @@ export function SettingsView() {
                     <div className="w-full space-y-2">
                       <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden">
                         <motion.div
-                          className="h-full bg-indigo-600"
+                          className="h-full bg-cyan-600"
                           initial={{ width: 0 }}
                           animate={{ width: `${(progress.current / progress.total) * 100}%` }}
                           transition={{ duration: 0.3 }}
                         />
                       </div>
-                      <p className="text-[10px] font-black text-indigo-600">
+                      <p className="text-[10px] font-black text-cyan-600">
                         {Math.round((progress.current / progress.total) * 100)}% HOÀN TẤT
                       </p>
                     </div>
@@ -950,13 +950,13 @@ export function SettingsView() {
                 </div>
               )}
             </div>
-            <div className="md:col-span-3 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 p-6 flex items-start gap-4">
-              <div className="p-3 bg-white rounded-xl shadow-sm text-indigo-600">
+            <div className="md:col-span-3 bg-cyan-50/50 rounded-[2rem] border border-cyan-100 p-6 flex items-start gap-4">
+              <div className="p-3 bg-white rounded-xl shadow-sm text-cyan-600">
                 <Info size={20} />
               </div>
               <div>
                 <h4 className="text-sm font-black text-indigo-900 mb-1">An toàn dữ liệu</h4>
-                <p className="text-xs font-medium text-indigo-600/80 leading-relaxed">
+                <p className="text-xs font-medium text-cyan-600/80 leading-relaxed">
                   Chúng tôi khuyến nghị bạn nên Backup dữ liệu ít nhất một lần mỗi tuần. File backup có thể được dùng để khôi phục hoặc chuyển đổi dữ liệu sang các hệ thống khác.
                 </p>
               </div>
@@ -970,7 +970,7 @@ export function SettingsView() {
               {/* Sys Info */}
               <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 p-8 space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
-                  <Activity className="w-5 h-5 text-indigo-600" />
+                  <Activity className="w-5 h-5 text-cyan-600" />
                   <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Thông tin vận hành</h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -986,7 +986,7 @@ export function SettingsView() {
               {/* Admin Control */}
               <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 p-8 space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
-                  <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                  <ShieldCheck className="w-5 h-5 text-cyan-600" />
                   <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Kiểm soát cấu hình chung</h3>
                 </div>
                 <div className="space-y-4">
@@ -1008,7 +1008,7 @@ export function SettingsView() {
                   <p className="text-slate-400 text-sm font-medium leading-relaxed mb-6">
                     Mọi thay đổi trong module này có thể ảnh hưởng trực tiếp đến sự ổn định của hệ thống. Vui lòng kiểm tra kỹ trước khi thực hiện.
                   </p>
-                  <button className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-indigo-900/40 hover:bg-indigo-700 transition-all">
+                  <button className="w-full py-4 bg-cyan-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-indigo-900/40 hover:bg-cyan-700 transition-all">
                     Xác thực quyền Admin
                   </button>
                 </div>
@@ -1036,7 +1036,7 @@ function AdminToggle({ label, enabled = false, disabled = false }: { label: stri
       <span className={cn("text-xs font-bold", disabled ? "text-slate-400" : "text-slate-700")}>{label}</span>
       <button className={cn(
         "relative w-12 h-6 rounded-full transition-all duration-300",
-        enabled ? "bg-indigo-600" : "bg-slate-200"
+        enabled ? "bg-cyan-600" : "bg-slate-200"
       )}>
         <div className={cn(
           "absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300",
@@ -1058,13 +1058,13 @@ interface DataActionCardProps {
 
 function DataActionCard({ title, description, icon: Icon, actionLabel, color, onClick }: DataActionCardProps) {
   const colorMap: Record<'indigo' | 'blue' | 'rose', string> = {
-    indigo: "text-indigo-600 bg-indigo-50 border-indigo-100",
+    indigo: "text-cyan-600 bg-cyan-50 border-cyan-100",
     blue: "text-blue-600 bg-blue-50 border-blue-100",
     rose: "text-rose-600 bg-rose-50 border-rose-100"
   };
 
   const btnColorMap: Record<'indigo' | 'blue' | 'rose', string> = {
-    indigo: "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100",
+    indigo: "bg-cyan-600 hover:bg-cyan-700 shadow-cyan-100",
     blue: "bg-blue-600 hover:bg-blue-700 shadow-blue-100",
     rose: "bg-rose-600 hover:bg-rose-700 shadow-rose-100"
   };

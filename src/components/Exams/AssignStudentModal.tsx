@@ -102,7 +102,7 @@ export function AssignStudentModal({ exam, isOpen, onClose, onSuccess }: AssignS
               </button>
             </div>
             <p className="text-sm text-slate-400 font-medium">
-              Đợt thi: <span className="text-indigo-600 font-bold">{exam.name}</span> • {exam.rank}
+              Đợt thi: <span className="text-cyan-600 font-bold">{exam.name}</span> • {exam.rank}
             </p>
           </div>
 
@@ -114,7 +114,7 @@ export function AssignStudentModal({ exam, isOpen, onClose, onSuccess }: AssignS
                 placeholder="Tìm kiếm học viên theo tên..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-12 bg-slate-50 pl-11 pr-4 rounded-2xl border border-slate-100 text-sm font-medium outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 transition-all"
+                className="w-full h-12 bg-slate-50 pl-11 pr-4 rounded-2xl border border-slate-100 text-sm font-medium outline-none focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/5 transition-all"
               />
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             </div>
@@ -139,7 +139,7 @@ export function AssignStudentModal({ exam, isOpen, onClose, onSuccess }: AssignS
                   className={cn(
                     "w-full flex items-center justify-between p-4 rounded-2xl border transition-all text-left group",
                     selectedStudentIds.includes(student.id)
-                      ? "bg-indigo-50/50 border-indigo-200"
+                      ? "bg-cyan-50/50 border-cyan-200"
                       : "bg-white border-slate-100 hover:border-slate-300",
                     !student.isFullyPaid && "opacity-60 grayscale-[0.5] cursor-not-allowed border-dashed bg-slate-50/50"
                   )}
@@ -147,7 +147,7 @@ export function AssignStudentModal({ exam, isOpen, onClose, onSuccess }: AssignS
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm",
-                      selectedStudentIds.includes(student.id) ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-400"
+                      selectedStudentIds.includes(student.id) ? "bg-cyan-600 text-white" : "bg-slate-100 text-slate-400"
                     )}>
                       {student.fullName.charAt(0)}
                     </div>
@@ -171,7 +171,7 @@ export function AssignStudentModal({ exam, isOpen, onClose, onSuccess }: AssignS
                   <div className={cn(
                     "w-6 h-6 rounded-lg border flex items-center justify-center transition-all",
                     selectedStudentIds.includes(student.id) 
-                      ? "bg-indigo-600 border-indigo-600" 
+                      ? "bg-cyan-600 border-cyan-600" 
                       : !student.isFullyPaid ? "border-slate-200 bg-slate-100" : "border-slate-200 group-hover:border-slate-400"
                   )}>
                     {selectedStudentIds.includes(student.id) && <CheckCircle2 className="w-4 h-4 text-white" />}
@@ -186,7 +186,7 @@ export function AssignStudentModal({ exam, isOpen, onClose, onSuccess }: AssignS
           <div className="p-6 border-t border-slate-100 flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-bold text-slate-800">
-                Đã chọn: <span className="text-indigo-600">{selectedStudentIds.length} học viên</span>
+                Đã chọn: <span className="text-cyan-600">{selectedStudentIds.length} học viên</span>
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -199,7 +199,7 @@ export function AssignStudentModal({ exam, isOpen, onClose, onSuccess }: AssignS
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || selectedStudentIds.length === 0}
-                className="flex items-center gap-2 px-8 py-2.5 bg-indigo-600 text-white rounded-2xl text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all disabled:opacity-50 active:scale-95"
+                className="flex items-center gap-2 px-8 py-2.5 bg-cyan-600 text-white rounded-2xl text-sm font-bold shadow-lg shadow-cyan-100 hover:bg-cyan-700 transition-all disabled:opacity-50 active:scale-95"
               >
                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Xác nhận thêm
