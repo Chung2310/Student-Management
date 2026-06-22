@@ -323,7 +323,7 @@ export function ExamManagement() {
                 type="date" 
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
-                className="w-full bg-transparent outline-none text-xs font-bold" 
+                className="w-full bg-transparent outline-none text-xs font-bold relative" 
               />
             </FilterItem>
             <FilterItem label="Đến ngày">
@@ -331,7 +331,7 @@ export function ExamManagement() {
                 type="date" 
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
-                className="w-full bg-transparent outline-none text-xs font-bold" 
+                className="w-full bg-transparent outline-none text-xs font-bold relative" 
               />
             </FilterItem>
             <FilterSelect label="Hạng bằng" value={rankFilter} onChange={setRankFilter} options={['Tất cả hạng', 'A1', 'A2', 'B1', 'B2', 'C']} />
@@ -478,7 +478,7 @@ function FilterItem({ label, children }: FilterItemProps) {
   return (
     <div className="space-y-1.5">
       <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</label>
-      <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 h-11 flex items-center">
+      <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 h-11 flex items-center relative">
         {children}
       </div>
     </div>
