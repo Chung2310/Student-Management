@@ -22,6 +22,7 @@ import { SettingsView } from './components/Settings/SettingsView';
 import { useAuth } from './hooks/useAuth';
 import { LoginView } from './components/Auth/LoginView';
 import { Loader2 } from 'lucide-react';
+import { ChatbotWidget } from './components/Chatbot/ChatbotWidget';
 
 export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'SettingsAdmin';
 
@@ -139,6 +140,9 @@ export default function App() {
         student={selectedStudent}
         onClose={() => setSelectedStudent(null)}
       />
+
+      {/* AI Chatbot Widget */}
+      <ChatbotWidget />
     </div>
   );
 }

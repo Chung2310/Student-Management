@@ -351,7 +351,7 @@ const swaggerDefinition = {
     },
     "/ai/analyze": {
       post: {
-        summary: "Phân tích hồ sơ và lộ trình học viên bằng mô hình AI PiAPI",
+        summary: "Phân tích hồ sơ và lộ trình học viên bằng mô hình AI Gemini",
         tags: ["AI Advisor"],
         security: [{ bearerAuth: [] }],
         requestBody: {
@@ -384,6 +384,55 @@ const swaggerDefinition = {
                   properties: {
                     success: { type: "boolean" },
                     analysis: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: "Dữ liệu không hợp lệ" },
+          401: { description: "Chưa đăng nhập" },
+        },
+      },
+    },
+    "/chatbot/chat": {
+      post: {
+        summary: "Gửi tin nhắn trò chuyện với chatbot AI qua Gemini",
+        tags: ["AI Chatbot"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["messages"],
+                properties: {
+                  messages: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      required: ["role", "content"],
+                      properties: {
+                        role: { type: "string", enum: ["user", "assistant", "system"], example: "user" },
+                        content: { type: "string", example: "Hồ sơ đăng ký học lái xe B2 gồm những gì?" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Thành công",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    reply: { type: "string" },
                   },
                 },
               },
