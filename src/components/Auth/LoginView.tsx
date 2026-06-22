@@ -53,9 +53,9 @@ export function LoginView() {
     <div className="min-h-screen bg-slate-950 flex flex-col lg:flex-row overflow-hidden font-sans">
       {/* Decorative Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full" />
-        <div className="absolute top-[20%] right-[10%] w-[20%] h-[20%] bg-blue-600/10 blur-[100px] rounded-full" />
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-600/20 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-teal-600/10 blur-[120px] rounded-full" />
+        <div className="absolute top-[20%] right-[10%] w-[20%] h-[20%] bg-sky-600/10 blur-[100px] rounded-full" />
       </div>
 
       {/* Left Side: Branding & Info */}
@@ -64,11 +64,11 @@ export function LoginView() {
           <img
             src="https://res.cloudinary.com/dgaofuhmv/image/upload/v1775301001/unnamed_tcmlmp.png"
             alt="Logo"
-            className="w-12 h-12 rounded-2xl object-cover shadow-lg shadow-indigo-500/20 bg-indigo-600/10"
+            className="w-12 h-12 rounded-2xl object-cover shadow-lg shadow-cyan-500/20 bg-cyan-600/10"
           />
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none">IGEN Quản lý học viên Lái xe</h1>
-            <p className="text-indigo-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Hệ thống quản lý thông minh</p>
+            <p className="text-cyan-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Hệ thống quản lý thông minh</p>
           </div>
         </div>
 
@@ -79,7 +79,7 @@ export function LoginView() {
             transition={{ duration: 0.6 }}
           >
             <h2 className="text-4xl lg:text-6xl font-black text-white leading-[1.1] tracking-tighter mb-8 text-balance">
-              NÂNG TẦM <span className="text-indigo-500">QUẢN LÝ</span> ĐÀO TẠO.
+              NÂNG TẦM <span className="text-cyan-500">QUẢN LÝ</span> ĐÀO TẠO.
             </h2>
             <p className="text-slate-400 text-lg lg:text-xl font-medium leading-relaxed mb-12">
               Giải pháp toàn diện tối ưu hóa quy trình tiếp nhận hồ sơ, theo dõi học phí và quản lý lịch thi tự động cho các trung tâm đào tạo lái xe.
@@ -97,7 +97,7 @@ export function LoginView() {
         <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between">
           <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">&copy; 2026 Igen Technology</p>
           <div className="flex gap-4">
-            <div className="w-2 h-2 rounded-full bg-indigo-500" />
+            <div className="w-2 h-2 rounded-full bg-cyan-500" />
             <div className="w-2 h-2 rounded-full bg-slate-800" />
             <div className="w-2 h-2 rounded-full bg-slate-800" />
           </div>
@@ -120,7 +120,7 @@ export function LoginView() {
                   {isRegisterMode && (
                     <button
                       onClick={() => handleModeSwitch(false)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-600 hover:bg-cyan-50"
                     >
                       <ArrowLeft className="w-5 h-5" />
                     </button>
@@ -159,7 +159,7 @@ export function LoginView() {
                         placeholder="Nguyễn Văn A"
                         value={displayName}
                         onChange={(e) => { setDisplayName(e.target.value); setErrorMsg(''); }}
-                        className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border-2 border-slate-50 focus:border-indigo-600 focus:bg-white outline-none transition-all font-medium text-slate-900"
+                        className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border-2 border-slate-50 focus:border-cyan-600 focus:bg-white outline-none transition-all font-medium text-slate-900"
                       />
                     </div>
                   </div>
@@ -175,7 +175,7 @@ export function LoginView() {
                       placeholder="example@gmail.com"
                       value={email}
                       onChange={(e) => { setEmail(e.target.value); setErrorMsg(''); }}
-                      className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border-2 border-slate-50 focus:border-indigo-600 focus:bg-white outline-none transition-all font-medium text-slate-900"
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border-2 border-slate-50 focus:border-cyan-600 focus:bg-white outline-none transition-all font-medium text-slate-900"
                     />
                   </div>
                 </div>
@@ -190,12 +190,12 @@ export function LoginView() {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => { setPassword(e.target.value); setErrorMsg(''); }}
-                      className="w-full pl-12 pr-12 py-4 rounded-2xl bg-slate-50 border-2 border-slate-50 focus:border-indigo-600 focus:bg-white outline-none transition-all font-medium text-slate-900"
+                      className="w-full pl-12 pr-12 py-4 rounded-2xl bg-slate-50 border-2 border-slate-50 focus:border-cyan-600 focus:bg-white outline-none transition-all font-medium text-slate-900"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-indigo-600 transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-cyan-600 transition-colors"
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -213,12 +213,12 @@ export function LoginView() {
                         placeholder="••••••••"
                         value={confirmPassword}
                         onChange={(e) => { setConfirmPassword(e.target.value); setErrorMsg(''); }}
-                        className="w-full pl-12 pr-12 py-4 rounded-2xl bg-slate-50 border-2 border-slate-50 focus:border-indigo-600 focus:bg-white outline-none transition-all font-medium text-slate-900"
+                        className="w-full pl-12 pr-12 py-4 rounded-2xl bg-slate-50 border-2 border-slate-50 focus:border-cyan-600 focus:bg-white outline-none transition-all font-medium text-slate-900"
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-indigo-600 transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-cyan-600 transition-colors"
                       >
                         {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
@@ -237,7 +237,7 @@ export function LoginView() {
                         placeholder="https://script.google.com/macros/s/..."
                         value={gasUrl}
                         onChange={(e) => { setGasUrl(e.target.value); setErrorMsg(''); }}
-                        className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border-2 border-slate-50 focus:border-indigo-600 focus:bg-white outline-none transition-all font-medium text-slate-900"
+                        className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border-2 border-slate-50 focus:border-cyan-600 focus:bg-white outline-none transition-all font-medium text-slate-900"
                       />
                     </div>
                   </div>
@@ -245,14 +245,14 @@ export function LoginView() {
 
                 {!isRegisterMode && (
                   <div className="flex justify-end">
-                    <button type="button" className="text-xs font-bold text-indigo-600 hover:text-indigo-700">Quên mật khẩu?</button>
+                    <button type="button" className="text-xs font-bold text-cyan-600 hover:text-cyan-700">Quên mật khẩu?</button>
                   </div>
                 )}
 
                 <button
                   type="submit"
                   disabled={isLoggingIn}
-                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-4 bg-cyan-600 text-white rounded-2xl font-bold hover:bg-cyan-700 shadow-lg shadow-cyan-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isLoggingIn ? (
                     <RefreshCcw className="w-5 h-5 animate-spin" />
@@ -278,7 +278,7 @@ export function LoginView() {
                     onClick={login}
                     disabled={isLoggingIn}
                     type="button"
-                    className="w-full flex items-center justify-center gap-4 py-4 rounded-2xl text-sm font-bold bg-white border-2 border-slate-100 text-slate-700 hover:border-indigo-600 hover:bg-slate-50 transition-all disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-4 py-4 rounded-2xl text-sm font-bold bg-white border-2 border-slate-100 text-slate-700 hover:border-cyan-600 hover:bg-slate-50 transition-all disabled:opacity-50"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -294,7 +294,7 @@ export function LoginView() {
                       Chưa có tài khoản?{' '}
                       <button
                         onClick={() => handleModeSwitch(true)}
-                        className="text-indigo-600 font-bold hover:underline"
+                        className="text-cyan-600 font-bold hover:underline"
                       >
                         Đăng ký ngay
                       </button>
@@ -307,7 +307,7 @@ export function LoginView() {
         </div>
 
         <div className="mt-auto text-center pt-8">
-          <button className="text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors">
+          <button className="text-xs font-bold text-slate-400 hover:text-cyan-600 transition-colors">
             Điều khoản sử dụng & Chính sách bảo mật
           </button>
         </div>
@@ -319,8 +319,8 @@ export function LoginView() {
 function FeatureItem({ icon: Icon, text }: { icon: React.ComponentType<{ className?: string }>, text: string }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
-        <Icon className="w-4 h-4 text-indigo-400" />
+      <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20">
+        <Icon className="w-4 h-4 text-cyan-400" />
       </div>
       <span className="text-slate-400 text-sm font-semibold">{text}</span>
     </div>

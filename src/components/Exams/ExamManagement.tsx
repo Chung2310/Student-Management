@@ -239,7 +239,7 @@ export function ExamManagement() {
           </button>
           <button 
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-8 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
+            className="flex items-center gap-2 px-8 py-2.5 bg-cyan-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-cyan-100 hover:bg-cyan-700 transition-all"
           >
             <Plus className="w-5 h-5" /> Tạo đợt thi
           </button>
@@ -248,7 +248,7 @@ export function ExamManagement() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 no-print">
-        <StatCard label="Tổng đợt thi" value={stats.totalExams} icon={ClipboardList} color="text-indigo-600" bgColor="bg-indigo-50" />
+        <StatCard label="Tổng đợt thi" value={stats.totalExams} icon={ClipboardList} color="text-cyan-600" bgColor="bg-cyan-50" />
         <StatCard label="Sắp diễn ra" value={stats.upcoming} icon={Clock} color="text-orange-500" bgColor="bg-orange-50" />
         <StatCard label="Đã xác nhận" value={stats.confirmed} icon={CheckCircle2} color="text-emerald-500" bgColor="bg-emerald-50" />
         <StatCard label="Đã hoàn thành" value={stats.completed} icon={CheckCircle2} color="text-sky-500" bgColor="bg-sky-50" />
@@ -261,22 +261,22 @@ export function ExamManagement() {
           onClick={() => setActiveTab('exams')}
           className={cn(
             "flex items-center gap-2 px-3 sm:px-4 py-4 sm:py-5 text-sm sm:text-base font-bold transition-all relative whitespace-nowrap",
-            activeTab === 'exams' ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
+            activeTab === 'exams' ? "text-cyan-600" : "text-slate-400 hover:text-slate-600"
           )}
         >
           <ClipboardList className="w-4 h-4 sm:w-5 h-5" /> Đợt thi
-          {activeTab === 'exams' && <motion.div layoutId="tabLine" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
+          {activeTab === 'exams' && <motion.div layoutId="tabLine" className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-600" />}
         </button>
         <button 
           onClick={() => setActiveTab('students')}
           className={cn(
             "flex items-center gap-2 px-3 sm:px-4 py-4 sm:py-5 text-sm sm:text-base font-bold transition-all relative whitespace-nowrap",
-            activeTab === 'students' ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
+            activeTab === 'students' ? "text-cyan-600" : "text-slate-400 hover:text-slate-600"
           )}
         >
           <UsersIcon className="w-4 h-4 sm:w-5 h-5" /> HV chưa có lịch
           <span className="hidden xs:inline px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-bold ml-1">{stats.unassignedStudents}</span>
-          {activeTab === 'students' && <motion.div layoutId="tabLine" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
+          {activeTab === 'students' && <motion.div layoutId="tabLine" className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-600" />}
         </button>
       </div>
 
@@ -483,7 +483,7 @@ function FilterSelect({ label, value, onChange, options }: FilterSelectProps) {
         <select 
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full h-11 bg-slate-50 px-4 pr-10 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 outline-none appearance-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 transition-all"
+          className="w-full h-11 bg-slate-50 px-4 pr-10 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 outline-none appearance-none focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/5 transition-all"
         >
           {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
         </select>
@@ -525,7 +525,7 @@ function ExamCard({ exam, getStatusInfo, onDelete, onEdit, onStatusClick, onAssi
               <span className={cn("flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold border", status.color)}>
                 <status.icon className="w-3 h-3 sm:w-4 h-4" /> {status.label}
               </span>
-              <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] sm:text-xs font-bold border border-indigo-100">
+              <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-cyan-50 text-cyan-700 rounded-lg text-[10px] sm:text-xs font-bold border border-cyan-100">
                 {exam.rank}
               </span>
               <span className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -588,7 +588,7 @@ function ExamCard({ exam, getStatusInfo, onDelete, onEdit, onStatusClick, onAssi
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end no-print">
             <button 
               onClick={(e) => { e.stopPropagation(); onAssignClick(); }}
-              className="p-2 sm:p-2.5 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all border border-slate-200 bg-white shadow-sm active:scale-95"
+              className="p-2 sm:p-2.5 rounded-xl text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 transition-all border border-slate-200 bg-white shadow-sm active:scale-95"
             >
               <UserPlus className="w-5 h-5" />
             </button>

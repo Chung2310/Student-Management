@@ -111,7 +111,7 @@ export function StatusTransitionModal({ student, isOpen, onClose }: StatusTransi
                   <div className="flex items-center gap-3 py-3 px-4 bg-slate-50 rounded-2xl border border-slate-100">
                     <span className="text-xs font-bold text-slate-400">{student.status}</span>
                     <ArrowRight className="w-3.5 h-3.5 text-slate-300" />
-                    <span className="text-xs font-bold text-indigo-600">{nextStatus}</span>
+                    <span className="text-xs font-bold text-cyan-600">{nextStatus}</span>
                   </div>
                   {feeError && nextStatus === 'Đang thi' && (
                     <p className="text-[11px] font-bold text-rose-500 bg-rose-50 px-3 py-2 rounded-lg">{feeError}</p>

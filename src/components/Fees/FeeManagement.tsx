@@ -31,7 +31,7 @@ export function FeeManagement() {
   // Helper to format number to VN currency
   const formatCurrency = (amount: number, withSpace = true) => {
     const formatted = new Intl.NumberFormat('vi-VN').format(amount);
-    return withSpace ? `${formatted} đ` : `${formatted}đ`;
+    return withSpace ? `${formatted}\u00a0đ` : `${formatted}đ`;
   };
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -144,8 +144,8 @@ export function FeeManagement() {
           label="Tổng học phí" 
           value={formatCurrency(stats.totalFee)} 
           icon={Banknote} 
-          color="text-indigo-600" 
-          bgColor="bg-indigo-50" 
+          color="text-cyan-600" 
+          bgColor="bg-cyan-50" 
         />
         <FeeStatCard 
           label="Đã thu" 
@@ -165,8 +165,8 @@ export function FeeManagement() {
           label="HV còn nợ" 
           value={stats.studentsWithDebt} 
           icon={UsersIcon} 
-          color="text-purple-500" 
-          bgColor="bg-purple-50" 
+          color="text-teal-500" 
+          bgColor="bg-teal-50" 
           isText={false}
         />
       </div>
@@ -180,7 +180,7 @@ export function FeeManagement() {
               <select 
                 value={areaFilter}
                 onChange={(e) => setAreaFilter(e.target.value)}
-                className="w-full h-11 bg-slate-50 px-4 pr-10 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 outline-none appearance-none focus:border-indigo-600 transition-all"
+                className="w-full h-11 bg-slate-50 px-4 pr-10 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 outline-none appearance-none focus:border-cyan-600 transition-all"
               >
                 <option value="Tất cả">Tất cả</option>
                 <option value="Nội thành">Nội thành</option>
@@ -196,7 +196,7 @@ export function FeeManagement() {
               <select 
                 value={debtFilter}
                 onChange={(e) => setDebtFilter(e.target.value)}
-                className="w-full h-11 bg-slate-50 px-4 pr-10 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 outline-none appearance-none focus:border-indigo-600 transition-all"
+                className="w-full h-11 bg-slate-50 px-4 pr-10 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 outline-none appearance-none focus:border-cyan-600 transition-all"
               >
                 <option value="Tất cả">Tất cả</option>
                 <option value="Còn nợ">Còn nợ</option>
@@ -215,7 +215,7 @@ export function FeeManagement() {
               placeholder="Tên / SĐT..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-11 bg-slate-50 pl-11 pr-4 rounded-xl border border-slate-100 text-sm font-medium outline-none focus:border-indigo-600 transition-all"
+              className="w-full h-11 bg-slate-50 pl-11 pr-4 rounded-xl border border-slate-100 text-sm font-medium outline-none focus:border-cyan-600 transition-all"
             />
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           </div>
@@ -231,9 +231,9 @@ export function FeeManagement() {
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Học viên</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Hạng</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Khu vực</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Tổng HP</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Đã đóng</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Còn nợ</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right whitespace-nowrap">Tổng HP</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right whitespace-nowrap">Đã đóng</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right whitespace-nowrap">Còn nợ</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Tiến độ</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Lần cuối</th>
                 <th className="px-6 py-4 text-right border-b border-slate-100"></th>
@@ -265,7 +265,7 @@ export function FeeManagement() {
                       </div>
                     </td>
                     <td className="px-6 py-5 border-b border-slate-50 text-center">
-                      <span className="px-2 py-1 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                      <span className="px-2 py-1 bg-cyan-50 border border-cyan-100 text-cyan-600 rounded-lg text-[10px] font-black uppercase tracking-wider">
                         {student.rank}
                       </span>
                     </td>
@@ -279,22 +279,22 @@ export function FeeManagement() {
                         ) : student.area}
                       </div>
                     </td>
-                    <td className="px-6 py-5 border-b border-slate-50 text-right">
-                      <span className="text-sm font-black text-slate-800 tracking-tight">
+                    <td className="px-6 py-5 border-b border-slate-50 text-right whitespace-nowrap">
+                      <span className="text-sm font-black text-slate-800 tracking-tight whitespace-nowrap">
                         {formatCurrency(total, false)}
                       </span>
                     </td>
-                    <td className="px-6 py-5 border-b border-slate-50 text-right">
+                    <td className="px-6 py-5 border-b border-slate-50 text-right whitespace-nowrap">
                       <span className={cn(
-                        "text-sm font-black tracking-tight",
+                        "text-sm font-black tracking-tight whitespace-nowrap",
                         paid > 0 ? "text-emerald-500" : "text-slate-300"
                       )}>
                         {formatCurrency(paid)}
                       </span>
                     </td>
-                    <td className="px-6 py-5 border-b border-slate-50 text-right">
+                    <td className="px-6 py-5 border-b border-slate-50 text-right whitespace-nowrap">
                       <span className={cn(
-                        "text-sm font-black tracking-tight",
+                        "text-sm font-black tracking-tight whitespace-nowrap",
                         debt > 0 ? "text-rose-500" : "text-slate-300"
                       )}>
                         {formatCurrency(debt)}
@@ -326,7 +326,7 @@ export function FeeManagement() {
                           setSelectedStudentForPayment(student);
                           setIsPaymentModalOpen(true);
                         }}
-                        className="p-2.5 rounded-2xl bg-white border border-slate-100 text-slate-300 hover:text-indigo-600 hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-50/50 transition-all group-hover:scale-105 active:scale-95"
+                        className="p-2.5 rounded-2xl bg-white border border-slate-100 text-slate-300 hover:text-cyan-600 hover:border-cyan-100 hover:shadow-xl hover:shadow-cyan-50/50 transition-all group-hover:scale-105 active:scale-95"
                       >
                         <CreditCard className="w-4 h-4" />
                       </button>
@@ -340,24 +340,26 @@ export function FeeManagement() {
         
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 p-4 border-t border-slate-100 bg-slate-50/50">
-            <button 
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              className="px-3 py-1 text-xs font-bold bg-white border border-slate-200 rounded-lg disabled:opacity-50"
-            >
-              Trước
-            </button>
-            <span className="text-xs font-black text-slate-600">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50 pagination-bar">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               Trang {currentPage} / {totalPages}
-            </span>
-            <button 
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              className="px-3 py-1 text-xs font-bold bg-white border border-slate-200 rounded-lg disabled:opacity-50"
-            >
-              Sau
-            </button>
+            </p>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-cyan-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                Trước
+              </button>
+              <button 
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-cyan-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                Sau
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -393,7 +395,7 @@ function FeeStatCard({ label, value, icon: Icon, color, bgColor }: FeeStatCardPr
         <Icon className={cn("w-7 h-7", color)} />
       </div>
       <div>
-        <p className={cn("text-2xl font-black text-slate-900 leading-none tracking-tight")}>
+        <p className={cn("text-2xl font-black text-slate-900 leading-none tracking-tight whitespace-nowrap")}>
           {value}
         </p>
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] mt-3">{label}</p>

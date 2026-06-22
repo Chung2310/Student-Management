@@ -129,7 +129,7 @@ export function ChatbotWidget() {
       if (isBullet) {
         return (
           <div key={idx} className="flex items-start gap-2 my-1 pl-1">
-            <span className="text-indigo-500 mt-1.5 shrink-0 select-none">•</span>
+            <span className="text-cyan-500 mt-1.5 shrink-0 select-none">•</span>
             <span className="text-slate-700 leading-relaxed text-xs sm:text-sm">{parsedLine}</span>
           </div>
         );
@@ -156,7 +156,7 @@ export function ChatbotWidget() {
           onClick={() => setIsOpen(!isOpen)}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="relative w-14 h-14 bg-gradient-to-tr from-brand-primary to-indigo-600 hover:from-indigo-600 hover:to-brand-primary text-white rounded-full shadow-lg shadow-indigo-500/25 flex items-center justify-center cursor-pointer border border-white/10"
+          className="relative w-14 h-14 bg-gradient-to-tr from-brand-primary to-cyan-600 hover:from-cyan-600 hover:to-brand-primary text-white rounded-full shadow-lg shadow-cyan-500/25 flex items-center justify-center cursor-pointer border border-white/10"
         >
           <AnimatePresence mode="wait">
             {isOpen ? (
@@ -179,7 +179,7 @@ export function ChatbotWidget() {
                 className="relative"
               >
                 <Bot className="w-6 h-6" />
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-indigo-600 animate-pulse" />
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-cyan-600 animate-pulse" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -197,7 +197,7 @@ export function ChatbotWidget() {
             className="fixed bottom-24 right-6 w-96 h-[550px] max-h-[calc(100vh-8rem)] max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-md rounded-[2rem] border border-slate-100/50 shadow-2xl flex flex-col z-[60] overflow-hidden"
           >
             {/* Header */}
-            <div className="px-6 py-4 bg-gradient-to-r from-brand-primary via-indigo-600 to-indigo-700 text-white flex items-center justify-between shrink-0">
+            <div className="px-6 py-4 bg-gradient-to-r from-brand-primary via-cyan-600 to-cyan-700 text-white flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-inner">
                   <Bot className="w-5 h-5 text-white" />
@@ -207,7 +207,7 @@ export function ChatbotWidget() {
                     Trợ lý ảo AI
                     <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                   </h4>
-                  <p className="text-[10px] text-indigo-100 font-bold tracking-wide uppercase flex items-center gap-1">
+                  <p className="text-[10px] text-cyan-100 font-bold tracking-wide uppercase flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                     Trực tuyến
                   </p>
@@ -220,14 +220,14 @@ export function ChatbotWidget() {
                     className="p-2 hover:bg-white/10 rounded-xl transition-colors cursor-pointer"
                     title="Làm mới lịch sử chat"
                   >
-                    <Trash2 className="w-4 h-4 text-indigo-100 hover:text-white" />
+                    <Trash2 className="w-4 h-4 text-cyan-100 hover:text-white" />
                   </button>
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
                   className="p-2 hover:bg-white/10 rounded-xl transition-colors cursor-pointer"
                 >
-                  <X className="w-4 h-4 text-indigo-100 hover:text-white" />
+                  <X className="w-4 h-4 text-cyan-100 hover:text-white" />
                 </button>
               </div>
             </div>
@@ -241,14 +241,14 @@ export function ChatbotWidget() {
                 >
                   <div className={`flex gap-2.5 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                     {msg.role !== 'user' && (
-                      <div className="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0 mt-1 shadow-sm">
-                        <Bot className="w-4 h-4 text-indigo-600" />
+                      <div className="w-7 h-7 rounded-lg bg-cyan-50 border border-cyan-100 flex items-center justify-center shrink-0 mt-1 shadow-sm">
+                        <Bot className="w-4 h-4 text-cyan-600" />
                       </div>
                     )}
                     <div
                       className={`px-4 py-3 rounded-2xl text-slate-800 shadow-sm ${
                         msg.role === 'user'
-                          ? 'bg-indigo-600 text-white rounded-br-none font-medium'
+                          ? 'bg-cyan-600 text-white rounded-br-none font-medium'
                           : 'bg-white rounded-bl-none border border-slate-100'
                       }`}
                     >
@@ -266,13 +266,13 @@ export function ChatbotWidget() {
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="flex gap-2.5 max-w-[85%]">
-                    <div className="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0 mt-1 shadow-sm">
-                      <Bot className="w-4 h-4 text-indigo-600" />
+                    <div className="w-7 h-7 rounded-lg bg-cyan-50 border border-cyan-100 flex items-center justify-center shrink-0 mt-1 shadow-sm">
+                      <Bot className="w-4 h-4 text-cyan-600" />
                     </div>
                     <div className="px-4 py-3 rounded-2xl rounded-bl-none bg-white border border-slate-100 flex items-center gap-1.5 shadow-sm min-h-[38px]">
-                      <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                      <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                      <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" />
+                      <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                      <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                      <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce" />
                     </div>
                   </div>
                 </div>
@@ -287,7 +287,7 @@ export function ChatbotWidget() {
                       <button
                         key={idx}
                         onClick={() => handleSend(suggestion)}
-                        className="w-full text-left px-4 py-2.5 bg-white hover:bg-indigo-50/30 text-xs font-bold text-slate-600 hover:text-indigo-600 rounded-xl border border-slate-100 hover:border-indigo-100 transition-all cursor-pointer shadow-sm active:scale-[0.99]"
+                        className="w-full text-left px-4 py-2.5 bg-white hover:bg-cyan-50/30 text-xs font-bold text-slate-600 hover:text-cyan-600 rounded-xl border border-slate-100 hover:border-cyan-100 transition-all cursor-pointer shadow-sm active:scale-[0.99]"
                       >
                         {suggestion}
                       </button>
@@ -314,12 +314,12 @@ export function ChatbotWidget() {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Hỏi trợ lý ảo..."
                   disabled={isLoading}
-                  className="flex-1 h-11 bg-slate-50 border border-slate-200 focus:border-indigo-500 px-4 rounded-xl text-xs sm:text-sm font-medium outline-none focus:ring-4 focus:ring-indigo-500/5 transition-all text-slate-800 disabled:opacity-50"
+                  className="flex-1 h-11 bg-slate-50 border border-slate-200 focus:border-cyan-500 px-4 rounded-xl text-xs sm:text-sm font-medium outline-none focus:ring-4 focus:ring-cyan-500/5 transition-all text-slate-800 disabled:opacity-50"
                 />
                 <button
                   type="submit"
                   disabled={!input.trim() || isLoading}
-                  className="w-11 h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-indigo-500/10 active:scale-95 cursor-pointer shrink-0"
+                  className="w-11 h-11 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-cyan-500/10 active:scale-95 cursor-pointer shrink-0"
                 >
                   {isLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

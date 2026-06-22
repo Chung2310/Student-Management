@@ -158,7 +158,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
                   name="fullName"
                   value={formData.fullName} 
                   onChange={handleInputChange} 
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all" 
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all" 
                 />
               </div>
               <div className="space-y-1">
@@ -170,7 +170,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
                   name="phone"
                   value={formData.phone} 
                   onChange={handleInputChange} 
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all" 
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all" 
                 />
               </div>
 
@@ -185,7 +185,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
                   value={formData.email} 
                   onChange={handleInputChange} 
                   placeholder="example@gmail.com"
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all" 
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all" 
                 />
               </div>
 
@@ -197,7 +197,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
                   name="referral"
                   value={formData.referral} 
                   onChange={handleInputChange} 
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all" 
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all" 
                 />
               </div>
 
@@ -211,7 +211,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
                   name="birthday"
                   value={formData.birthday} 
                   onChange={handleInputChange} 
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all" 
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all" 
                   placeholder="DD/MM/YYYY" 
                 />
               </div>
@@ -224,7 +224,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
                   name="idCard"
                   value={formData.idCard} 
                   onChange={handleInputChange} 
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all" 
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all" 
                 />
               </div>
 
@@ -238,7 +238,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
                     name="rank"
                     value={formData.rank} 
                     onChange={handleInputChange} 
-                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all"
+                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all"
                   >
                     <option value="">-- Chọn hạng --</option>
                     <option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option>
@@ -256,7 +256,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
                     name="area"
                     value={formData.area} 
                     onChange={handleInputChange} 
-                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all"
+                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all"
                   >
                     <option value="">-- Chọn khu vực --</option>
                     <option value="Nội thành">Nội thành</option>
@@ -285,7 +285,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
                   name="fee"
                   value={formData.fee} 
                   onChange={handleInputChange} 
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all" 
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all" 
                   placeholder="Ví dụ: 4.000.000"
                 />
               </div>
@@ -298,7 +298,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
                   name="address"
                   value={formData.address} 
                   onChange={handleInputChange} 
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all" 
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all" 
                 />
               </div>
             </div>
@@ -316,7 +316,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
               <button 
                 type="submit" 
                 disabled={isSubmitting} 
-                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-100 transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-70 disabled:hover:translate-y-0"
+                className="flex items-center gap-2 px-6 py-2.5 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-xs font-bold shadow-lg shadow-cyan-100 transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-70 disabled:hover:translate-y-0"
               >
                 {isSubmitting ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
