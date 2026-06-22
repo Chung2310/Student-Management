@@ -21,3 +21,10 @@
 
 - **Clean Architecture & Decoupling**: Obsolete configurations, scripts, and package dependencies of migrated platforms (e.g., Firebase) should be fully purged from the codebase. This keeps dependencies minimal, prevents security audit warnings (e.g. from unused packages), and ensures that all entry points and files focus exclusively on active systems (e.g. MongoDB and Cloudinary).
 
+- **Dynamic AI Model Routing**: When integrating third-party AI APIs like OpenRouter in systems, utilizing dynamic fallback router endpoints (e.g., `openrouter/free`) is preferred over pinning concrete free model IDs. This guards the service against deprecations or status changes in free model catalogs.
+
+- **React State Optimization (Lazy Initialization)**: Avoid calling state mutations inside `useEffect` immediately on component mount. If the initial state depends on synchronous operations like `localStorage` parsing, utilize lazy initialization functions inside `useState` (e.g., `useState(() => { ... })`). This prevents unnecessary render cascades, optimizes paint performance, and resolves dependency warning issues under linter analysis.
+
+- **Isolated Database Context Injection**: For AI Chatbots embedded in internal management dashboards, dynamically querying and serializing user-owned MongoDB records (scoped by `ownerId` from the JWT token) directly into the System Prompt context ensures 100% accurate responses and maintains absolute multi-user data isolation.
+
+- **AI Integration Consolidation**: When consolidating multiple AI engines to a single high-performance model (e.g. Google Gemini 2.5), using the unified OpenAI compatibility schema for payloads (containing messages array, role headers) simplifies routing and makes it effortless to remove external vendor wrappers (like OpenRouter or PiAPI). This reduces technical debt, reduces environmental dependencies, and ensures high availability and cost stability.
