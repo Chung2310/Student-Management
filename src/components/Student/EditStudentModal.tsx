@@ -27,6 +27,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
     fee: '',
     address: '',
     email: '',
+    status: '',
   });
 
   useEffect(() => {
@@ -44,6 +45,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
           registrationDate: student.registrationDate || '',
           fee: student.fee || '',
           address: student.address || '',
+          status: student.status || '',
         });
       }, 0);
       return () => clearTimeout(timer);
@@ -290,8 +292,8 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
                 />
               </div>
 
-              {/* Row 6 - Address */}
-              <div className="sm:col-span-2 space-y-1">
+              {/* Row 6 - Address & Status */}
+              <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Địa chỉ</label>
                 <input 
                   type="text" 
@@ -300,6 +302,28 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
                   onChange={handleInputChange} 
                   className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all" 
                 />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Trạng thái</label>
+                <div className="relative">
+                  <select 
+                    name="status"
+                    value={formData.status} 
+                    onChange={handleInputChange} 
+                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all"
+                  >
+                    <option value="Chờ KSK">Chờ KSK</option>
+                    <option value="Đã KSK">Đã KSK</option>
+                    <option value="Đã nộp HS">Đã nộp HS</option>
+                    <option value="Đang học">Đang học</option>
+                    <option value="Đang thi">Đang thi</option>
+                    <option value="Đã đậu">Đã đậu</option>
+                    <option value="Thi lại">Thi lại</option>
+                    <option value="Nghỉ học">Nghỉ học</option>
+                    <option value="Nợ học phí">Nợ học phí</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                </div>
               </div>
             </div>
 
