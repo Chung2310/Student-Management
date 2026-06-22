@@ -95,10 +95,12 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
 
     setIsSubmitting(true);
 
+    const { registrationDate: _registrationDate, ...updatePayload } = formData;
+
     try {
       await apiFetch(`/students/${student.id}`, {
         method: 'PATCH',
-        body: JSON.stringify(formData),
+        body: JSON.stringify(updatePayload),
       });
       window.dispatchEvent(new Event("student-mutation"));
       toast.success('Đã cập nhật thông tin học viên thành công!');
