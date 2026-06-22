@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { LogIn, Car, CheckCircle2, ShieldCheck, Zap, RefreshCcw, Mail, Lock, UserPlus, ArrowLeft, Eye, EyeOff, AlertCircle, User, Link } from 'lucide-react';
+import { LogIn, CheckCircle2, ShieldCheck, Zap, RefreshCcw, Mail, Lock, UserPlus, ArrowLeft, Eye, EyeOff, AlertCircle, User, Link } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
 export function LoginView() {
@@ -61,11 +61,13 @@ export function LoginView() {
       {/* Left Side: Branding & Info */}
       <div className="relative flex-1 flex flex-col p-8 lg:p-16 z-10">
         <div className="flex items-center gap-3 mb-12">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <Car className="w-7 h-7 text-white" />
-          </div>
+          <img
+            src="https://res.cloudinary.com/dgaofuhmv/image/upload/v1775301001/unnamed_tcmlmp.png"
+            alt="Logo"
+            className="w-12 h-12 rounded-2xl object-cover shadow-lg shadow-indigo-500/20 bg-indigo-600/10"
+          />
           <div>
-            <h1 className="text-2xl font-black text-white tracking-tight leading-none">QLHV Lái Xe</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none">IGEN Quản lý học viên Lái xe</h1>
             <p className="text-indigo-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Hệ thống quản lý thông minh</p>
           </div>
         </div>
@@ -93,7 +95,7 @@ export function LoginView() {
         </div>
 
         <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between">
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">&copy; 2026 IGENTECH.VN</p>
+          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">&copy; 2026 Igen Technology</p>
           <div className="flex gap-4">
             <div className="w-2 h-2 rounded-full bg-indigo-500" />
             <div className="w-2 h-2 rounded-full bg-slate-800" />

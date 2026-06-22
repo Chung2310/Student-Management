@@ -123,7 +123,7 @@ export default function App() {
 
         <footer className="p-6 text-center text-slate-400">
           <p className="text-[10px] font-bold uppercase tracking-widest">
-            &copy; 2026 QLHV Lái Xe • Phần mềm quản lý đào tạo & sát hạch
+            &copy; 2026 IGEN Quản lý học viên Lái xe • Phần mềm quản lý đào tạo & sát hạch
           </p>
         </footer>
       </div>
