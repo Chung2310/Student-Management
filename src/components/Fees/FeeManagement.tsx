@@ -395,7 +395,7 @@ function FeeStatCard({ label, value, icon: Icon, color, bgColor }: FeeStatCardPr
         <Icon className={cn("w-7 h-7", color)} />
       </div>
       <div>
-        <p className={cn("text-2xl font-black text-slate-900 leading-none tracking-tight whitespace-nowrap")}>
+        <p className={cn("text-xl sm:text-lg md:text-xl lg:text-base xl:text-lg 2xl:text-2xl font-black text-slate-900 leading-none tracking-tight whitespace-nowrap")}>
           {value}
         </p>
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] mt-3">{label}</p>

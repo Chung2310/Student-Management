@@ -44,10 +44,9 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
       </AnimatePresence>
 
       <aside className={cn(
-        "bg-brand-sidebar flex flex-col h-screen sticky top-0 transition-all duration-300 z-[50] text-slate-300",
-        "fixed lg:sticky lg:translate-x-0 w-72 lg:w-64",
-        isOpen ? "translate-x-0" : "-translate-x-full",
-        "lg:flex" // Show on large screens by default
+        "bg-brand-sidebar flex flex-col h-screen fixed top-0 left-0 transition-all duration-300 z-[50] text-slate-300",
+        "w-72 lg:w-64",
+        isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-6 overflow-y-auto no-scrollbar">
           <div className="flex items-center justify-between mb-8">

@@ -23,6 +23,7 @@ import { useAuth } from './hooks/useAuth';
 import { LoginView } from './components/Auth/LoginView';
 import { Loader2 } from 'lucide-react';
 import { ChatbotWidget } from './components/Chatbot/ChatbotWidget';
+import { cn } from './lib/utils';
 
 export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'SettingsAdmin';
 
@@ -31,7 +32,7 @@ export default function App() {
   const [currentView, setCurrentView] = React.useState<ViewType>('Dashboard');
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
 
   const currentDate = new Date();
   const formattedDate = `Thứ Sáu, ${currentDate.getDate()} tháng ${currentDate.getMonth() + 1}, ${currentDate.getFullYear()}`;
@@ -105,16 +106,21 @@ export default function App() {
         currentView={currentView} 
         onViewChange={(view) => {
           setCurrentView(view);
-          setIsSidebarOpen(false);
+          if (window.innerWidth < 1024) {
+            setIsSidebarOpen(false);
+          }
         }} 
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className={cn(
+        "flex-1 flex flex-col min-w-0 transition-all duration-300",
+        isSidebarOpen ? "lg:pl-64" : "lg:pl-0"
+      )}>
         <Header 
           currentView={currentView} 
-          onMenuClick={() => setIsSidebarOpen(true)}
+          onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
         />
 
         <main className="flex-1 p-4 md:p-8 space-y-6 max-w-[1600px] mx-auto w-full">
