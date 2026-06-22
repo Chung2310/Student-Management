@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, Calendar, Wallet, MessageSquare, Settings, LogOut, Car, LogIn, RefreshCcw, X } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Wallet, MessageSquare, Settings, LogOut, LogIn, RefreshCcw, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
 import { useStudents } from '../../hooks/useStudents';
@@ -52,11 +52,13 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
         <div className="p-6 overflow-y-auto no-scrollbar">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-brand-primary flex items-center justify-center shadow-lg">
-                <Car className="w-6 h-6 text-white" />
-              </div>
+              <img
+                src="https://res.cloudinary.com/dgaofuhmv/image/upload/v1775301001/unnamed_tcmlmp.png"
+                alt="Logo"
+                className="w-10 h-10 rounded-xl object-cover shadow-lg bg-white/5"
+              />
               <div>
-                <h1 className="font-bold text-white text-base leading-tight">QLHV Lái Xe</h1>
+                <h1 className="font-bold text-white text-sm leading-tight">IGEN QLHV Lái Xe</h1>
                 <p className="text-[10px] text-slate-400 font-medium">Quản lý học viên</p>
               </div>
             </div>
