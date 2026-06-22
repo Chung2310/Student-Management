@@ -95,7 +95,7 @@ export function LoginView() {
         </div>
 
         <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between">
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">&copy; 2026 IGENTECH.VN</p>
+          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">&copy; 2026 Igen Technology</p>
           <div className="flex gap-4">
             <div className="w-2 h-2 rounded-full bg-indigo-500" />
             <div className="w-2 h-2 rounded-full bg-slate-800" />
