@@ -532,13 +532,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
                       </button>
                       <button 
                         onClick={() => setEditingStudent(student)}
-                        disabled={student.status !== 'Chờ KSK' && student.status !== 'Đã KSK'}
-                        className={cn(
-                          "p-1.5 rounded-lg transition-colors",
-                          (student.status === 'Chờ KSK' || student.status === 'Đã KSK')
-                            ? "text-slate-400 hover:text-cyan-600 hover:bg-cyan-50"
-                            : "text-slate-300 opacity-50 cursor-not-allowed"
-                        )}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 transition-colors"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>

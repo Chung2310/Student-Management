@@ -24,7 +24,7 @@ export function Header({ currentView, onMenuClick }: HeaderProps) {
       <div className="flex items-center gap-4">
         <button 
           onClick={onMenuClick}
-          className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg border border-slate-200 shadow-sm active:scale-95 transition-all"
+          className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg border border-slate-200 shadow-sm active:scale-95 transition-all"
         >
           <Menu className="w-5 h-5" />
         </button>
