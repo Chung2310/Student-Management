@@ -139,8 +139,8 @@ export function BusinessResults() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <p className="text-[10px] font-black text-cyan-600 uppercase tracking-[0.2em] mb-1">Phân tích tuyển sinh & dòng tiền</p>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Kết quả kinh doanh</h1>
-          <p className="text-slate-400 text-xs font-medium mt-1 leading-relaxed max-w-2xl">
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Kết quả kinh doanh</h1>
+          <p className="text-slate-400 text-sm font-medium mt-1 leading-relaxed max-w-2xl">
             Đo lường theo học viên có một trong kỳ (ngày đăng ký hồ sơ, hoặc ngày tạo nếu chưa có đăng ký).
           </p>
         </div>

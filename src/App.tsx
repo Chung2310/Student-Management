@@ -61,8 +61,8 @@ export default function App() {
           <>
             <section className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Tổng quan</h2>
-                <p className="text-slate-400 text-xs font-medium mt-1">Hôm nay: {formattedDate}</p>
+                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Tổng quan</h1>
+                <p className="text-slate-400 text-sm font-medium mt-1">Hôm nay: {formattedDate}</p>
               </div>
               <LuxuryButton 
                 onClick={() => setIsAddModalOpen(true)}
