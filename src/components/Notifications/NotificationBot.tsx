@@ -522,8 +522,8 @@ export function NotificationBot() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight text-left">BOT Thông báo</h1>
-          <p className="text-slate-500 text-sm font-medium mt-1 text-left">Gửi thông báo tự động đến học viên</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight text-left">BOT Thông báo</h1>
+          <p className="text-slate-400 text-sm font-medium mt-1 text-left">Gửi thông báo tự động đến học viên</p>
         </div>
       </div>
 

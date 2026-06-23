@@ -255,8 +255,8 @@ export function ExamManagement() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Lịch thi</h1>
-          <p className="text-slate-500 text-base font-medium mt-2">Quản lý đợt thi, gắn học viên và theo dõi kết quả</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Lịch thi</h1>
+          <p className="text-slate-400 text-sm font-medium mt-1">Quản lý đợt thi, gắn học viên và theo dõi kết quả</p>
         </div>
         <div className="flex items-center gap-3">
           <button 
