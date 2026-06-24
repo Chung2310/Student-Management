@@ -193,8 +193,36 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    
+    // Serve static files with proper Cache-Control headers
+    app.use(express.static(distPath, {
+      maxAge: '1d',
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          // Do not cache HTML files (entry point index.html)
+          res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+        } else if (filePath.includes(path.sep + 'assets' + path.sep) || /\.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?|eot|ttf)$/.test(filePath)) {
+          // Cache hashed assets for a long time (immutable)
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      }
+    }));
+
     app.get('*', (req, res) => {
+      // Return 404 for missing static assets instead of serving index.html
+      const ext = path.extname(req.path);
+      if (ext && ext !== '.html') {
+        return res.status(404).send('Asset not found');
+      }
+      if (req.path.startsWith('/assets/')) {
+        return res.status(404).send('Asset not found');
+      }
+
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
