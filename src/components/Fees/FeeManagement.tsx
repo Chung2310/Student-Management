@@ -125,8 +125,8 @@ export function FeeManagement() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Học phí</h1>
-          <p className="text-slate-500 text-sm md:text-base font-medium mt-1 md:mt-2">Theo dõi thu, nợ học phí của tất cả học viên</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Học phí</h1>
+          <p className="text-slate-400 text-sm font-medium mt-1">Theo dõi thu, nợ học phí của tất cả học viên</p>
         </div>
         <div className="flex items-center gap-3">
           <button 

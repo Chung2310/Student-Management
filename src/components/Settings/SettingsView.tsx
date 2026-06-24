@@ -590,8 +590,8 @@ export function SettingsView() {
     <div className="space-y-8 pb-12">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Cài đặt & Quản trị</h1>
-          <p className="text-slate-500 text-sm font-medium mt-1">Quản lý cấu hình toàn bộ hệ thống và dữ liệu vận hành</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Cài đặt & Quản trị</h1>
+          <p className="text-slate-400 text-sm font-medium mt-1">Quản lý cấu hình toàn bộ hệ thống và dữ liệu vận hành</p>
         </div>
       </div>
 

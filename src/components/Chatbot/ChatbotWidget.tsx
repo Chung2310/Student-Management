@@ -39,7 +39,7 @@ export function ChatbotWidget() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
 
@@ -246,11 +246,10 @@ export function ChatbotWidget() {
                       </div>
                     )}
                     <div
-                      className={`px-4 py-3 rounded-2xl text-slate-800 shadow-sm ${
-                        msg.role === 'user'
-                          ? 'bg-cyan-600 text-white rounded-br-none font-medium'
-                          : 'bg-white rounded-bl-none border border-slate-100'
-                      }`}
+                      className={`px-4 py-3 rounded-2xl text-slate-800 shadow-sm ${msg.role === 'user'
+                        ? 'bg-cyan-600 text-white rounded-br-none font-medium'
+                        : 'bg-white rounded-bl-none border border-slate-100'
+                        }`}
                     >
                       {msg.role === 'user' ? (
                         <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
@@ -295,7 +294,7 @@ export function ChatbotWidget() {
                   </div>
                 </div>
               )}
-              
+
               <div ref={messagesEndRef} />
             </div>
 
@@ -328,11 +327,7 @@ export function ChatbotWidget() {
                   )}
                 </button>
               </form>
-              <div className="mt-2.5 flex items-center justify-center gap-1">
-                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">
-                  Hỗ trợ bởi Gemini AI • Google
-                </span>
-              </div>
+
             </div>
 
             {/* Custom Confirmation Dialog */}
