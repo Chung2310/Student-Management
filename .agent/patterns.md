@@ -28,3 +28,9 @@
 - **Isolated Database Context Injection**: For AI Chatbots embedded in internal management dashboards, dynamically querying and serializing user-owned MongoDB records (scoped by `ownerId` from the JWT token) directly into the System Prompt context ensures 100% accurate responses and maintains absolute multi-user data isolation.
 
 - **AI Integration Consolidation**: When consolidating multiple AI engines to a single high-performance model (e.g. Google Gemini 2.5), using the unified OpenAI compatibility schema for payloads (containing messages array, role headers) simplifies routing and makes it effortless to remove external vendor wrappers (like OpenRouter or PiAPI). This reduces technical debt, reduces environmental dependencies, and ensures high availability and cost stability.
+
+- **SPA Caching Prevention & Chunk Load Self-Healing**: To prevent White Screen of Death (WSOD) issues during application updates:
+  1. Always set `Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate` for `index.html` on the server-side to guarantee the client fetches the latest entrypoint.
+  2. Map the static asset wildcard routing to return a `404` for missing static files (e.g. JS/CSS files inside `/assets/`) instead of falling back to returning the HTML contents of `index.html`. This avoids parsing errors like `Uncaught SyntaxError: Unexpected token '<'`.
+  3. Implement global self-healing listeners (`window.addEventListener("error")`, `window.addEventListener("unhandledrejection")`, and React `componentDidCatch`) that detect `ChunkLoadError` or related script failure messages, and automatically reload the page (guarded with a `sessionStorage` throttle to avoid infinite reload loops).
+
