@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   Settings, QrCode, ClipboardList, Database,
@@ -85,9 +85,50 @@ export function SettingsView() {
     };
   });
 
-  const saveVietqrConfig = (updated: typeof vietqrConfig) => {
+  // Đồng bộ cấu hình từ Backend về LocalStorage nếu có sự khác biệt
+  useEffect(() => {
+    if (user) {
+      const saved = localStorage.getItem('vietqrConfig');
+      let localConfig = saved ? JSON.parse(saved) : null;
+      if (!localConfig) {
+        localConfig = {
+          enabled: true,
+          bankId: user.bankId || 'mbbank',
+          accountNo: user.bankAccountNo || '',
+          accountName: user.displayName || '',
+          template: '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}'
+        };
+        localStorage.setItem('vietqrConfig', JSON.stringify(localConfig));
+        const cfg = localConfig;
+        setTimeout(() => setVietqrConfig(cfg), 0);
+      } else if (user.bankAccountNo && (localConfig.accountNo !== user.bankAccountNo || localConfig.bankId !== user.bankId)) {
+        const newConfig = {
+          ...localConfig,
+          accountNo: user.bankAccountNo,
+          bankId: user.bankId || 'mbbank'
+        };
+        localStorage.setItem('vietqrConfig', JSON.stringify(newConfig));
+        setTimeout(() => setVietqrConfig(newConfig), 0);
+      }
+    }
+  }, [user]);
+
+  const saveVietqrConfig = async (updated: typeof vietqrConfig) => {
     setVietqrConfig(updated);
     localStorage.setItem('vietqrConfig', JSON.stringify(updated));
+
+    // Đồng bộ lên backend để phục vụ đối soát webhook thanh toán tự động
+    try {
+      await apiFetch('/auth/bank-settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          bankAccountNo: updated.accountNo || "",
+          bankId: updated.bankId || ""
+        })
+      });
+    } catch (e) {
+      console.error("Lỗi đồng bộ cấu hình ngân hàng lên server:", e);
+    }
   };
 
   const tabs: { id: SettingsTab; icon: React.ComponentType<{ className?: string }>; label: string }[] = [

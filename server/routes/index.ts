@@ -9,6 +9,7 @@ import notificationRoutes from "./notification.routes";
 import uploadRoutes from "./upload.routes";
 import aiRoutes from "./ai.routes";
 import chatbotRoutes from "./chatbot.routes";
+import webhookRoutes from "./webhook.routes";
 import { logger } from "../config/logger";
 
 const router = Router();
@@ -21,6 +22,7 @@ router.use("/notifications", notificationRoutes);
 router.use("/upload", uploadRoutes);
 router.use("/ai", aiRoutes);
 router.use("/chatbot", chatbotRoutes);
+router.use("/webhook", webhookRoutes);
 
 
 // Endpoint to log client-side crashes and runtime errors

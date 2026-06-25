@@ -23,6 +23,17 @@ const userSchema = new Schema<IUser>(
       type: String,
       default: "",
     },
+    bankAccountNo: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    bankId: {
+      type: String,
+      default: "",
+      trim: true,
+      lowercase: true,
+    },
   },
   {
     timestamps: true,

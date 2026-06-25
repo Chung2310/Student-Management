@@ -20,6 +20,7 @@ import { FeeManagement } from './components/Fees/FeeManagement';
 import { NotificationBot } from './components/Notifications/NotificationBot';
 import { SettingsView } from './components/Settings/SettingsView';
 import { useAuth } from './hooks/useAuth';
+import { useRealtimePayment } from './hooks/useRealtimePayment';
 import { LoginView } from './components/Auth/LoginView';
 import { Loader2 } from 'lucide-react';
 import { ChatbotWidget } from './components/Chatbot/ChatbotWidget';
@@ -29,6 +30,7 @@ export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'Se
 
 export default function App() {
   const { user, loading } = useAuth();
+  useRealtimePayment();
   const [currentView, setCurrentView] = React.useState<ViewType>('Dashboard');
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null);

@@ -5,6 +5,8 @@ export interface IUser extends Document {
   password?: string;
   displayName: string;
   gasUrl?: string;
+  bankAccountNo?: string;
+  bankId?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
