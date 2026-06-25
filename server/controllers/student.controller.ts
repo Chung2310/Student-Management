@@ -63,4 +63,18 @@ export class StudentController {
       next(error);
     }
   }
+
+  static async bulkCreate(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const ownerId = req.user!.uid;
+      const students = req.body.students;
+      if (!Array.isArray(students)) {
+        return res.status(400).json({ success: false, error: "Dữ liệu học viên không hợp lệ (phải là danh sách)." });
+      }
+      const result = await StudentService.bulkCreateStudents(ownerId, students);
+      res.status(200).json({ success: true, ...result });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
 }
