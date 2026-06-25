@@ -70,6 +70,8 @@ export class AuthService {
         email: user.email,
         displayName: user.displayName,
         gasUrl: user.gasUrl,
+        bankAccountNo: user.bankAccountNo,
+        bankId: user.bankId,
       },
       accessToken,
       refreshToken,
@@ -101,12 +103,32 @@ export class AuthService {
           email: user.email,
           displayName: user.displayName,
           gasUrl: user.gasUrl,
+          bankAccountNo: user.bankAccountNo,
+          bankId: user.bankId,
         }
       };
     } catch (error) {
       logger.error(`[Auth] Refresh token verification failed: ${error instanceof Error ? error.message : error}`);
       throw new Error("Refresh token không hợp lệ hoặc đã hết hạn.", { cause: error });
     }
+  }
+
+  static async updateBankSettings(uid: string, data: { bankAccountNo?: string; bankId?: string }): Promise<IUser | null> {
+    logger.info(`[Auth] Updating bank settings for uid: ${uid}`);
+    return await User.findByIdAndUpdate(
+      uid,
+      {
+        $set: {
+          bankAccountNo: data.bankAccountNo || "",
+          bankId: data.bankId ? data.bankId.trim().toLowerCase() : "",
+        },
+      },
+      { new: true }
+    );
+  }
+
+  static async getUserProfile(uid: string): Promise<IUser | null> {
+    return await User.findById(uid);
   }
 
   static async seedAdmin() {

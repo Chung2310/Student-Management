@@ -12,6 +12,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../lib/api';
 import { BroadcastNotification, Student } from '../../types';
 import { useToast } from '../../hooks/useToast';
+import { AddPaymentModal } from '../Fees/AddPaymentModal';
 
 interface HistoryCardProps {
   key?: string | number;
@@ -20,7 +21,7 @@ interface HistoryCardProps {
 }
 
 interface SendResult {
-  studentName: string;
+  student: Student;
   status: 'Thành công' | 'Thất bại';
   error?: string;
 }
@@ -142,6 +143,23 @@ export function NotificationBot() {
 
   const [apiStatus, setApiStatus] = useState<'Checking' | 'Ready' | 'Missing Key' | 'Error'>('Checking');
   const [smsApiStatus, setSmsApiStatus] = useState<'Checking' | 'Ready' | 'Error'>('Checking');
+  const [vietqrConfig] = useState<{
+    enabled: boolean;
+    bankId: string;
+    accountNo: string;
+    accountName: string;
+    template: string;
+  } | null>(() => {
+    try {
+      const cfg = localStorage.getItem("vietqrConfig");
+      return cfg ? JSON.parse(cfg) : null;
+    } catch (e) {
+      console.error("Error parsing vietqrConfig in NotificationBot", e);
+      return null;
+    }
+  });
+  const [selectedStudentForPayment, setSelectedStudentForPayment] = useState<Student | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const checkApiStatus = async () => {
     try {
@@ -249,13 +267,75 @@ export function NotificationBot() {
     const examDate = student.exams?.find(e => e.status === 'Sắp thi')?.date || 
                     (student.status === 'Đang thi' ? student.examDate : '') || 
                     'Chưa có lịch';
+    const totalFee = parseInt(parseVND(student.fee) || '0');
+    const debtAmount = totalFee - (student.paidAmount || 0);
+    const formattedSotien = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(debtAmount);
     
     return str
       .replace(/\{ten\}/g, student.fullName)
       .replace(/\{hang\}/g, student.rank)
       .replace(/\{kv\}/g, student.area)
       .replace(/\{email\}/g, student.email || '')
-      .replace(/\{ngaythi\}/g, examDate);
+      .replace(/\{ngaythi\}/g, examDate)
+      .replace(/\{sotien\}/g, formattedSotien);
+  };
+
+  const buildQrEmailHtml = (
+    student: Student,
+    config: { bankId: string; accountNo: string; accountName: string; template: string },
+    textContent: string
+  ) => {
+    const totalFee = parseInt(parseVND(student.fee) || "0");
+    const debtAmount = totalFee - (student.paidAmount || 0);
+    
+    let note = config.template || "Nop hoc phi {ten} {phone}";
+    note = note.replace(/{ten}/g, student.fullName)
+               .replace(/{phone}/g, student.phone)
+               .replace(/{id}/g, student.id || "");
+               
+    const removeVietnameseTones = (str: string) => {
+      str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g,"a");
+      str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g,"e");
+      str = str.replace(/ì|í|ị|ỉ|ĩ/g,"i");
+      str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g,"o");
+      str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g,"u");
+      str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g,"y");
+      str = str.replace(/đ/g,"d");
+      str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g,"A");
+      str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g,"E");
+      str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g,"I");
+      str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g,"O");
+      str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g,"U");
+      str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g,"Y");
+      str = str.replace(/Đ/g,"D");
+      str = str.replace(/[^a-zA-Z0-9 ]/g, "");
+      return str;
+    };
+    note = removeVietnameseTones(note);
+
+    const qrUrl = `https://img.vietqr.io/image/${config.bankId}-${config.accountNo}-compact2.png?amount=${debtAmount}&addInfo=${encodeURIComponent(note)}&accountName=${encodeURIComponent(config.accountName)}`;
+
+    return `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <h2 style="color: #0f172a; margin-bottom: 16px;">Thông báo thanh toán học phí</h2>
+        <div style="color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 24px;">
+          ${textContent.replace(/\n/g, "<br/>")}
+        </div>
+        
+        <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 24px;">
+          <p style="margin: 0 0 10px 0; font-size: 12px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Quét mã VietQR để thanh toán</p>
+          <img src="${qrUrl}" alt="Mã QR thanh toán" style="max-width: 250px; height: auto; display: block; margin: 0 auto 15px auto; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);" />
+          <div style="text-align: left; max-width: 300px; margin: 0 auto; font-size: 13px; color: #334155;">
+            <p style="margin: 4px 0;"><b>Ngân hàng:</b> ${config.bankId.toUpperCase()}</p>
+            <p style="margin: 4px 0;"><b>Số tài khoản:</b> ${config.accountNo}</p>
+            <p style="margin: 4px 0;"><b>Chủ tài khoản:</b> ${config.accountName}</p>
+            <p style="margin: 4px 0;"><b>Số tiền:</b> <span style="color: #0284c7; font-weight: bold;">${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(debtAmount)}</span></p>
+            <p style="margin: 4px 0;"><b>Nội dung CK:</b> <span style="background-color: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: bold; color: #0f172a;">${note}</span></p>
+          </div>
+        </div>
+        <p style="font-size: 11px; color: #94a3b8; text-align: center; margin: 0;">Email này được gửi tự động từ hệ thống quản lý học phí.</p>
+      </div>
+    `;
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -290,13 +370,19 @@ export function NotificationBot() {
         // If Email channel is selected, call our real API
         if (channels.includes('Email') && student.email) {
           try {
+            const hasVietQr = vietqrConfig && vietqrConfig.enabled && vietqrConfig.bankId && vietqrConfig.accountNo;
+            const isDebtFilter = recipientFilter === 'Học viên còn nợ học phí';
+            const emailHtml = (isDebtFilter && hasVietQr)
+              ? buildQrEmailHtml(student, vietqrConfig, personalizedContent)
+              : personalizedContent.replace(/\n/g, '<br/>');
+
             const response = await fetch('/api/send-email', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 to: student.email,
                 subject: personalizedTitle,
-                html: personalizedContent.replace(/\n/g, '<br/>')
+                html: emailHtml
               })
             });
             const data = await response.json();
@@ -343,7 +429,7 @@ export function NotificationBot() {
         }
         
         results.push({
-          studentName: `${student.fullName} (${student.phone || 'No Phone'})`,
+          student,
           status: isSuccess ? 'Thành công' : 'Thất bại',
           error: isSuccess ? undefined : errorMessage
         });
@@ -412,7 +498,7 @@ export function NotificationBot() {
     {
       name: 'Nhắc phí',
       title: 'THÔNG BÁO HOÀN THÀNH HỌC PHÍ - {ten}',
-      content: 'Thân chào {ten},\n\nTrung tâm xin thông báo học phí khóa học hạng {hang} của bạn hiện vẫn chưa hoàn thành. Để đảm bảo tiến độ học tập và dự thi đúng hạn, bạn vui lòng hoàn tất học phí trong tuần này tại {kv}.\n\nTrân trọng,\nTrung tâm Đào tạo Lái xe.'
+      content: 'Thân chào {ten},\n\nTrung tâm xin thông báo học phí khóa học hạng {hang} của bạn hiện vẫn còn nợ {sotien}. Để đảm bảo tiến độ học tập và dự thi đúng hạn, bạn vui lòng hoàn tất học phí trong tuần này tại {kv}.\n\nTrân trọng,\nTrung tâm Đào tạo Lái xe.'
     },
     {
       name: 'Lịch thi',
@@ -487,17 +573,31 @@ export function NotificationBot() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         className={cn(
-                          "flex items-center justify-between p-3 rounded-xl border text-xs font-bold",
+                          "flex items-center justify-between p-3 rounded-xl border text-xs font-bold gap-2",
                           res.status === 'Thành công' ? "bg-emerald-50/50 border-emerald-100 text-emerald-700" : "bg-rose-50/50 border-rose-100 text-rose-700"
                         )}
                       >
-                        <div className="flex items-center gap-2">
-                          {res.status === 'Thành công' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                          {res.studentName}
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {res.status === 'Thành công' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />}
+                          <span className="truncate">{res.student.fullName} ({res.student.phone})</span>
                         </div>
-                        <span className="text-[10px] uppercase opacity-60">
-                          {res.status} {res.error ? `- ${res.error}` : ''}
-                        </span>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {res.status === 'Thành công' && recipientFilter === 'Học viên còn nợ học phí' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedStudentForPayment(res.student);
+                                setIsPaymentModalOpen(true);
+                              }}
+                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] rounded-lg transition-colors font-black active:scale-95"
+                            >
+                              Đánh dấu đã thu
+                            </button>
+                          )}
+                          <span className="text-[10px] uppercase opacity-60">
+                            {res.status} {res.error ? `- ${res.error}` : ''}
+                          </span>
+                        </div>
                       </motion.div>
                     ))}
                   </div>
@@ -607,10 +707,27 @@ export function NotificationBot() {
                     <VariableTag name="kv" label="KV" />
                     <VariableTag name="email" label="Email" />
                     <VariableTag name="ngaythi" label="Ngày thi" />
+                    <VariableTag name="sotien" label="Tiền nợ" />
                   </div>
                 </div>
               </div>
             </div>
+
+            {recipientFilter === 'Học viên còn nợ học phí' && channels.includes('Email') && (
+              <div className="text-xs font-bold text-left">
+                {vietqrConfig && vietqrConfig.enabled && vietqrConfig.bankId && vietqrConfig.accountNo ? (
+                  <div className="flex items-center gap-2 text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 p-3.5 rounded-2xl">
+                    <Smartphone size={16} className="text-cyan-600 flex-shrink-0" />
+                    <span>📲 Mã VietQR cá nhân hóa chứa số tiền còn nợ sẽ được tự động nhúng trực tiếp vào email của từng học viên.</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-amber-700 bg-amber-50/50 border border-amber-100/50 p-3.5 rounded-2xl">
+                    <AlertCircle size={16} className="text-amber-600 flex-shrink-0" />
+                    <span>⚠️ Chưa cấu hình VietQR hoặc VietQR đang tắt. Email nhắc phí gửi đi sẽ chỉ là plain text. Bạn có thể vào Cài đặt để kích hoạt VietQR.</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="space-y-3">
               <div className="flex flex-col gap-2">
@@ -758,6 +875,20 @@ export function NotificationBot() {
           </div>
         </motion.div>
       </div>
+
+      {isPaymentModalOpen && selectedStudentForPayment && (
+        <AddPaymentModal
+          student={selectedStudentForPayment}
+          isOpen={isPaymentModalOpen}
+          onClose={() => {
+            setIsPaymentModalOpen(false);
+            setSelectedStudentForPayment(null);
+          }}
+          onSuccess={() => {
+            window.dispatchEvent(new Event('student-mutation'));
+          }}
+        />
+      )}
     </div>
   );
 }

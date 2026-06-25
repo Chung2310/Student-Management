@@ -146,6 +146,32 @@ const swaggerDefinition = {
         },
       },
     },
+    "/auth/bank-settings": {
+      patch: {
+        summary: "Cập nhật tài khoản ngân hàng của admin để đối soát webhook",
+        tags: ["Auth"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  bankAccountNo: { type: "string", example: "1234567890", description: "Số tài khoản ngân hàng nhận tiền" },
+                  bankId: { type: "string", example: "vietcombank", description: "Mã ngân hàng (ví dụ: vietcombank, techcombank...)" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: "Cập nhật thành công" },
+          401: { description: "Chưa đăng nhập" },
+          400: { description: "Dữ liệu không hợp lệ" },
+        },
+      },
+    },
     "/students": {
       get: {
         summary: "Lấy danh sách học viên",
@@ -452,6 +478,48 @@ const swaggerDefinition = {
           500: { description: "Mất kết nối Cơ sở dữ liệu" },
         },
       },
+    },
+    "/webhook/payment": {
+      post: {
+        summary: "Webhook nhận thông tin thanh toán từ ngân hàng (Casso/SePay)",
+        tags: ["Webhook"],
+        parameters: [
+          { name: "secret", in: "query", schema: { type: "string" }, description: "Secret token dùng để xác thực webhook (nếu không gửi ở header)" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  transferAmount: { type: "number", example: 1500000 },
+                  content: { type: "string", example: "Nop hoc phi Nguyen Van A 0987654321" },
+                  accountNumber: { type: "string", example: "1234567890" }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          200: { description: "Ghi nhận giao dịch thành công" },
+          401: { description: "Xác thực token thất bại" },
+          400: { description: "Lỗi dữ liệu đầu vào hoặc không khớp được học viên" }
+        }
+      }
+    },
+    "/events": {
+      get: {
+        summary: "Kênh Server-Sent Events (SSE) để nhận cập nhật thanh toán thời gian thực",
+        tags: ["Realtime"],
+        parameters: [
+          { name: "token", in: "query", required: true, schema: { type: "string" }, description: "Access Token của admin" }
+        ],
+        responses: {
+          200: { description: "Thiết lập kết nối SSE thành công" },
+          401: { description: "Token không hợp lệ hoặc đã hết hạn" }
+        }
+      }
     },
   },
 };
