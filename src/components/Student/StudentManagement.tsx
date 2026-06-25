@@ -4,7 +4,7 @@ import {
   Search, Download, Printer, Plus, 
   Eye, ChevronRight, Trash2, Pencil,
   X, Calendar as CalendarIcon, ChevronDown,
-  Users, Bike, Car, ChevronLeft
+  Users, Bike, Car, ChevronLeft, Upload
 } from 'lucide-react';
 import { cn, formatVND, formatDisplayDate } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
@@ -13,6 +13,7 @@ import { Student } from '../../types';
 import { apiFetch } from '../../lib/api';
 import { StatusTransitionModal } from './StatusTransitionModal';
 import { EditStudentModal } from './EditStudentModal';
+import { ImportStudentModal } from './ImportStudentModal';
 
 interface StudentManagementProps {
   onSelectStudent: (student: Student) => void;
@@ -38,6 +39,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [transitioningStudent, setTransitioningStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   // Reset to first page when filtering
   React.useEffect(() => {
@@ -153,23 +155,37 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
     }
 
     // Define CSV headers
-    const headers = ['Họ và tên', 'Số điện thoại', 'Hạng', 'Khu vực', 'Ngày đăng ký', 'Học phí', 'Trạng thái'];
+    const headers = [
+      'Họ và tên', 'Số điện thoại', 'Hạng', 'Khu vực', 'Ngày đăng ký', 
+      'Tổng học phí', 'Đã đóng', 'Còn nợ', 'Trạng thái'
+    ];
     
     // Map data to CSV rows
-    const rows = filteredStudents.map(student => [
-      student.fullName,
-      student.phone,
-      student.rank,
-      student.area,
-      student.registrationDate,
-      student.fee,
-      student.status
-    ]);
+    const rows = filteredStudents.map(student => {
+      const totalFeeNum = parseInt(String(student.fee).replace(/\D/g, ''), 10) || 0;
+      const paidSoFar = student.paidAmount || 0;
+      const remaining = totalFeeNum - paidSoFar;
+
+      return [
+        student.fullName,
+        `\t${student.phone}`, // tab prefix preserves leading zero in Excel
+        student.rank,
+        student.area,
+        student.registrationDate,
+        totalFeeNum,
+        paidSoFar,
+        remaining,
+        student.status
+      ];
+    });
 
     // Construct CSV content
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ...rows.map(row => row.map(cell => {
+        const cellStr = String(cell ?? '').replace(/"/g, '""');
+        return `"${cellStr}"`;
+      }).join(','))
     ].join('\n');
 
     // Create a blob and download link
@@ -278,6 +294,12 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
             className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all"
           >
             <Printer className="w-4 h-4" /> In
+          </button>
+          <button 
+            onClick={() => setIsImportOpen(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all"
+          >
+            <Upload className="w-4 h-4" /> Nhập Excel
           </button>
           <button 
             onClick={onAddStudent}
@@ -652,6 +674,13 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
         isOpen={!!editingStudent}
         onClose={() => setEditingStudent(null)}
         onSuccess={() => setEditingStudent(null)}
+      />
+
+      {/* Import Student Modal */}
+      <ImportStudentModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onSuccess={() => setIsImportOpen(false)}
       />
     </div>
   );

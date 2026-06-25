@@ -106,4 +106,110 @@ export class StudentService {
     }
     return deletedStudent;
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  static async bulkCreateStudents(ownerId: string, studentsData: any[]) {
+    logger.info(`[Student] Bulk importing ${studentsData.length} students for ownerId=${ownerId}`);
+    
+    let importedCount = 0;
+    let skippedCount = 0;
+    const errors: { row: number; name: string; phone: string; reason: string }[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const validStudents: any[] = [];
+    
+    // Track unique phone numbers within this batch to prevent duplicates inside the file itself
+    const seenPhonesInBatch = new Set<string>();
+
+    // Fetch all existing student phone numbers for this ownerId to check in memory
+    const existingStudents = await Student.find({ ownerId }).select("phone");
+    const existingPhones = new Set(existingStudents.map(s => s.phone));
+
+    for (let i = 0; i < studentsData.length; i++) {
+      const rowNum = i + 1;
+      const data = studentsData[i];
+      const fullName = String(data.fullName || "").trim();
+      const phone = String(data.phone || "").trim();
+      const rank = String(data.rank || "").trim().toUpperCase();
+      const area = String(data.area || "").trim();
+      
+      // Basic validations
+      if (!fullName) {
+        errors.push({ row: rowNum, name: fullName, phone, reason: "Họ và tên không được để trống." });
+        skippedCount++;
+        continue;
+      }
+      if (!phone) {
+        errors.push({ row: rowNum, name: fullName, phone, reason: "Số điện thoại không được để trống." });
+        skippedCount++;
+        continue;
+      }
+      if (!["A1", "A2", "B1", "B2", "C"].includes(rank)) {
+        errors.push({ row: rowNum, name: fullName, phone, reason: `Hạng bằng '${rank}' không hợp lệ (chỉ nhận A1, A2, B1, B2, C).` });
+        skippedCount++;
+        continue;
+      }
+      const validAreas = ["Nội thành", "Ngoại thành", "Tỉnh lân cận"];
+      if (!validAreas.includes(area)) {
+        errors.push({ row: rowNum, name: fullName, phone, reason: `Khu vực '${area}' không hợp lệ (chỉ nhận Nội thành, Ngoại thành, Tỉnh lân cận).` });
+        skippedCount++;
+        continue;
+      }
+
+      // Check duplicates within batch
+      if (seenPhonesInBatch.has(phone)) {
+        errors.push({ row: rowNum, name: fullName, phone, reason: "Số điện thoại bị trùng lặp trong file import." });
+        skippedCount++;
+        continue;
+      }
+      seenPhonesInBatch.add(phone);
+
+      // Check duplicate in database
+      if (existingPhones.has(phone)) {
+        errors.push({ row: rowNum, name: fullName, phone, reason: "Số điện thoại đã tồn tại trên hệ thống." });
+        skippedCount++;
+        continue;
+      }
+
+      // Set defaults for optional parameters
+      const birthday = String(data.birthday || "").trim();
+      const idCard = String(data.idCard || "").trim();
+      const email = String(data.email || "").trim().toLowerCase();
+      const referral = String(data.referral || "").trim();
+      const address = String(data.address || "").trim();
+      const fee = String(data.fee || "0").trim();
+      const registrationDate = String(data.registrationDate || new Date().toLocaleDateString('vi-VN')).trim();
+      const status = String(data.status || "Chờ KSK").trim();
+
+      validStudents.push({
+        fullName,
+        phone,
+        email: email || undefined,
+        referral,
+        birthday,
+        idCard,
+        rank,
+        area,
+        registrationDate,
+        fee,
+        paidAmount: 0,
+        address,
+        status,
+        ownerId,
+      });
+    }
+
+    if (validStudents.length > 0) {
+      const results = await Student.insertMany(validStudents);
+      importedCount = results.length;
+      logger.info(`[Student] Bulk import complete: successfully imported ${importedCount} students, skipped ${skippedCount} students`);
+    } else {
+      logger.info(`[Student] Bulk import complete: no valid students to import. Skipped ${skippedCount} students`);
+    }
+
+    return {
+      importedCount,
+      skippedCount,
+      errors
+    };
+  }
 }
