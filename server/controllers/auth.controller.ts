@@ -81,10 +81,48 @@ export class AuthController {
       if (!req.user) {
         return res.status(401).json({ success: false, error: "Chưa xác thực." });
       }
+      const user = await AuthService.getUserProfile(req.user.uid);
+      if (!user) {
+        return res.status(404).json({ success: false, error: "Không tìm thấy người dùng." });
+      }
       res.json({
         success: true,
         data: {
-          user: req.user,
+          user: {
+            uid: user._id.toString(),
+            email: user.email,
+            displayName: user.displayName,
+            gasUrl: user.gasUrl,
+            bankAccountNo: user.bankAccountNo,
+            bankId: user.bankId,
+          },
+        },
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  static async updateBankSettings(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: "Chưa xác thực." });
+      }
+      const updatedUser = await AuthService.updateBankSettings(req.user.uid, req.body);
+      if (!updatedUser) {
+        return res.status(404).json({ success: false, error: "Không tìm thấy người dùng." });
+      }
+      res.json({
+        success: true,
+        data: {
+          user: {
+            uid: updatedUser._id.toString(),
+            email: updatedUser.email,
+            displayName: updatedUser.displayName,
+            gasUrl: updatedUser.gasUrl,
+            bankAccountNo: updatedUser.bankAccountNo,
+            bankId: updatedUser.bankId,
+          },
         },
       });
     } catch (error: unknown) {

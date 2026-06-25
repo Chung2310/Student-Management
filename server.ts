@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import swaggerUi from "swagger-ui-express";
 import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 import { logger } from "./server/config/logger";
 
 import { connectDB } from "./server/config/db";
@@ -16,6 +17,7 @@ import { swaggerSpec } from "./server/swagger";
 import { errorMiddleware } from "./server/middlewares/error.middleware";
 import { requestLoggerMiddleware } from "./server/middlewares/logger.middleware";
 import { AuthService } from "./server/services/auth.service";
+import { sseManager } from "./server/services/sse.manager";
 
 dotenv.config();
 
@@ -68,6 +70,48 @@ async function startServer() {
 
   // REST API Route Registration
   app.use("/api/v1", apiRoutes);
+
+  // Server-Sent Events (SSE) Endpoint
+  app.get("/api/v1/events", (req, res) => {
+    const token = req.query.token as string;
+    if (!token) {
+      return res.status(401).json({ success: false, error: "Thiếu token xác thực." });
+    }
+
+    try {
+      const decoded = jwt.verify(
+        token, 
+        process.env.JWT_ACCESS_SECRET || "your_jwt_access_secret_key_should_be_long_and_secure_12345"
+      ) as { uid: string; email: string };
+      
+      const ownerId = decoded.uid;
+
+      // Thiết lập header cho SSE
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+
+      // Gửi event khởi tạo kết nối
+      res.write(`event: connected\ndata: ${JSON.stringify({ message: "Đã kết nối SSE thành công." })}\n\n`);
+
+      // Thêm connection vào SSE Manager
+      sseManager.addConnection(ownerId, res);
+
+      // Gửi ping định kỳ mỗi 30 giây để giữ kết nối
+      const pingInterval = setInterval(() => {
+        res.write(`: ping\n\n`);
+      }, 30000);
+
+      req.on("close", () => {
+        clearInterval(pingInterval);
+        sseManager.removeConnection(ownerId, res);
+      });
+    } catch (error) {
+      logger.error("[SSE] Authentication failed: %o", error);
+      return res.status(401).json({ success: false, error: "Token xác thực không hợp lệ hoặc đã hết hạn." });
+    }
+  });
 
   // API Route for sending email
   app.post("/api/send-email", async (req, res) => {

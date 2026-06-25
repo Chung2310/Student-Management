@@ -48,6 +48,7 @@ export class PaymentService {
 
     const payment = new Payment({
       ...data,
+      studentName: student.fullName,
       ownerId,
     });
     const savedPayment = await payment.save();

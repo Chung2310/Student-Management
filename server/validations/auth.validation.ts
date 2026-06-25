@@ -31,3 +31,12 @@ export const loginSchema = Joi.object({
     "string.empty": "Mật khẩu không được để trống.",
   }),
 });
+
+export const bankSettingsSchema = Joi.object({
+  bankAccountNo: Joi.string().allow("").optional().messages({
+    "string.base": "Số tài khoản không hợp lệ.",
+  }),
+  bankId: Joi.string().allow("").optional().messages({
+    "string.base": "Mã ngân hàng không hợp lệ.",
+  }),
+});

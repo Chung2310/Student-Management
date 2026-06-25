@@ -114,7 +114,7 @@ export class ExamService {
             date: exam.tentativeDate,
             type: "Sát hạch",
             status: "Sắp thi",
-            result: { theory: 0, practice: 0, simulation: 0, overall: "Chờ kết quả" }
+            result: { theory: 0, practice: 0, simulation: 0, overall: "Chưa có" }
           }
         }
       }
