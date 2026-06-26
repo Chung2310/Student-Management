@@ -8,6 +8,15 @@ export interface AuthUser {
   email: string;
   displayName: string;
   gasUrl?: string;
+  bankAccountNo?: string;
+  bankId?: string;
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpSecure?: boolean;
+  smtpUser?: string;
+  smtpPass?: string;
+  smtpFrom?: string;
+  smtpSandboxEmail?: string;
 }
 
 interface AuthContextType {
@@ -18,6 +27,7 @@ interface AuthContextType {
   loginWithEmail: (email: string, pass: string) => Promise<void>;
   registerWithEmail: (email: string, pass: string, displayName: string, gasUrl: string) => Promise<void>;
   logout: () => Promise<void>;
+  fetchMe: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,6 +47,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: res.data.user.email,
           displayName: res.data.user.displayName,
           gasUrl: res.data.user.gasUrl,
+          bankAccountNo: res.data.user.bankAccountNo,
+          bankId: res.data.user.bankId,
+          smtpHost: res.data.user.smtpHost,
+          smtpPort: res.data.user.smtpPort,
+          smtpSecure: res.data.user.smtpSecure,
+          smtpUser: res.data.user.smtpUser,
+          smtpPass: res.data.user.smtpPass,
+          smtpFrom: res.data.user.smtpFrom,
+          smtpSandboxEmail: res.data.user.smtpSandboxEmail,
         });
       } else {
         setUser(null);
@@ -117,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, isLoggingIn, login, loginWithEmail, registerWithEmail, logout }}>
+    <AuthContext.Provider value={{ user, loading, isLoggingIn, login, loginWithEmail, registerWithEmail, logout, fetchMe }}>
       {children}
     </AuthContext.Provider>
   );

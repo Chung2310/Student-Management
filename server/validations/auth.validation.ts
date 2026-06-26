@@ -40,3 +40,16 @@ export const bankSettingsSchema = Joi.object({
     "string.base": "Mã ngân hàng không hợp lệ.",
   }),
 });
+
+export const smtpSettingsSchema = Joi.object({
+  smtpHost: Joi.string().allow("").optional(),
+  smtpPort: Joi.number().integer().allow(null, "").optional(),
+  smtpSecure: Joi.boolean().allow(null, "").optional(),
+  smtpUser: Joi.string().allow("").optional(),
+  smtpPass: Joi.string().allow("").optional(),
+  smtpFrom: Joi.string().allow("").optional(),
+  smtpSandboxEmail: Joi.string().email().allow("").optional().messages({
+    "string.email": "Định dạng email sandbox không hợp lệ.",
+  }),
+});
+

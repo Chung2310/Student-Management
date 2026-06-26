@@ -163,21 +163,22 @@ export function NotificationBot() {
 
   const checkApiStatus = async () => {
     try {
-      const response = await fetch('/api/send-email', {
+      const data = await apiFetch('/send-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ check: true }) 
       });
-      const data = await response.json();
-      if (response.status === 400 && (data.error?.includes('SMTP_CONFIG_missing') || data.error?.includes('SMTP'))) {
-        setApiStatus('Missing Key');
-      } else if (!response.ok) {
-        setApiStatus('Error');
-      } else {
+      if (data.success && data.status === 'Ready') {
         setApiStatus('Ready');
+      } else {
+        setApiStatus('Error');
       }
-    } catch {
-      setApiStatus('Error');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('SMTP_CONFIG_missing') || msg.includes('cấu hình') || msg.includes('SMTP')) {
+        setApiStatus('Missing Key');
+      } else {
+        setApiStatus('Error');
+      }
     }
   };
 
@@ -378,23 +379,21 @@ export function NotificationBot() {
               ? buildQrEmailHtml(student, vietqrConfig, personalizedContent)
               : personalizedContent.replace(/\n/g, '<br/>');
 
-            const response = await fetch('/api/send-email', {
+            const data = await apiFetch('/send-email', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 to: student.email,
                 subject: personalizedTitle,
                 html: emailHtml
               })
             });
-            const data = await response.json();
-            if (!response.ok || !data.success) {
+            if (!data.success) {
               isSuccess = false;
               errorMessage = data.error || 'Lỗi gửi mail';
             }
-          } catch {
+          } catch (err: unknown) {
             isSuccess = false;
-            errorMessage = 'Lỗi kết nối server (Email)';
+            errorMessage = err instanceof Error ? err.message : 'Lỗi gửi mail';
           }
         }
 
