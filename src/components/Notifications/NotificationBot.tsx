@@ -169,8 +169,10 @@ export function NotificationBot() {
         body: JSON.stringify({ check: true }) 
       });
       const data = await response.json();
-      if (response.status === 400 && data.error?.includes('RESEND_API_KEY')) {
+      if (response.status === 400 && (data.error?.includes('SMTP_CONFIG_missing') || data.error?.includes('SMTP'))) {
         setApiStatus('Missing Key');
+      } else if (!response.ok) {
+        setApiStatus('Error');
       } else {
         setApiStatus('Ready');
       }
@@ -764,7 +766,7 @@ export function NotificationBot() {
                   </div>
                 </div>
                 {channels.includes('Email') && apiStatus === 'Ready' && (
-                  <p className="text-[9px] text-slate-400 font-medium italic text-right">* Resend Trial: Chỉ gửi được tới Email đăng ký của bạn.</p>
+                  <p className="text-[9px] text-slate-400 font-medium italic text-right">* SMTP Sender: Gửi email không giới hạn qua tài khoản của bạn.</p>
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-6">
