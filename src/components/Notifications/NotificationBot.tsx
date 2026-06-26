@@ -142,7 +142,7 @@ export function NotificationBot() {
   });
 
   const [apiStatus, setApiStatus] = useState<'Checking' | 'Ready' | 'Missing Key' | 'Error'>('Checking');
-  const [smsApiStatus, setSmsApiStatus] = useState<'Checking' | 'Ready' | 'Error'>('Checking');
+  const [smsApiStatus, setSmsApiStatus] = useState<'Checking' | 'Ready' | 'Sandbox' | 'Error'>('Checking');
   const [vietqrConfig] = useState<{
     enabled: boolean;
     bankId: string;
@@ -190,7 +190,8 @@ export function NotificationBot() {
         body: JSON.stringify({ check: true })
       });
       if (response.ok) {
-        setSmsApiStatus('Ready');
+        const data = await response.json();
+        setSmsApiStatus(data.sandbox ? 'Sandbox' : 'Ready');
       } else {
         setSmsApiStatus('Error');
       }
@@ -759,6 +760,7 @@ export function NotificationBot() {
                             <CheckCircle2 size={8} /> Sẵn sàng
                           </span>
                         )}
+                        {smsApiStatus === 'Sandbox' && <span className="text-[9px] font-black text-amber-500 uppercase">Sandbox</span>}
                         {smsApiStatus === 'Error' && <span className="text-[9px] font-black text-rose-500 uppercase">Chưa cấu hình</span>}
                       </div>
                     )}
@@ -766,6 +768,9 @@ export function NotificationBot() {
                 </div>
                 {channels.includes('Email') && apiStatus === 'Ready' && (
                   <p className="text-[9px] text-slate-400 font-medium italic text-right">* SMTP Sender: Gửi email không giới hạn qua tài khoản của bạn.</p>
+                )}
+                {channels.includes('SMS') && smsApiStatus === 'Sandbox' && (
+                  <p className="text-[9px] text-amber-500 font-medium italic text-right">* eSMS đang ở sandbox, request có thể thành công nhưng sẽ không gửi SMS thật về số điện thoại.</p>
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-6">
