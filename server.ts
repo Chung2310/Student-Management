@@ -1,7 +1,7 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
-import { Resend } from "resend";
+import { EmailService } from "./server/services/email.service";
 import twilio from "twilio";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
@@ -117,11 +117,16 @@ async function startServer() {
   app.post("/api/send-email", async (req, res) => {
     try {
       const { to, subject, html, check } = req.body;
-      const apiKey = process.env.RESEND_API_KEY?.trim();
 
       if (check) {
-        if (!apiKey) {
-          return res.status(400).json({ success: false, error: 'RESEND_API_KEY missing' });
+        const checkResult = await EmailService.verifyConnection();
+        if (!checkResult.success) {
+          return res.status(400).json({ 
+            success: false, 
+            error: checkResult.error === "SMTP_CONFIG_missing" 
+              ? "Cấu hình SMTP (host, port, user, pass) còn thiếu." 
+              : `Lỗi kết nối SMTP: ${checkResult.error}` 
+          });
         }
         return res.json({ success: true, status: 'Ready' });
       }
@@ -130,44 +135,19 @@ async function startServer() {
         return res.status(400).json({ success: false, error: 'Thiếu thông tin (to, subject, html)' });
       }
 
-      if (!apiKey) {
-        return res.status(400).json({
-          success: false,
-          error: "Chưa cấu hình API Key trong Settings -> Secrets."
-        });
-      }
+      const result = await EmailService.sendMail({ to, subject, html });
 
-      const resend = new Resend(apiKey);
-
-      let targetEmail = to.trim();
-      const sandboxEmail = process.env.RESEND_SANDBOX_EMAIL?.trim();
-      let finalSubject = subject.trim();
-
-      if (sandboxEmail) {
-        targetEmail = sandboxEmail;
-        finalSubject = `[SANDBOX - Học viên: ${to}] ${finalSubject}`;
-      }
-
-      const { data, error } = await resend.emails.send({
-        from: 'He thong <onboarding@resend.dev>',
-        to: targetEmail,
-        subject: finalSubject,
-        html: html,
-      });
-
-      if (error) {
-        logger.error("Resend API Error: %o", error);
-        if (error.name === 'validation_error') {
+      if (!result.success) {
+        if (result.error === "SMTP_CONFIG_missing") {
           return res.status(400).json({
             success: false,
-            error: "Lỗi Validation: Tài khoản Resend Free/Trial chỉ cho phép gửi đến chính email bạn đã đăng ký tài khoản Resend. Vui lòng xác thực tên miền trên Resend để gửi cho học viên khác, hoặc cấu hình biến môi trường `RESEND_SANDBOX_EMAIL` trong `.env` để chuyển hướng toàn bộ email kiểm thử về email của bạn.",
-            details: error
+            error: "Hệ thống chưa được cấu hình máy chủ gửi thư SMTP. Vui lòng kiểm tra lại cấu hình."
           });
         }
-        return res.status(400).json({ success: false, error: error.message || 'Lỗi gửi mail từ phía Resend', details: error });
+        return res.status(400).json({ success: false, error: result.error });
       }
 
-      res.json({ success: true, data });
+      res.json({ success: true, data: { id: result.messageId } });
     } catch (error: unknown) {
       logger.error("Server email error: %o", error);
       const msg = error instanceof Error ? error.message : 'Lỗi hệ thống';
