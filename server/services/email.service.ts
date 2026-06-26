@@ -7,17 +7,28 @@ export interface MailOptions {
   html: string;
 }
 
+export interface SmtpSettings {
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpSecure?: boolean;
+  smtpUser?: string;
+  smtpPass?: string;
+  smtpFrom?: string;
+  smtpSandboxEmail?: string;
+}
+
 export class EmailService {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private static transporter: any = null;
-  private static lastConfigKey: string = "";
+  private static transporters = new Map<string, any>();
 
-  private static getTransporter() {
-    const host = process.env.SMTP_HOST?.trim();
-    const portStr = process.env.SMTP_PORT?.trim();
-    const secureStr = process.env.SMTP_SECURE?.trim();
-    const user = process.env.SMTP_USER?.trim();
-    const pass = process.env.SMTP_PASS?.trim();
+  private static getTransporter(settings?: SmtpSettings) {
+    const host = (settings?.smtpHost || process.env.SMTP_HOST)?.trim();
+    const portVal = settings?.smtpPort !== undefined ? settings.smtpPort : process.env.SMTP_PORT;
+    const portStr = String(portVal || "").trim();
+    const secureVal = settings?.smtpSecure !== undefined ? settings.smtpSecure : process.env.SMTP_SECURE;
+    const secureStr = String(secureVal || "").trim();
+    const user = (settings?.smtpUser || process.env.SMTP_USER)?.trim();
+    const pass = (settings?.smtpPass || process.env.SMTP_PASS)?.trim();
 
     if (!host || !portStr || !user || !pass) {
       throw new Error("SMTP_CONFIG_missing");
@@ -26,14 +37,14 @@ export class EmailService {
     const configKey = `${host}:${portStr}:${secureStr}:${user}:${pass}`;
 
     // Reuse existing transporter if configuration hasn't changed
-    if (this.transporter && this.lastConfigKey === configKey) {
-      return this.transporter;
+    if (this.transporters.has(configKey)) {
+      return this.transporters.get(configKey);
     }
 
     const port = parseInt(portStr, 10);
-    const secure = secureStr === "true";
+    const secure = secureStr === "true" || secureVal === true;
 
-    this.transporter = nodemailer.createTransport({
+    const transporter = nodemailer.createTransport({
       pool: true, // Enable connection pooling for faster bulk sending
       maxConnections: 5,
       maxMessages: 100,
@@ -46,16 +57,16 @@ export class EmailService {
       },
     });
 
-    this.lastConfigKey = configKey;
-    return this.transporter;
+    this.transporters.set(configKey, transporter);
+    return transporter;
   }
 
   /**
    * Verify SMTP connection status
    */
-  static async verifyConnection(): Promise<{ success: boolean; error?: string }> {
+  static async verifyConnection(settings?: SmtpSettings): Promise<{ success: boolean; error?: string }> {
     try {
-      const transporter = this.getTransporter();
+      const transporter = this.getTransporter(settings);
       await transporter.verify();
       return { success: true };
     } catch (error: unknown) {
@@ -68,11 +79,12 @@ export class EmailService {
   /**
    * Send an email via SMTP
    */
-  static async sendMail(options: MailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  static async sendMail(options: MailOptions, settings?: SmtpSettings): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-      const transporter = this.getTransporter();
-      const from = process.env.SMTP_FROM?.trim() || `"Hệ thống Quản lý" <${process.env.SMTP_USER}>`;
-      const sandboxEmail = process.env.SMTP_SANDBOX_EMAIL?.trim();
+      const transporter = this.getTransporter(settings);
+      const defaultFrom = `"Hệ thống Quản lý" <${settings?.smtpUser || process.env.SMTP_USER}>`;
+      const from = (settings?.smtpFrom || process.env.SMTP_FROM)?.trim() || defaultFrom;
+      const sandboxEmail = (settings?.smtpSandboxEmail || process.env.SMTP_SANDBOX_EMAIL)?.trim();
 
       let targetEmail = options.to.trim();
       let finalSubject = options.subject.trim();

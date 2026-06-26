@@ -4,7 +4,8 @@ import {
   Settings, QrCode, ClipboardList, Database,
   CreditCard, Plus, Edit2, Trash2,
   CheckCircle2, Info, ShieldCheck, Download, Upload,
-  FileJson, RotateCcw, ToggleLeft, ToggleRight, Activity
+  FileJson, RotateCcw, ToggleLeft, ToggleRight, Activity,
+  Mail, Loader2
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
@@ -17,7 +18,7 @@ type SettingsTab = 'Cấu hình hệ thống' | 'Quản lý dữ liệu' | 'Qu�
 export function SettingsView() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('Cấu hình hệ thống');
   const { students } = useStudents();
-  const { user } = useAuth();
+  const { user, fetchMe } = useAuth();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, message: '' });
@@ -128,6 +129,75 @@ export function SettingsView() {
       });
     } catch (e) {
       console.error("Lỗi đồng bộ cấu hình ngân hàng lên server:", e);
+    }
+  };
+
+  const [smtpHost, setSmtpHost] = useState(user?.smtpHost || '');
+  const [smtpPort, setSmtpPort] = useState(user?.smtpPort !== undefined ? String(user.smtpPort) : '587');
+  const [smtpSecure, setSmtpSecure] = useState(user?.smtpSecure !== undefined ? user.smtpSecure : false);
+  const [smtpUser, setSmtpUser] = useState(user?.smtpUser || '');
+  const [smtpPass, setSmtpPass] = useState(user?.smtpPass || '');
+  const [smtpFrom, setSmtpFrom] = useState(user?.smtpFrom || '');
+  const [smtpSandboxEmail, setSmtpSandboxEmail] = useState(user?.smtpSandboxEmail || '');
+  const [isSavingSmtp, setIsSavingSmtp] = useState(false);
+  const [isTestingSmtp, setIsTestingSmtp] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setTimeout(() => {
+        setSmtpHost(user.smtpHost || '');
+        setSmtpPort(user.smtpPort !== undefined ? String(user.smtpPort) : '587');
+        setSmtpSecure(user.smtpSecure !== undefined ? user.smtpSecure : false);
+        setSmtpUser(user.smtpUser || '');
+        setSmtpPass(user.smtpPass || '');
+        setSmtpFrom(user.smtpFrom || '');
+        setSmtpSandboxEmail(user.smtpSandboxEmail || '');
+      }, 0);
+    }
+  }, [user]);
+
+  const handleSaveSmtpSettings = async () => {
+    setIsSavingSmtp(true);
+    try {
+      await apiFetch('/auth/smtp-settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          smtpHost,
+          smtpPort: smtpPort ? parseInt(smtpPort, 10) : 587,
+          smtpSecure,
+          smtpUser,
+          smtpPass,
+          smtpFrom,
+          smtpSandboxEmail
+        })
+      });
+      await fetchMe();
+      toast.success('Đã lưu cấu hình máy chủ SMTP thành công!');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Lỗi không xác định.';
+      toast.error('Lỗi khi lưu cấu hình SMTP: ' + msg);
+    } finally {
+      setIsSavingSmtp(false);
+    }
+  };
+
+  const handleTestSmtpConnection = async () => {
+    setIsTestingSmtp(true);
+    try {
+      const res = await apiFetch('/send-email', {
+        method: 'POST',
+        body: JSON.stringify({ check: true })
+      });
+      if (res.success && res.status === 'Ready') {
+        toast.success('Kết nối SMTP thành công! Máy chủ đã sẵn sàng.');
+      } else {
+        toast.error('Kết nối SMTP thất bại: ' + (res.error || 'Lỗi không xác định.'));
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Lỗi không xác định.';
+      toast.error('Lỗi kết nối SMTP: ' + msg);
+    } finally {
+      setIsTestingSmtp(false);
     }
   };
 
@@ -797,6 +867,136 @@ export function SettingsView() {
                       onChange={(e) => saveVietqrConfig({ ...vietqrConfig, template: e.target.value })}
                     />
                     <p className="text-[10px] text-slate-400 italic font-medium">* Sử dụng các biến tương tự BOT Thông báo để cá nhân hóa nội dung.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SMTP Settings */}
+            <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 p-6 space-y-6 lg:col-span-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-50 pb-4 gap-4">
+                <div className="flex items-center gap-3">
+                  <Mail className="w-5 h-5 text-rose-500" />
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Cấu hình máy chủ SMTP gửi Mail</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleTestSmtpConnection}
+                    disabled={isTestingSmtp}
+                    className="h-9 px-4 rounded-xl border border-slate-200 hover:border-slate-300 text-xs font-bold text-slate-600 hover:text-slate-800 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  >
+                    {isTestingSmtp ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" />
+                    ) : (
+                      <Activity className="w-3.5 h-3.5 text-slate-400" />
+                    )}
+                    Kiểm tra kết nối
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveSmtpSettings}
+                    disabled={isSavingSmtp}
+                    className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-850 active:scale-95 text-xs font-bold text-white transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  >
+                    {isSavingSmtp ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    )}
+                    Lưu cấu hình
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Máy chủ SMTP (Host)</label>
+                    <input
+                      type="text"
+                      placeholder="VD: smtp.gmail.com"
+                      value={smtpHost}
+                      onChange={(e) => setSmtpHost(e.target.value)}
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cổng (Port)</label>
+                      <input
+                        type="text"
+                        placeholder="587"
+                        value={smtpPort}
+                        onChange={(e) => setSmtpPort(e.target.value.replace(/\D/g, ''))}
+                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1 flex flex-col justify-end">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Secure (SSL/TLS)</label>
+                      <button
+                        type="button"
+                        onClick={() => setSmtpSecure(!smtpSecure)}
+                        className="flex items-center gap-2 group cursor-pointer h-11 px-2"
+                      >
+                        <div className={cn(
+                          "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
+                          smtpSecure ? "bg-rose-500 border-rose-500" : "border-slate-300 group-hover:border-slate-400"
+                        )}>
+                          {smtpSecure && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                        </div>
+                        <span className="text-xs font-bold text-slate-600">SSL/TLS</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="md:col-span-2 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tài khoản SMTP (User)</label>
+                      <input
+                        type="text"
+                        placeholder="VD: account@gmail.com"
+                        value={smtpUser}
+                        onChange={(e) => setSmtpUser(e.target.value)}
+                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mật khẩu ứng dụng (Password)</label>
+                      <input
+                        type="password"
+                        placeholder="Nhập mật khẩu SMTP..."
+                        value={smtpPass}
+                        onChange={(e) => setSmtpPass(e.target.value)}
+                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email gửi đi (From)</label>
+                      <input
+                        type="text"
+                        placeholder='VD: "Hệ thống" <account@gmail.com>'
+                        value={smtpFrom}
+                        onChange={(e) => setSmtpFrom(e.target.value)}
+                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Sandbox (Không bắt buộc)</label>
+                      <input
+                        type="email"
+                        placeholder="Nhận toàn bộ mail test tại đây..."
+                        value={smtpSandboxEmail}
+                        onChange={(e) => setSmtpSandboxEmail(e.target.value)}
+                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

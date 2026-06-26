@@ -2,7 +2,7 @@ import { Router } from "express";
 import { AuthController } from "../controllers/auth.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
-import { loginSchema, registerSchema, bankSettingsSchema } from "../validations/auth.validation";
+import { loginSchema, registerSchema, bankSettingsSchema, smtpSettingsSchema } from "../validations/auth.validation";
 
 const router = Router();
 
@@ -12,5 +12,6 @@ router.post("/refresh-token", AuthController.refreshToken);
 router.post("/logout", AuthController.logout);
 router.get("/me", authMiddleware, AuthController.getMe);
 router.patch("/bank-settings", authMiddleware, validate(bankSettingsSchema), AuthController.updateBankSettings);
+router.patch("/smtp-settings", authMiddleware, validate(smtpSettingsSchema), AuthController.updateSmtpSettings);
 
 export default router;

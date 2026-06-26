@@ -95,6 +95,13 @@ export class AuthController {
             gasUrl: user.gasUrl,
             bankAccountNo: user.bankAccountNo,
             bankId: user.bankId,
+            smtpHost: user.smtpHost,
+            smtpPort: user.smtpPort,
+            smtpSecure: user.smtpSecure,
+            smtpUser: user.smtpUser,
+            smtpPass: user.smtpPass,
+            smtpFrom: user.smtpFrom,
+            smtpSandboxEmail: user.smtpSandboxEmail,
           },
         },
       });
@@ -122,6 +129,47 @@ export class AuthController {
             gasUrl: updatedUser.gasUrl,
             bankAccountNo: updatedUser.bankAccountNo,
             bankId: updatedUser.bankId,
+            smtpHost: updatedUser.smtpHost,
+            smtpPort: updatedUser.smtpPort,
+            smtpSecure: updatedUser.smtpSecure,
+            smtpUser: updatedUser.smtpUser,
+            smtpPass: updatedUser.smtpPass,
+            smtpFrom: updatedUser.smtpFrom,
+            smtpSandboxEmail: updatedUser.smtpSandboxEmail,
+          },
+        },
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  static async updateSmtpSettings(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: "Chưa xác thực." });
+      }
+      const updatedUser = await AuthService.updateSmtpSettings(req.user.uid, req.body);
+      if (!updatedUser) {
+        return res.status(404).json({ success: false, error: "Không tìm thấy người dùng." });
+      }
+      res.json({
+        success: true,
+        data: {
+          user: {
+            uid: updatedUser._id.toString(),
+            email: updatedUser.email,
+            displayName: updatedUser.displayName,
+            gasUrl: updatedUser.gasUrl,
+            bankAccountNo: updatedUser.bankAccountNo,
+            bankId: updatedUser.bankId,
+            smtpHost: updatedUser.smtpHost,
+            smtpPort: updatedUser.smtpPort,
+            smtpSecure: updatedUser.smtpSecure,
+            smtpUser: updatedUser.smtpUser,
+            smtpPass: updatedUser.smtpPass,
+            smtpFrom: updatedUser.smtpFrom,
+            smtpSandboxEmail: updatedUser.smtpSandboxEmail,
           },
         },
       });

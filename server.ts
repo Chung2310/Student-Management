@@ -1,7 +1,6 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
-import { EmailService } from "./server/services/email.service";
 import twilio from "twilio";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
@@ -113,47 +112,7 @@ async function startServer() {
     }
   });
 
-  // API Route for sending email
-  app.post("/api/send-email", async (req, res) => {
-    try {
-      const { to, subject, html, check } = req.body;
 
-      if (check) {
-        const checkResult = await EmailService.verifyConnection();
-        if (!checkResult.success) {
-          return res.status(400).json({ 
-            success: false, 
-            error: checkResult.error === "SMTP_CONFIG_missing" 
-              ? "Cấu hình SMTP (host, port, user, pass) còn thiếu." 
-              : `Lỗi kết nối SMTP: ${checkResult.error}` 
-          });
-        }
-        return res.json({ success: true, status: 'Ready' });
-      }
-
-      if (!to || !subject || !html) {
-        return res.status(400).json({ success: false, error: 'Thiếu thông tin (to, subject, html)' });
-      }
-
-      const result = await EmailService.sendMail({ to, subject, html });
-
-      if (!result.success) {
-        if (result.error === "SMTP_CONFIG_missing") {
-          return res.status(400).json({
-            success: false,
-            error: "Hệ thống chưa được cấu hình máy chủ gửi thư SMTP. Vui lòng kiểm tra lại cấu hình."
-          });
-        }
-        return res.status(400).json({ success: false, error: result.error });
-      }
-
-      res.json({ success: true, data: { id: result.messageId } });
-    } catch (error: unknown) {
-      logger.error("Server email error: %o", error);
-      const msg = error instanceof Error ? error.message : 'Lỗi hệ thống';
-      res.status(500).json({ success: false, error: msg });
-    }
-  });
 
   // API Route for sending SMS (Twilio)
   app.post("/api/send-sms", async (req, res) => {

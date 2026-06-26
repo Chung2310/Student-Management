@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, RequestHandler } from "express";
 import fs from "fs";
 import path from "path";
 import authRoutes from "./auth.routes";
@@ -23,6 +23,62 @@ router.use("/upload", uploadRoutes);
 router.use("/ai", aiRoutes);
 router.use("/chatbot", chatbotRoutes);
 router.use("/webhook", webhookRoutes);
+
+import { authMiddleware, AuthRequest } from "../middlewares/auth.middleware";
+import { EmailService } from "../services/email.service";
+import { AuthService } from "../services/auth.service";
+
+router.post("/send-email", authMiddleware as unknown as RequestHandler, async (req: AuthRequest, res) => {
+  try {
+    const { to, subject, html, check } = req.body;
+
+    const user = await AuthService.getUserProfile(req.user.uid);
+    const smtpSettings = user ? {
+      smtpHost: user.smtpHost,
+      smtpPort: user.smtpPort,
+      smtpSecure: user.smtpSecure,
+      smtpUser: user.smtpUser,
+      smtpPass: user.smtpPass,
+      smtpFrom: user.smtpFrom,
+      smtpSandboxEmail: user.smtpSandboxEmail,
+    } : undefined;
+
+    if (check) {
+      const checkResult = await EmailService.verifyConnection(smtpSettings);
+      if (!checkResult.success) {
+        return res.status(400).json({ 
+          success: false, 
+          error: checkResult.error === "SMTP_CONFIG_missing" 
+            ? "Cấu hình SMTP (host, port, user, pass) còn thiếu." 
+            : `Lỗi kết nối SMTP: ${checkResult.error}` 
+        });
+      }
+      return res.json({ success: true, status: 'Ready' });
+    }
+
+    if (!to || !subject || !html) {
+      return res.status(400).json({ success: false, error: 'Thiếu thông tin (to, subject, html)' });
+    }
+
+    const result = await EmailService.sendMail({ to, subject, html }, smtpSettings);
+
+    if (!result.success) {
+      if (result.error === "SMTP_CONFIG_missing") {
+        return res.status(400).json({
+          success: false,
+          error: "Hệ thống chưa được cấu hình máy chủ gửi thư SMTP. Vui lòng kiểm tra lại cấu hình."
+        });
+      }
+      return res.status(400).json({ success: false, error: result.error });
+    }
+
+    res.json({ success: true, data: { id: result.messageId } });
+  } catch (error: unknown) {
+    logger.error("Server email error: %o", error);
+    const msg = error instanceof Error ? error.message : 'Lỗi hệ thống';
+    res.status(500).json({ success: false, error: msg });
+  }
+});
 
 
 // Endpoint to log client-side crashes and runtime errors

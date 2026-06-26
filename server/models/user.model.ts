@@ -34,6 +34,39 @@ const userSchema = new Schema<IUser>(
       trim: true,
       lowercase: true,
     },
+    smtpHost: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    smtpPort: {
+      type: Number,
+      default: 587,
+    },
+    smtpSecure: {
+      type: Boolean,
+      default: false,
+    },
+    smtpUser: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    smtpPass: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    smtpFrom: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    smtpSandboxEmail: {
+      type: String,
+      default: "",
+      trim: true,
+    },
   },
   {
     timestamps: true,
