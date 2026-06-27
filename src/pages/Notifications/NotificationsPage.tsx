@@ -216,7 +216,12 @@ export function NotificationsPage() {
       setLoadingHistory(true);
       const res = await apiFetch('/notifications');
       if (res.success && res.notifications) {
-        setHistory(res.notifications);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mapped = res.notifications.map((n: any) => ({
+          ...n,
+          id: n._id,
+        })) as BroadcastNotification[];
+        setHistory(mapped);
       }
     } catch (error) {
       console.error("Lỗi khi tải lịch sử thông báo:", error);

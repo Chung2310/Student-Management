@@ -104,12 +104,12 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
 
       <div className="mt-auto p-4 border-t border-white/5 bg-black/20">
         {user ? (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
               {user.photoURL ? (
-                <img src={user.photoURL} alt={user.displayName || ''} className="w-8 h-8 rounded-full" />
+                <img src={user.photoURL} alt={user.displayName || ''} className="w-8 h-8 rounded-full shrink-0" />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white">
+                <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
                   {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
                 </div>
               )}
@@ -120,7 +120,7 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
             </div>
             <button 
               onClick={logout}
-              className="p-2 text-slate-500 hover:text-white transition-colors"
+              className="p-2 text-slate-500 hover:text-white transition-colors shrink-0"
               title="Đăng xuất"
             >
               <LogOut className="w-4 h-4" />

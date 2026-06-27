@@ -15,6 +15,7 @@ import { AddExamModal } from '../../components/Exams/AddExamModal';
 import { ExamStatusModal } from '../../components/Exams/ExamStatusModal';
 import { AssignStudentModal } from '../../components/Exams/AssignStudentModal';
 import { useToast } from '../../hooks/useToast';
+import { Pagination } from '../../components/ui/Pagination';
 
 export function ExamsPage() {
   const { exams, loading: examsLoading } = useExams();
@@ -44,6 +45,15 @@ export function ExamsPage() {
   const [statusFilter, setStatusFilter] = useState('Tất cả');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 5;
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [searchQuery, rankFilter, areaFilter, statusFilter, fromDate, toDate]);
 
   // Helper to parse DD/MM/YYYY to Date object
   const parseDateString = (dateStr: string): Date | null => {
@@ -83,6 +93,12 @@ export function ExamsPage() {
     }
     return true;
   });
+
+  const totalPages = Math.ceil(filteredExams.length / pageSize);
+  const paginatedExams = filteredExams.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const getStatusInfo = (status: ExamStatus) => {
     switch (status) {
@@ -351,9 +367,9 @@ export function ExamsPage() {
           <div className="space-y-4">
             {examsLoading ? (
               <div className="py-20 text-center text-slate-400 text-sm italic">Đang nạp dữ liệu đợt thi...</div>
-            ) : filteredExams.length === 0 ? (
+            ) : paginatedExams.length === 0 ? (
               <div className="py-20 bg-white rounded-3xl border border-slate-100 text-center text-slate-400 text-sm italic">Không tìm thấy đợt thi nào.</div>
-            ) : filteredExams.map((exam) => (
+            ) : paginatedExams.map((exam) => (
               <ExamCard 
                 key={exam.id} 
                 exam={exam} 
@@ -365,6 +381,17 @@ export function ExamsPage() {
               />
             ))}
           </div>
+
+          {/* Pagination Controls */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredExams.length}
+            pageSize={pageSize}
+            itemName="đợt thi"
+            className="mt-4 shadow-sm bg-white rounded-3xl border border-slate-100"
+          />
         </>
       ) : (
         <div className="py-20 bg-white rounded-3xl border border-slate-100 text-center text-slate-400 text-sm italic">Danh sách học viên chưa có lịch thi.</div>

@@ -13,7 +13,7 @@ import { cn } from '../../lib/utils';
 type ManagedUser = {
   uid: string; email: string; displayName: string;
   role: 'superadmin' | 'admin' | 'user'; centerId: string; createdBy?: string; isActive?: boolean;
-  gasUrl?: string; bankAccountNo?: string; bankId?: string;
+  bankAccountNo?: string; bankId?: string;
 };
 type RoleFilter = 'all' | 'superadmin' | 'admin' | 'user';
 type ModalMode = null | 'center' | 'user' | 'edit-user' | 'edit-center';
@@ -83,7 +83,6 @@ export function UserManagementPage() {
   const [fPass, setFPass] = useState('');
   const [fCenter, setFCenter] = useState('');
   const [fActive, setFActive] = useState(true);
-  const [fGasUrl, setFGasUrl] = useState('');
   const [fBankAccountNo, setFBankAccountNo] = useState('');
   const [fBankId, setFBankId] = useState('mbbank');
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
@@ -94,7 +93,6 @@ export function UserManagementPage() {
     setFPass('');
     setFCenter('');
     setFActive(true);
-    setFGasUrl('');
     setFBankAccountNo('');
     setFBankId('mbbank');
     setEditingUser(null);
@@ -108,7 +106,6 @@ export function UserManagementPage() {
     setFEmail(item.email);
     setFCenter(item.centerId);
     setFActive(item.isActive !== false);
-    setFGasUrl(item.gasUrl || '');
     setFBankAccountNo(item.bankAccountNo || '');
     setFBankId(item.bankId || 'mbbank');
     setModal(item.role === 'admin' ? 'edit-center' : 'edit-user');
@@ -161,7 +158,6 @@ export function UserManagementPage() {
           displayName: fName, email: fEmail, password: fPass,
           role: isCenter ? 'admin' : 'user',
           centerId: isCenter ? '' : (isSA ? fCenter : user?.centerId),
-          gasUrl: fGasUrl,
           bankAccountNo: fBankAccountNo,
           bankId: fBankId,
         }),
@@ -182,7 +178,6 @@ export function UserManagementPage() {
         displayName: fName,
         email: fEmail,
         isActive: fActive,
-        gasUrl: fGasUrl,
         bankAccountNo: fBankAccountNo,
         bankId: fBankId,
       };
@@ -445,26 +440,6 @@ export function UserManagementPage() {
           )}
         </div>
 
-        {/* Center Overview – superadmin only */}
-        {isSA && !loading && centerMap.size > 0 && roleFilter === 'all' && !search && (
-          <div className="space-y-3">
-            <h2 className="text-base font-bold text-slate-800">Tổng quan theo trung tâm</h2>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from(centerMap.entries()).map(([cid, { admin, users: cUsers }]) => (
-                <div key={cid} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="mb-3 flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600"><Building2 className="h-4 w-4" /></div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-slate-900">{admin?.displayName || 'Chưa có Admin'}</p>
-                      {admin && <p className="truncate text-[11px] text-slate-500">{admin.email}</p>}
-                    </div>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-xs text-slate-500"><Users className="h-3 w-3" />{cUsers.length} nhân viên</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ═══ Modal: Thêm trung tâm ═══ */}
@@ -508,10 +483,6 @@ export function UserManagementPage() {
                 <label className={LABEL}>Số tài khoản</label>
                 <input type="text" value={fBankAccountNo} onChange={e => setFBankAccountNo(e.target.value.replace(/\D/g, ''))} placeholder="Nhập số tài khoản..." className={INPUT} />
               </div>
-            </div>
-            <div>
-              <label className={LABEL}>Google Sheets GAS URL</label>
-              <input type="text" value={fGasUrl} onChange={e => setFGasUrl(e.target.value)} placeholder="https://script.google.com/macros/s/..." className={INPUT} />
             </div>
           </div>
 
@@ -614,10 +585,6 @@ export function UserManagementPage() {
                 <label className={LABEL}>Số tài khoản</label>
                 <input type="text" value={fBankAccountNo} onChange={e => setFBankAccountNo(e.target.value.replace(/\D/g, ''))} placeholder="Nhập số tài khoản..." className={INPUT} />
               </div>
-            </div>
-            <div>
-              <label className={LABEL}>Google Sheets GAS URL</label>
-              <input type="text" value={fGasUrl} onChange={e => setFGasUrl(e.target.value)} placeholder="https://script.google.com/macros/s/..." className={INPUT} />
             </div>
           </div>
 

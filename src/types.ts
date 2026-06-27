@@ -7,6 +7,7 @@ export type StudentStatus = 'Chờ KSK' | 'Đã KSK' | 'Đã nộp HS' | 'Đang 
 export interface DrivingStudent {
   id: string;
   fullName: string;
+  slug?: string;
   email?: string;
   phone: string;
   referral?: string;

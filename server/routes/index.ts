@@ -33,7 +33,8 @@ router.post("/send-email", authMiddleware as unknown as RequestHandler, async (r
     const { to, subject, html, check } = req.body;
 
     const user = await AuthService.getUserProfile(req.user.uid);
-    const smtpSettings = user ? {
+    const hasCustomSmtp = !!(user && user.smtpHost && user.smtpUser && user.smtpPass);
+    const smtpSettings = hasCustomSmtp ? {
       smtpHost: user.smtpHost,
       smtpPort: user.smtpPort,
       smtpSecure: user.smtpSecure,
