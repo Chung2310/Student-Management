@@ -58,6 +58,7 @@ const studentPaymentSchema = new Schema({
 const studentSchema = new Schema<IStudent>(
   {
     fullName: { type: String, required: true, trim: true },
+    slug: { type: String, trim: true, index: true },
     email: { type: String, lowercase: true, trim: true },
     phone: { type: String, required: true, trim: true, index: true },
     referral: { type: String, default: "" },
@@ -90,6 +91,26 @@ const studentSchema = new Schema<IStudent>(
     timestamps: true,
   }
 );
+
+export function slugify(str: string): string {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[đĐ]/g, "d")
+    .replace(/([^a-z0-9\s-])/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim();
+}
+
+studentSchema.pre("save", function (this: any, next: any) {
+  if (this.isModified("fullName") || !this.slug) {
+    this.slug = slugify(this.fullName);
+  }
+  next();
+});
 
 // Add index on fullName and phone for search
 studentSchema.index({ fullName: "text", phone: "text" });

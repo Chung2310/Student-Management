@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { Student } from '../../types';
 import { apiFetch } from '../../lib/api';
-import { cn, formatVND, parseVND, formatDisplayDate } from '../../lib/utils';
+import { cn, formatVND, parseVND, formatDisplayDate, toSlug } from '../../lib/utils';
 import { analyzeStudentPerformance } from '../../services/geminiService';
 import { useToast } from '../../hooks/useToast';
 
@@ -319,6 +319,20 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
                     <span className="text-slate-400 text-[10px] sm:text-xs font-medium">{student.area}</span>
                     <span className="text-slate-300 hidden sm:block">•</span>
                     <span className="text-slate-500 text-[10px] sm:text-xs font-medium">{student.phone}</span>
+                    <span className="text-slate-300 hidden sm:block">•</span>
+                    <button 
+                      onClick={() => {
+                        const slug = student.slug || toSlug(student.fullName);
+                        const url = `${window.location.origin}/students/${slug}`;
+                        navigator.clipboard.writeText(url);
+                        toast.success("Đã sao chép liên kết SEO của học viên!");
+                      }}
+                      className="text-[10px] sm:text-xs text-cyan-600 hover:text-cyan-700 font-extrabold flex items-center gap-1 active:scale-95 transition-all bg-cyan-50 hover:bg-cyan-100/50 px-2 py-0.5 rounded border border-cyan-100 cursor-pointer"
+                      title="Sao chép liên kết định danh SEO của học viên"
+                    >
+                      <Sparkles className="w-3 h-3 text-cyan-500" />
+                      Sao chép Link SEO
+                    </button>
                   </div>
                 </div>
               </div>

@@ -4,7 +4,7 @@ import {
   Search, Download, Printer, Plus, 
   Eye, ChevronRight, Trash2, Pencil,
   X, Calendar as CalendarIcon, ChevronDown,
-  Users, Bike, Car, ChevronLeft, Upload
+  Users, Bike, Car, Upload
 } from 'lucide-react';
 import { cn, formatVND, formatDisplayDate } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
@@ -14,6 +14,7 @@ import { apiFetch } from '../../lib/api';
 import { StatusTransitionModal } from '../../components/Student/StatusTransitionModal';
 import { EditStudentModal } from '../../components/Student/EditStudentModal';
 import { ImportStudentModal } from '../../components/Student/ImportStudentModal';
+import { Pagination } from '../../components/ui/Pagination';
 
 interface StudentsPageProps {
   onSelectStudent: (student: Student) => void;
@@ -607,51 +608,16 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         </div>
 
         {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 bg-slate-50/50 border-t border-slate-100 pagination-bar gap-4 sm:gap-0">
-            <div className="text-xs font-medium text-slate-400 order-2 sm:order-1">
-              Hiển thị {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, filteredStudents.length)} của {filteredStudents.length} học viên
-            </div>
-            <div className="flex items-center gap-1 order-1 sm:order-2">
-              <button 
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              
-              <div className="hidden sm:flex items-center gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={cn(
-                      "w-8 h-8 rounded-lg text-xs font-bold transition-all",
-                      currentPage === page 
-                        ? "bg-cyan-600 text-white shadow-md shadow-cyan-100" 
-                        : "bg-white border border-slate-200 text-slate-600 hover:border-cyan-600 hover:text-cyan-600"
-                    )}
-                  >
-                    {page}
-                  </button>
-                ))}
-              </div>
-
-              <span className="sm:hidden text-xs font-bold text-slate-600 px-3">
-                Trang {currentPage} / {totalPages}
-              </span>
-
-              <button 
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Pagination Controls */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalItems={filteredStudents.length}
+          pageSize={pageSize}
+          itemName="học viên"
+          className="pagination-bar"
+        />
       </div>
 
       {/* Status Transition Modal */}

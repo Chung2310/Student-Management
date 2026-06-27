@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Save, ChevronDown, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
+import { toSlug } from '../../lib/utils';
 import { Student } from '../../types';
 
 interface EditStudentModalProps {
@@ -164,6 +165,11 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
                   onChange={handleInputChange} 
                   className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all" 
                 />
+                {formData.fullName && (
+                  <p className="text-[10px] font-bold text-cyan-600 mt-1 select-all truncate" title="Đường dẫn SEO sẽ được tạo tự động">
+                    🔗 Link SEO: /students/{toSlug(formData.fullName)}
+                  </p>
+                )}
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">

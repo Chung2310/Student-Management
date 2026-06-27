@@ -42,6 +42,7 @@ export interface IStudentPayment {
 
 export interface IStudent extends Document {
   fullName: string;
+  slug?: string;
   email?: string;
   phone: string;
   referral?: string;
