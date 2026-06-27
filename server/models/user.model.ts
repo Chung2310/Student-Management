@@ -19,6 +19,25 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: true,
     },
+    role: {
+      type: String,
+      enum: ["superadmin", "admin", "user"],
+      required: true,
+      default: "admin",
+      index: true,
+    },
+    centerId: {
+      type: String,
+      required: true,
+      index: true,
+      trim: true,
+    },
+    createdBy: {
+      type: String,
+      default: "",
+      trim: true,
+      index: true,
+    },
     gasUrl: {
       type: String,
       default: "",
@@ -61,6 +80,10 @@ const userSchema = new Schema<IUser>(
       type: String,
       default: "",
       trim: true,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
     },
     smtpSandboxEmail: {
       type: String,

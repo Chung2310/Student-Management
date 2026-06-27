@@ -5,17 +5,17 @@ import {
   CreditCard, Plus, Edit2, Trash2,
   CheckCircle2, Info, ShieldCheck, Download, Upload,
   FileJson, RotateCcw, ToggleLeft, ToggleRight, Activity,
-  Mail, Loader2
+  Mail, Loader2, Smartphone
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
 import { useAuth } from '../../hooks/useAuth';
-import { apiFetch } from '../../lib/api';
+import { apiFetch, getAccessToken } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 
 type SettingsTab = 'Cấu hình hệ thống' | 'Quản lý dữ liệu' | 'Quản trị';
 
-export function SettingsView() {
+export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('Cấu hình hệ thống');
   const { students } = useStudents();
   const { user, fetchMe } = useAuth();
@@ -142,6 +142,11 @@ export function SettingsView() {
   const [isSavingSmtp, setIsSavingSmtp] = useState(false);
   const [isTestingSmtp, setIsTestingSmtp] = useState(false);
 
+  const [smsProvider, setSmsProvider] = useState<'twilio' | 'stringee' | 'tingting'>(user?.smsSettings?.provider || 'tingting');
+  const [tingtingApiKey, setTingtingApiKey] = useState(user?.smsSettings?.tingtingApiKey || '');
+  const [tingtingSender, setTingtingSender] = useState(user?.smsSettings?.tingtingSender || '');
+  const [isSavingSms, setIsSavingSms] = useState(false);
+  const [isTestingSms, setIsTestingSms] = useState(false);
   useEffect(() => {
     if (user) {
       setTimeout(() => {
@@ -152,6 +157,9 @@ export function SettingsView() {
         setSmtpPass(user.smtpPass || '');
         setSmtpFrom(user.smtpFrom || '');
         setSmtpSandboxEmail(user.smtpSandboxEmail || '');
+        setSmsProvider(user.smsSettings?.provider || 'tingting');
+        setTingtingApiKey(user.smsSettings?.tingtingApiKey || '');
+        setTingtingSender(user.smsSettings?.tingtingSender || '');
       }, 0);
     }
   }, [user]);
@@ -200,6 +208,60 @@ export function SettingsView() {
       setIsTestingSmtp(false);
     }
   };
+
+  const handleSaveSmsSettings = async () => {
+    setIsSavingSms(true);
+    try {
+      await apiFetch('/auth/sms-settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          provider: smsProvider,
+          tingtingApiKey,
+          tingtingSender,
+        })
+      });
+      await fetchMe();
+      toast.success('Đã lưu cấu hình SMS thành công!');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Lỗi không xác định.';
+      toast.error('Lỗi khi lưu cấu hình SMS: ' + msg);
+    } finally {
+      setIsSavingSms(false);
+    }
+  };
+
+  const handleTestSmsConnection = async () => {
+    setIsTestingSms(true);
+    try {
+      const token = getAccessToken();
+      const response = await fetch('/api/send-sms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ check: true })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.status === 'Ready') {
+          toast.success(`Kết nối TingTing thành công! (Nguồn: ${data.source === 'tenant' ? 'Cấu hình riêng' : 'Mặc định hệ thống'})`);
+        } else {
+          toast.error('Kiểm tra TingTing thất bại: ' + (data.error || 'Lỗi phản hồi'));
+        }
+      } else {
+        const data = await response.json().catch(() => ({}));
+        toast.error('Kiểm tra TingTing thất bại: ' + (data.error || 'Lỗi HTTP ' + response.status));
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Lỗi không xác định.';
+      toast.error('Lỗi kết nối TingTing: ' + msg);
+    } finally {
+      setIsTestingSms(false);
+    }
+  };
+
+
 
   const tabs: { id: SettingsTab; icon: React.ComponentType<{ className?: string }>; label: string }[] = [
     { id: 'Cấu hình hệ thống', icon: Settings, label: 'Cấu hình hệ thống' },
@@ -998,6 +1060,107 @@ export function SettingsView() {
                       />
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+            {/* SMS / eSMS Settings */}
+            <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 p-6 space-y-6 lg:col-span-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-50 pb-4 gap-4">
+                <div className="flex items-center gap-3">
+                  <Smartphone className="w-5 h-5 text-cyan-600" />
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Cấu hình SMS (TingTing)</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleTestSmsConnection}
+                    disabled={isTestingSms}
+                    className="h-9 px-4 rounded-xl border border-slate-200 hover:border-slate-300 text-xs font-bold text-slate-600 hover:text-slate-800 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  >
+                    {isTestingSms ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-600" />
+                    ) : (
+                      <Activity className="w-3.5 h-3.5 text-slate-400" />
+                    )}
+                    Kiểm tra kết nối
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveSmsSettings}
+                    disabled={isSavingSms}
+                    className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-850 active:scale-95 text-xs font-bold text-white transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  >
+                    {isSavingSms ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    )}
+                    Lưu cấu hình
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nhà cung cấp SMS</label>
+                    <select
+                      value={smsProvider}
+                      onChange={(e) => setSmsProvider(e.target.value as 'twilio' | 'stringee' | 'tingting')}
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all"
+                    >
+                      <option value="tingting">TingTing (SpeedSMS)</option>
+                      <option value="twilio">Twilio (Quốc tế - Chưa hỗ trợ)</option>
+                      <option value="stringee">Stringee (Chưa hỗ trợ)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="md:col-span-2 space-y-4">
+                  {smsProvider === 'tingting' ? (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1 col-span-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">TingTing API Key</label>
+                          <input
+                            type="text"
+                            placeholder="Nhập API Key từ TingTing..."
+                            value={tingtingApiKey}
+                            onChange={(e) => setTingtingApiKey(e.target.value)}
+                            className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tên Sender (Nếu cần)</label>
+                        <input
+                          type="text"
+                          placeholder="VD: Brandname hoặc Device ID (Để trống nếu dùng mặc định)..."
+                          value={tingtingSender}
+                          onChange={(e) => setTingtingSender(e.target.value)}
+                          className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all"
+                        />
+                      </div>
+
+                      <div className="bg-cyan-50/50 border border-cyan-100 rounded-2xl p-4 space-y-2">
+                        <div className="flex items-center gap-2 text-cyan-800 font-bold text-xs">
+                          <Info size={14} className="shrink-0" />
+                          <span>HƯỚNG DẪN CẤU HÌNH VÀ SỬ DỤNG TINGTING:</span>
+                        </div>
+                        <ul className="text-[11px] text-cyan-700/90 leading-relaxed list-decimal pl-4 space-y-1 font-medium">
+                          <li>Đăng nhập hoặc đăng ký tài khoản tại <a href="https://app.tingting.im" target="_blank" rel="noreferrer" className="underline font-bold text-cyan-800 hover:text-cyan-900">app.tingting.im</a>, sau đó tiến hành nạp số dư tối thiểu.</li>
+                          <li>Vào mục <strong>Developers</strong> để tạo <strong>API Key</strong>. Đừng quên cấu hình địa chỉ IP whitelist của server để được phép gọi API.</li>
+                          <li>Copy <strong>API Key</strong> vừa tạo dán vào trường thông tin ở trên.</li>
+                          <li>Nếu bạn có đăng ký sử dụng <strong>Brandname riêng</strong>, hãy nhập tên Brandname vào mục <strong>Tên Sender</strong>.</li>
+                        </ul>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="h-full min-h-[150px] border border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 text-xs italic">
+                      Nhà cung cấp này hiện chưa được hỗ trợ tích hợp trực tiếp trên giao diện. Vui lòng chọn TingTing.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

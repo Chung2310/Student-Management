@@ -3,30 +3,37 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Sidebar } from './components/Dashboard/Sidebar';
 import { Header } from './components/Dashboard/Header';
-import { StatsGrid } from './components/Dashboard/StatsGrid';
-import { DrivingDashboardTables } from './components/Dashboard/DrivingDashboardTables';
 import { AddStudentModal } from './components/Student/AddStudentModal';
 import { StudentDetailModal } from './components/Student/StudentDetailModal';
-import { LuxuryButton } from './components/ui/LuxuryButton';
-import { Plus } from 'lucide-react';
 import { Student } from './types';
 
-import { StudentManagement } from './components/Student/StudentManagement';
-import { ExamManagement } from './components/Exams/ExamManagement';
-import { FeeManagement } from './components/Fees/FeeManagement';
-import { NotificationBot } from './components/Notifications/NotificationBot';
-import { SettingsView } from './components/Settings/SettingsView';
 import { useAuth } from './hooks/useAuth';
 import { useRealtimePayment } from './hooks/useRealtimePayment';
-import { LoginView } from './components/Auth/LoginView';
 import { Loader2 } from 'lucide-react';
 import { ChatbotWidget } from './components/Chatbot/ChatbotWidget';
 import { cn } from './lib/utils';
 
-export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'SettingsAdmin';
+// Lazy load pages
+const LoginPage = lazy(() => import('./pages/Auth/LoginPage').then(m => ({ default: m.LoginPage })));
+const DashboardPage = lazy(() => import('./pages/Dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const StudentsPage = lazy(() => import('./pages/Students/StudentsPage').then(m => ({ default: m.StudentsPage })));
+const ExamsPage = lazy(() => import('./pages/Exams/ExamsPage').then(m => ({ default: m.ExamsPage })));
+const FeesPage = lazy(() => import('./pages/Fees/FeesPage').then(m => ({ default: m.FeesPage })));
+const NotificationsPage = lazy(() => import('./pages/Notifications/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
+const UserManagementPage = lazy(() => import('./pages/UserManagement/UserManagementPage').then(m => ({ default: m.UserManagementPage })));
+const SettingsPage = lazy(() => import('./pages/Settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
+
+const PageLoader = () => (
+  <div className="min-h-[50vh] flex flex-col items-center justify-center">
+    <Loader2 className="w-10 h-10 text-cyan-600 animate-spin mb-3" />
+    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider animate-pulse">Đang tải trang...</p>
+  </div>
+);
+
+export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'UserManagement' | 'SettingsAdmin';
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -53,45 +60,46 @@ export default function App() {
   }
 
   if (!user) {
-    return <LoginView />;
+    return (
+      <Suspense fallback={
+        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
+          <Loader2 className="w-12 h-12 text-cyan-500 animate-spin mb-4" />
+          <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.3em] animate-pulse">Đang nạp trang đăng nhập...</p>
+        </div>
+      }>
+        <LoginPage />
+      </Suspense>
+    );
   }
 
   const renderView = () => {
     switch (currentView) {
       case 'Dashboard':
         return (
-          <>
-            <section className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Tổng quan</h1>
-                <p className="text-slate-400 text-sm font-medium mt-1">Hôm nay: {formattedDate}</p>
-              </div>
-              <LuxuryButton 
-                onClick={() => setIsAddModalOpen(true)}
-                className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-lg shadow-purple-200"
-              >
-                <Plus className="w-4 h-4 mr-2" /> Thêm học viên
-              </LuxuryButton>
-            </section>
-            <section><StatsGrid /></section>
-            <section><DrivingDashboardTables onSelectStudent={handleOpenProfile} onNavigate={setCurrentView} /></section>
-          </>
+          <DashboardPage 
+            formattedDate={formattedDate}
+            onAddStudent={() => setIsAddModalOpen(true)}
+            onSelectStudent={handleOpenProfile}
+            onNavigate={setCurrentView}
+          />
         );
       case 'Students':
         return (
-          <StudentManagement 
+          <StudentsPage 
             onSelectStudent={handleOpenProfile} 
             onAddStudent={() => setIsAddModalOpen(true)}
           />
         );
       case 'Exams':
-        return <ExamManagement />;
+        return <ExamsPage />;
       case 'Fees':
-        return <FeeManagement />;
+        return <FeesPage />;
       case 'Bot':
-        return <NotificationBot />;
+        return <NotificationsPage />;
+      case 'UserManagement':
+        return <UserManagementPage />;
       case 'SettingsAdmin':
-        return <SettingsView />;
+        return <SettingsPage />;
       default:
         return (
           <div className="flex flex-col items-center justify-center h-[60vh] text-slate-400">
@@ -126,7 +134,9 @@ export default function App() {
         />
 
         <main className="flex-1 p-4 md:p-8 space-y-6 max-w-[1600px] mx-auto w-full">
-          {renderView()}
+          <Suspense fallback={<PageLoader />}>
+            {renderView()}
+          </Suspense>
         </main>
 
         <footer className="p-6 text-center text-slate-400">

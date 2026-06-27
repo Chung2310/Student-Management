@@ -4,15 +4,15 @@ import {
   Send, History, UserCheck, 
   ChevronDown, SendHorizontal,
   AlertCircle, MessageCircle, Smartphone, Mail,
-  Inbox, Loader2, CheckCircle2, X, Trash2
+  Inbox, Loader2, CheckCircle2, X, Trash2, Lock
 } from 'lucide-react';
 import { cn, parseVND } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
 import { useAuth } from '../../hooks/useAuth';
-import { apiFetch } from '../../lib/api';
+import { apiFetch, getAccessToken } from '../../lib/api';
 import { BroadcastNotification, Student } from '../../types';
 import { useToast } from '../../hooks/useToast';
-import { AddPaymentModal } from '../Fees/AddPaymentModal';
+import { AddPaymentModal } from '../../components/Fees/AddPaymentModal';
 
 interface HistoryCardProps {
   key?: string | number;
@@ -116,7 +116,7 @@ function HistoryCard({ notification, onDelete }: HistoryCardProps) {
   );
 }
 
-export function NotificationBot() {
+export function NotificationsPage() {
   const { students } = useStudents();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -184,14 +184,17 @@ export function NotificationBot() {
 
   const checkSmsApiStatus = async () => {
     try {
+      const token = getAccessToken();
       const response = await fetch('/api/send-sms', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ check: true })
       });
       if (response.ok) {
-        const data = await response.json();
-        setSmsApiStatus(data.sandbox ? 'Sandbox' : 'Ready');
+        setSmsApiStatus('Ready');
       } else {
         setSmsApiStatus('Error');
       }
@@ -242,6 +245,10 @@ export function NotificationBot() {
   }, [user]);
 
   const toggleChannel = (channel: string) => {
+    if (channel === 'Zalo OA' || channel === 'SMS') {
+      toast.info('Tính năng đang phát triển');
+      return;
+    }
     setChannels(prev => 
       prev.includes(channel) 
         ? prev.filter(c => c !== channel) 
@@ -401,9 +408,13 @@ export function NotificationBot() {
         // Handle SMS real API
         if (channels.includes('SMS')) {
           try {
+            const token = getAccessToken();
             const response = await fetch('/api/send-sms', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {})
+              },
               body: JSON.stringify({
                 to: student.phone,
                 message: personalizedContent
@@ -500,17 +511,17 @@ export function NotificationBot() {
     {
       name: 'Nhắc phí',
       title: 'THÔNG BÁO HOÀN THÀNH HỌC PHÍ - {ten}',
-      content: 'Thân chào {ten},\n\nTrung tâm xin thông báo học phí khóa học hạng {hang} của bạn hiện vẫn còn nợ {sotien}. Để đảm bảo tiến độ học tập và dự thi đúng hạn, bạn vui lòng hoàn tất học phí trong tuần này tại {kv}.\n\nTrân trọng,\nTrung tâm Đào tạo Lái xe.'
+      content: 'Kính gửi học viên {ten}, Trung tâm xin thông báo học phí khóa học hạng {hang} của bạn hiện vẫn còn nợ {sotien}. Để đảm bảo tiến độ học tập và dự thi đúng hạn, bạn vui lòng hoàn tất học phí trong tuần này tại {kv}. Trân trọng.'
     },
     {
       name: 'Lịch thi',
       title: 'THÔNG BÁO LỊCH THI SÁT HẠCH - {ten}',
-      content: 'Chào {ten},\n\nTrung tâm xin thông báo lịch thi sát hạch hạng {hang} của bạn đã có. \n- Ngày thi: {ngaythi} \n- Địa điểm: {kv}\n\nBạn vui lòng có mặt đúng giờ và mang theo CCCD bản gốc để làm thủ tục dự thi.\n\nChúc bạn đạt kết quả tốt nhất!'
+      content: 'Kính gửi học viên {ten}, Trung tâm xin thông báo lịch thi sát hạch hạng {hang} của bạn đã có vào ngày {ngaythi} tại {kv}. Bạn vui lòng có mặt đúng giờ và mang theo CCCD bản gốc để làm thủ tục dự thi. Chúc bạn thi tốt.'
     },
     {
       name: 'Thi lại',
       title: 'LỊCH THI LẠI & ÔN TẬP - {ten}',
-      content: 'Chào {ten},\n\nĐừng quá lo lắng về kết quả thi vừa qua. Trung tâm đã sắp xếp lịch ôn tập và thi lại cho bạn khóa hạng {hang} tại khu vực {kv}.\n\nVui lòng liên hệ văn phòng để xác nhận lịch thi dự kiến kế tiếp.\n\nCố gắng lên bạn nhé!'
+      content: 'Kính gửi học viên {ten}, Trung tâm đã sắp xếp lịch ôn tập và thi lại cho bạn khóa hạng {hang} tại khu vực {kv}. Vui lòng liên hệ văn phòng để xác nhận lịch thi dự kiến kế tiếp. Cố gắng lên bạn nhé.'
     }
   ];
 
@@ -760,7 +771,6 @@ export function NotificationBot() {
                             <CheckCircle2 size={8} /> Sẵn sàng
                           </span>
                         )}
-                        {smsApiStatus === 'Sandbox' && <span className="text-[9px] font-black text-amber-500 uppercase">Sandbox</span>}
                         {smsApiStatus === 'Error' && <span className="text-[9px] font-black text-rose-500 uppercase">Chưa cấu hình</span>}
                       </div>
                     )}
@@ -768,9 +778,6 @@ export function NotificationBot() {
                 </div>
                 {channels.includes('Email') && apiStatus === 'Ready' && (
                   <p className="text-[9px] text-slate-400 font-medium italic text-right">* SMTP Sender: Gửi email không giới hạn qua tài khoản của bạn.</p>
-                )}
-                {channels.includes('SMS') && smsApiStatus === 'Sandbox' && (
-                  <p className="text-[9px] text-amber-500 font-medium italic text-right">* eSMS đang ở sandbox, request có thể thành công nhưng sẽ không gửi SMS thật về số điện thoại.</p>
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-6">
@@ -794,34 +801,32 @@ export function NotificationBot() {
                 <button 
                   type="button"
                   onClick={() => toggleChannel('Zalo OA')}
-                  className="flex items-center gap-2 group cursor-pointer"
+                  className="flex items-center gap-2 group cursor-pointer opacity-60 hover:opacity-80 transition-opacity"
+                  title="Tính năng đang phát triển"
                 >
-                  <div className={cn(
-                    "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
-                    channels.includes('Zalo OA') ? "bg-cyan-600 border-cyan-600" : "border-slate-300 group-hover:border-slate-400"
-                  )}>
-                    {channels.includes('Zalo OA') && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                  <div className="w-5 h-5 rounded-md border border-slate-300 flex items-center justify-center bg-slate-50">
+                    <Lock className="w-2.5 h-2.5 text-slate-400" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <MessageCircle className="w-4 h-4 text-blue-500" />
-                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">ZALO OA</span>
+                  <div className="flex items-center gap-1.5">
+                    <MessageCircle className="w-4 h-4 text-blue-400" />
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">ZALO OA</span>
+                    <span className="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-100/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">Sắp có</span>
                   </div>
                 </button>
 
                 <button 
                   type="button"
                   onClick={() => toggleChannel('SMS')}
-                  className="flex items-center gap-2 group cursor-pointer"
+                  className="flex items-center gap-2 group cursor-pointer opacity-60 hover:opacity-80 transition-opacity"
+                  title="Tính năng đang phát triển"
                 >
-                  <div className={cn(
-                    "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
-                    channels.includes('SMS') ? "bg-cyan-600 border-cyan-600" : "border-slate-300 group-hover:border-slate-400"
-                  )}>
-                    {channels.includes('SMS') && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                  <div className="w-5 h-5 rounded-md border border-slate-300 flex items-center justify-center bg-slate-50">
+                    <Lock className="w-2.5 h-2.5 text-slate-400" />
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <Smartphone className="w-4 h-4 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">SMS</span>
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">SMS</span>
+                    <span className="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-100/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">Sắp có</span>
                   </div>
                 </button>
               </div>

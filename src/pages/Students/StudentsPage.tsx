@@ -11,11 +11,11 @@ import { useStudents } from '../../hooks/useStudents';
 import { useToast } from '../../hooks/useToast';
 import { Student } from '../../types';
 import { apiFetch } from '../../lib/api';
-import { StatusTransitionModal } from './StatusTransitionModal';
-import { EditStudentModal } from './EditStudentModal';
-import { ImportStudentModal } from './ImportStudentModal';
+import { StatusTransitionModal } from '../../components/Student/StatusTransitionModal';
+import { EditStudentModal } from '../../components/Student/EditStudentModal';
+import { ImportStudentModal } from '../../components/Student/ImportStudentModal';
 
-interface StudentManagementProps {
+interface StudentsPageProps {
   onSelectStudent: (student: Student) => void;
   onAddStudent: () => void;
 }
@@ -23,7 +23,7 @@ interface StudentManagementProps {
 type CategoryFilter = 'Tất cả' | 'Xe máy' | 'Ô tô';
 type StatusFilter = 'Tất cả' | 'KSK' | 'Đã KSK' | 'Nộp HS' | 'Đang học' | 'Đang thi' | 'Đã đậu' | 'Thi lại' | 'Nghỉ học';
 
-export function StudentManagement({ onSelectStudent, onAddStudent }: StudentManagementProps) {
+export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProps) {
   const { students, loading } = useStudents();
   const { toast } = useToast();
   const [category, setCategory] = useState<CategoryFilter>('Tất cả');
@@ -154,13 +154,11 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
       return;
     }
 
-    // Define CSV headers
     const headers = [
       'Họ và tên', 'Số điện thoại', 'Hạng', 'Khu vực', 'Ngày đăng ký', 
       'Tổng học phí', 'Đã đóng', 'Còn nợ', 'Trạng thái'
     ];
     
-    // Map data to CSV rows
     const rows = filteredStudents.map(student => {
       const totalFeeNum = parseInt(String(student.fee).replace(/\D/g, ''), 10) || 0;
       const paidSoFar = student.paidAmount || 0;
@@ -168,7 +166,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
 
       return [
         student.fullName,
-        `\t${student.phone}`, // tab prefix preserves leading zero in Excel
+        `\t${student.phone}`,
         student.rank,
         student.area,
         student.registrationDate,
@@ -179,7 +177,6 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
       ];
     });
 
-    // Construct CSV content
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.map(cell => {
@@ -188,7 +185,6 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
       }).join(','))
     ].join('\n');
 
-    // Create a blob and download link
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -205,14 +201,12 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
       return;
     }
 
-    // Create a new window for printing
     const printWindow = window.open('', '_blank', 'width=1000,height=800');
     if (!printWindow) {
       toast.warning('Trình duyệt đã chặn cửa sổ bật lên. Vui lòng cho phép bật lên để in hoặc mở ứng dụng trong tab mới.');
       return;
     }
 
-    // Prepare table rows html
     const rowsHtml = filteredStudents.map(student => `
       <tr>
         <td style="padding: 10px; border: 1px solid #ddd;">${student.fullName}</td>
@@ -224,7 +218,6 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
       </tr>
     `).join('');
 
-    // Construct print html content
     const printContent = `
       <html>
         <head>
@@ -332,7 +325,7 @@ export function StudentManagement({ onSelectStudent, onAddStudent }: StudentMana
             )}
           </button>
         ))}
-</div>
+      </div>
 
       {/* Sub-Tabs (Status Workflow) */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 status-tabs">
