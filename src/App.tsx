@@ -126,6 +126,7 @@ export default function App() {
       if (slug) {
         const found = students.find(s => (s.slug || toSlug(s.fullName)) === slug);
         if (found) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setSelectedStudent(found);
         }
       }

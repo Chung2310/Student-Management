@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Save, ChevronDown, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
-import { toSlug } from '../../lib/utils';
 import { Student } from '../../types';
 
 interface EditStudentModalProps {
