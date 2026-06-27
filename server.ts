@@ -7,7 +7,6 @@ import cors from "cors";
 import swaggerUi from "swagger-ui-express";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
-import twilio from "twilio";
 import { logger } from "./server/config/logger";
 
 import { connectDB } from "./server/config/db";
@@ -15,7 +14,9 @@ import apiRoutes from "./server/routes/index";
 import { swaggerSpec } from "./server/swagger";
 import { errorMiddleware } from "./server/middlewares/error.middleware";
 import { requestLoggerMiddleware } from "./server/middlewares/logger.middleware";
+import { authMiddleware, AuthRequest } from "./server/middlewares/auth.middleware";
 import { AuthService } from "./server/services/auth.service";
+import { SmsSettingsService } from "./server/services/sms-settings.service";
 import { sseManager } from "./server/services/sse.manager";
 
 dotenv.config();
@@ -31,62 +32,95 @@ function formatVietnamPhoneNumber(phone: string) {
   return digits;
 }
 
-function formatPhoneToE164(phone: string) {
-  const normalized = formatVietnamPhoneNumber(phone);
-  return normalized.startsWith("+") ? normalized : `+${normalized}`;
-}
+type SmsSendResult = {
+  provider: "tingting";
+  smsId: string | null;
+  codeResult: string | null;
+  errorMessage: string | null;
+  normalizedPhone: string;
+};
 
-async function sendSmsViaTwilio(to: string, message: string) {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const fromNumber = process.env.TWILIO_FROM_NUMBER?.trim();
-  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID?.trim();
-  const statusCallbackUrl = process.env.TWILIO_STATUS_CALLBACK_URL?.trim();
+async function sendSmsViaTingtingWithConfig(params: {
+  to: string;
+  message: string;
+  apikey?: string;
+  sender?: string;
+}): Promise<SmsSendResult> {
+  const { to, message, apikey, sender = "" } = params;
 
-  if (!accountSid || !authToken) {
-    throw new Error("Cau hinh Twilio con thieu. Vui long them TWILIO_ACCOUNT_SID va TWILIO_AUTH_TOKEN.");
+  if (!apikey) {
+    throw new Error("Cau hinh TingTing con thieu. Vui long them TINGTING_API_KEY.");
   }
 
-  if (!fromNumber && !messagingServiceSid) {
-    throw new Error("Can cau hinh TWILIO_FROM_NUMBER hoac TWILIO_MESSAGING_SERVICE_SID.");
-  }
-
-  const client = twilio(accountSid, authToken);
-  const toPhone = formatPhoneToE164(to);
+  const normalizedPhone = formatVietnamPhoneNumber(to);
 
   logger.info(
-    `[Twilio] Sending SMS ${JSON.stringify({
-      to: toPhone,
-      hasFromNumber: Boolean(fromNumber),
-      hasMessagingServiceSid: Boolean(messagingServiceSid),
+    `[TingTing] Sending SMS ${JSON.stringify({
+      to: normalizedPhone,
+      sender,
       contentLength: message.length,
     })}`
   );
 
-  const result = await client.messages.create({
-    to: toPhone,
-    body: message,
-    ...(statusCallbackUrl ? { statusCallback: statusCallbackUrl } : {}),
-    ...(messagingServiceSid ? { messagingServiceSid } : { from: fromNumber }),
+  const payload = {
+    to: normalizedPhone,
+    content: message,
+    sender: sender,
+  };
+
+  const response = await fetch("https://v1.tingting.im/api/sms", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": apikey,
+    },
+    body: JSON.stringify(payload),
   });
 
+  const data = await response.json() as {
+    status?: string;
+    message?: string;
+    count?: number;
+    cost?: number;
+    transaction_id?: string;
+  };
+
   logger.info(
-    `[Twilio] Response received ${JSON.stringify({
-      sid: result.sid,
-      status: result.status,
-      errorCode: result.errorCode,
-      errorMessage: result.errorMessage,
-      to: result.to,
+    `[TingTing] Response received ${JSON.stringify({
+      httpStatus: response.status,
+      status: data.status,
+      message: data.message,
+      transaction_id: data.transaction_id,
     })}`
   );
 
+  if (!response.ok) {
+    throw new Error(data.message || "Khong the ket noi TingTing.");
+  }
+
+  if (data.status !== "success") {
+    throw new Error(data.message || `TingTing gui tin nhan that bai.`);
+  }
+
   return {
-    sid: result.sid,
-    status: result.status,
-    errorCode: result.errorCode,
-    errorMessage: result.errorMessage,
-    normalizedPhone: toPhone,
-    provider: "twilio",
+    provider: "tingting" as const,
+    smsId: data.transaction_id || null,
+    codeResult: data.status || null,
+    errorMessage: data.message || null,
+    normalizedPhone,
+  };
+}
+
+async function getTenantSmsConfig(ownerId: string) {
+  const settings = await SmsSettingsService.getByOwnerId(ownerId);
+  if (!settings) {
+    return null;
+  }
+
+  return {
+    provider: settings.provider,
+    tingtingApiKey: settings.tingtingApiKey,
+    tingtingSender: settings.tingtingSender,
   };
 }
 
@@ -171,24 +205,29 @@ async function startServer() {
     }
   });
 
-  app.post("/api/send-sms", async (req, res) => {
+  app.post("/api/send-sms", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const { to, message, check } = req.body;
-      const accountSid = process.env.TWILIO_ACCOUNT_SID;
-      const authToken = process.env.TWILIO_AUTH_TOKEN;
-      const fromNumber = process.env.TWILIO_FROM_NUMBER?.trim();
-      const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID?.trim();
+      const ownerId = req.user?.uid;
+      const tenantConfig = ownerId ? await getTenantSmsConfig(ownerId) : null;
+      
+      const useTenant = tenantConfig?.provider === "tingting" && tenantConfig.tingtingApiKey;
+      
+      const provider = "tingting";
+      const apikey = useTenant ? tenantConfig.tingtingApiKey : process.env.TINGTING_API_KEY;
+      const sender = useTenant 
+        ? (tenantConfig.tingtingSender?.trim() || "") 
+        : (process.env.TINGTING_SENDER?.trim() || "");
 
       if (check) {
-        if (!accountSid || !authToken || (!fromNumber && !messagingServiceSid)) {
-          return res.status(400).json({ success: false, error: "Cau hinh Twilio con thieu" });
+        if (!apikey) {
+          return res.status(400).json({ success: false, error: "Cau hinh TingTing con thieu" });
         }
         return res.json({
           success: true,
           status: "Ready",
-          provider: "twilio",
-          fromNumber: fromNumber || null,
-          messagingServiceSid: messagingServiceSid || null,
+          provider,
+          source: useTenant ? "tenant" : "env",
         });
       }
 
@@ -196,45 +235,34 @@ async function startServer() {
         return res.status(400).json({ success: false, error: "Thieu so dien thoai hoac noi dung" });
       }
 
-      if (!accountSid || !authToken || (!fromNumber && !messagingServiceSid)) {
+      if (!apikey) {
         return res.status(400).json({
           success: false,
-          error: "He thong chua duoc cau hinh Twilio. Vui long them TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN va TWILIO_FROM_NUMBER hoac TWILIO_MESSAGING_SERVICE_SID vao file moi truong.",
+          error: "He thong chua duoc cau hinh TingTing. Vui long them TINGTING_API_KEY vao file moi truong.",
         });
       }
 
-      const result = await sendSmsViaTwilio(to, message);
+      const result = await sendSmsViaTingtingWithConfig({
+        to,
+        message,
+        apikey,
+        sender,
+      });
       res.json({
         success: true,
         provider: result.provider,
-        smsId: result.sid,
-        status: result.status,
-        errorCode: result.errorCode,
+        source: useTenant ? "tenant" : "env",
+        smsId: result.smsId,
+        codeResult: result.codeResult,
         errorMessage: result.errorMessage,
         normalizedPhone: result.normalizedPhone,
-        message: "Yeu cau da gui toi Twilio thanh cong.",
+        message: "Yeu cau da gui toi TingTing thanh cong.",
       });
     } catch (error: unknown) {
-      logger.error("Twilio error: %o", error);
+      logger.error("TingTing error: %o", error);
       const msg = error instanceof Error ? error.message : "Loi he thong";
       res.status(400).json({ success: false, error: msg });
     }
-  });
-
-  app.post("/api/twilio/status", (req, res) => {
-    const payload = {
-      messageSid: req.body.MessageSid,
-      messageStatus: req.body.MessageStatus,
-      smsStatus: req.body.SmsStatus,
-      to: req.body.To,
-      from: req.body.From,
-      errorCode: req.body.ErrorCode,
-      errorMessage: req.body.ErrorMessage,
-      accountSid: req.body.AccountSid,
-    };
-
-    logger.info(`[Twilio] Status callback ${JSON.stringify(payload)}`);
-    res.status(204).send();
   });
 
   app.use(errorMiddleware);

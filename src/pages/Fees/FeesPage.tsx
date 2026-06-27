@@ -9,9 +9,9 @@ import { cn } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
 import { useToast } from '../../hooks/useToast';
 import { Student } from '../../types';
-import { AddPaymentModal } from './AddPaymentModal';
+import { AddPaymentModal } from '../../components/Fees/AddPaymentModal';
 
-export function FeeManagement() {
+export function FeesPage() {
   const { students, loading } = useStudents();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
@@ -371,9 +371,7 @@ export function FeeManagement() {
           setIsPaymentModalOpen(false);
           setSelectedStudentForPayment(null);
         }}
-        onSuccess={() => {
-          // Data will be updated automatically via onSnapshot in useStudents
-        }}
+        onSuccess={() => {}}
       />
     </div>
   );

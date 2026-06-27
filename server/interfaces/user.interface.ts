@@ -4,6 +4,9 @@ export interface IUser extends Document {
   email: string;
   password?: string;
   displayName: string;
+  role: "superadmin" | "admin" | "user";
+  centerId: string;
+  createdBy?: string;
   gasUrl?: string;
   bankAccountNo?: string;
   bankId?: string;
@@ -14,6 +17,7 @@ export interface IUser extends Document {
   smtpPass?: string;
   smtpFrom?: string;
   smtpSandboxEmail?: string;
+  isActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -5,6 +5,8 @@ export interface AuthRequest extends Request {
   user?: {
     uid: string;
     email: string;
+    role: "superadmin" | "admin" | "user";
+    centerId: string;
   };
 }
 
@@ -19,6 +21,8 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET || "your_jwt_access_secret_key_should_be_long_and_secure_12345") as {
       uid: string;
       email: string;
+      role: "superadmin" | "admin" | "user";
+      centerId: string;
     };
     req.user = decoded;
     next();
@@ -28,4 +32,17 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
     }
     return res.status(401).json({ success: false, error: "Token không hợp lệ." });
   }
+}
+export function requireRoles(...roles: Array<"superadmin" | "admin" | "user">) {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: "Chua xac thuc." });
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ success: false, error: "Ban khong co quyen truy cap." });
+    }
+
+    next();
+  };
 }
