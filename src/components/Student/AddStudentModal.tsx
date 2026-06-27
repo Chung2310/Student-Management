@@ -203,11 +203,6 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
                   placeholder="Nguyễn Văn A"
                   className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
                 />
-                {formData.fullName && (
-                  <p className="text-[10px] font-bold text-cyan-600 mt-1 select-all truncate" title="Đường dẫn SEO sẽ được tạo tự động">
-                    🔗 Link SEO: /students/{toSlug(formData.fullName)}
-                  </p>
-                )}
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
