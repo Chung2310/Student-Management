@@ -105,11 +105,10 @@ export function slugify(str: string): string {
     .trim();
 }
 
-studentSchema.pre("save", function (this: any, next: any) {
+studentSchema.pre("save", function (this: any) {
   if (this.isModified("fullName") || !this.slug) {
     this.slug = slugify(this.fullName);
   }
-  next();
 });
 
 // Add index on fullName and phone for search
