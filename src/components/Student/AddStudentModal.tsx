@@ -4,7 +4,7 @@ import { X, Save, ChevronDown, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
-import { formatVND, toSlug } from '../../lib/utils';
+import { formatVND } from '../../lib/utils';
 import { DrivingStudent } from '../../types';
 
 interface AddStudentModalProps {

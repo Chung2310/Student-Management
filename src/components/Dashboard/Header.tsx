@@ -1,4 +1,4 @@
-import { RefreshCcw, Home, ChevronRight, Menu } from 'lucide-react';
+import { Home, ChevronRight, Menu } from 'lucide-react';
 import { ViewType } from '../../App';
 
 interface HeaderProps {
@@ -35,17 +35,6 @@ export function Header({ currentView, onMenuClick }: HeaderProps) {
           <ChevronRight className="w-4 h-4" />
           <span className="text-slate-900 font-semibold">{getViewName(currentView)}</span>
         </nav>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <button 
-          onClick={() => window.location.reload()}
-          className="p-2 text-slate-400 hover:text-brand-primary hover:bg-slate-50 rounded-full transition-all"
-          title="Tải lại trang"
-        >
-          <RefreshCcw className="w-5 h-5" />
-        </button>
-        <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200" />
       </div>
     </header>
   );

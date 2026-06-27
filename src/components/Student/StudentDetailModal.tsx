@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { Student } from '../../types';
 import { apiFetch } from '../../lib/api';
-import { cn, formatVND, parseVND, formatDisplayDate, toSlug } from '../../lib/utils';
+import { cn, formatVND, parseVND, formatDisplayDate } from '../../lib/utils';
 import { analyzeStudentPerformance } from '../../services/geminiService';
 import { useToast } from '../../hooks/useToast';
 

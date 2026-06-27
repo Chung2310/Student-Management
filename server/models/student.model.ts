@@ -105,7 +105,7 @@ export function slugify(str: string): string {
     .trim();
 }
 
-studentSchema.pre("save", function (this: any) {
+studentSchema.pre("save", function (this: IStudent) {
   if (this.isModified("fullName") || !this.slug) {
     this.slug = slugify(this.fullName);
   }
