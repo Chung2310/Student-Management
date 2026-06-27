@@ -11,12 +11,12 @@ import { apiFetch } from '../../lib/api';
 import { useExams } from '../../hooks/useExams';
 import { useStudents } from '../../hooks/useStudents';
 import { ExamSession, ExamStatus } from '../../types';
-import { AddExamModal } from './AddExamModal';
-import { ExamStatusModal } from './ExamStatusModal';
-import { AssignStudentModal } from './AssignStudentModal';
+import { AddExamModal } from '../../components/Exams/AddExamModal';
+import { ExamStatusModal } from '../../components/Exams/ExamStatusModal';
+import { AssignStudentModal } from '../../components/Exams/AssignStudentModal';
 import { useToast } from '../../hooks/useToast';
 
-export function ExamManagement() {
+export function ExamsPage() {
   const { exams, loading: examsLoading } = useExams();
   const { students } = useStudents();
   const { toast } = useToast();
@@ -136,10 +136,8 @@ export function ExamManagement() {
       return;
     }
 
-    // Define CSV headers
     const headers = ['Tên đợt thi', 'Hạng', 'Trạng thái', 'Ngày dự kiến', 'Ngày chính thức', 'Địa điểm', 'Số học viên', 'Đậu', 'Trượt'];
     
-    // Map data to CSV rows
     const rows = filteredExams.map(exam => [
       exam.name,
       exam.rank,
@@ -152,13 +150,11 @@ export function ExamManagement() {
       exam.failCount
     ]);
 
-    // Construct CSV content
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
     ].join('\n');
 
-    // Create a blob and download link
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -175,14 +171,12 @@ export function ExamManagement() {
       return;
     }
 
-    // Create a new window for printing
     const printWindow = window.open('', '_blank', 'width=1100,height=800');
     if (!printWindow) {
       toast.error('Trình duyệt đã chặn cửa sổ bật lên. Vui lòng cho phép bật lên để in hoặc mở ứng dụng trong tab mới.');
       return;
     }
 
-    // Prepare table rows html
     const rowsHtml = filteredExams.map(exam => `
       <tr>
         <td style="padding: 10px; border: 1px solid #ddd;">${exam.name}</td>
@@ -197,7 +191,6 @@ export function ExamManagement() {
       </tr>
     `).join('');
 
-    // Construct print html content
     const printContent = `
       <html>
         <head>

@@ -14,6 +14,7 @@ export function Header({ currentView, onMenuClick }: HeaderProps) {
       Exams: 'Lịch thi',
       Fees: 'Học phí',
       Bot: 'BOT Thông báo',
+      UserManagement: 'Quản lý người dùng',
       SettingsAdmin: 'Cài đặt & Quản trị'
     };
     return names[view];

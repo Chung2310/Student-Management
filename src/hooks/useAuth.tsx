@@ -7,6 +7,10 @@ export interface AuthUser {
   uid: string;
   email: string;
   displayName: string;
+  photoURL?: string;
+  role: "superadmin" | "admin" | "user";
+  centerId: string;
+  createdBy?: string;
   gasUrl?: string;
   bankAccountNo?: string;
   bankId?: string;
@@ -17,6 +21,22 @@ export interface AuthUser {
   smtpPass?: string;
   smtpFrom?: string;
   smtpSandboxEmail?: string;
+  smsSettings?: {
+    provider?: "twilio" | "stringee" | "tingting";
+    twilioAccountSid?: string;
+    twilioAuthToken?: string;
+    twilioFromNumber?: string;
+    twilioMessagingServiceSid?: string;
+    twilioStatusCallbackUrl?: string;
+    tingtingApiKey?: string;
+    tingtingSender?: string;
+    stringeeApiUrl?: string;
+    stringeeApiKey?: string;
+    stringeeSecretKey?: string;
+    stringeeBrandname?: string;
+    stringeeSender?: string;
+    stringeeStatusCallbackUrl?: string;
+  } | null;
 }
 
 interface AuthContextType {
@@ -46,6 +66,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           uid: res.data.user.uid,
           email: res.data.user.email,
           displayName: res.data.user.displayName,
+          photoURL: res.data.user.photoURL,
+          role: res.data.user.role,
+          centerId: res.data.user.centerId,
+          createdBy: res.data.user.createdBy,
           gasUrl: res.data.user.gasUrl,
           bankAccountNo: res.data.user.bankAccountNo,
           bankId: res.data.user.bankId,
@@ -56,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           smtpPass: res.data.user.smtpPass,
           smtpFrom: res.data.user.smtpFrom,
           smtpSandboxEmail: res.data.user.smtpSandboxEmail,
+          smsSettings: res.data.user.smsSettings || null,
         });
       } else {
         setUser(null);

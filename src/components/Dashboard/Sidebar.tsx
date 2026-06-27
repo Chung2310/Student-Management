@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, Calendar, Wallet, MessageSquare, Settings, LogOut, LogIn, RefreshCcw, X } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Wallet, MessageSquare, Settings, Shield, LogOut, LogIn, RefreshCcw, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
 import { useStudents } from '../../hooks/useStudents';
@@ -19,14 +19,17 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
   const { students } = useStudents();
   const { exams } = useExams();
 
-  const menuItems: { icon: React.ComponentType<{ className?: string }>; label: string; view: ViewType; count?: number }[] = [
+  const menuItems = [
     { icon: LayoutDashboard, label: 'Tổng quan', view: 'Dashboard' },
     { icon: Users, label: 'Học viên', view: 'Students', count: user ? students.length : 0 },
     { icon: Calendar, label: 'Lịch thi', view: 'Exams', count: user ? exams.length : 0 },
     { icon: Wallet, label: 'Học phí', view: 'Fees' },
     { icon: MessageSquare, label: 'BOT Thông báo', view: 'Bot' },
+    { icon: Shield, label: 'Quản lý người dùng', view: 'UserManagement' },
     { icon: Settings, label: 'Cài đặt & Quản trị', view: 'SettingsAdmin' },
-  ];
+  ] satisfies { icon: React.ComponentType<{ className?: string }>; label: string; view: ViewType; count?: number }[];
+
+  const visibleMenuItems = menuItems.filter((item) => !((item.view === 'SettingsAdmin' || item.view === 'UserManagement') && user?.role === 'user'));
 
   return (
     <>
@@ -71,7 +74,7 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
           </div>
 
         <nav className="space-y-1">
-          {menuItems.map((item, idx) => (
+          {visibleMenuItems.map((item, idx) => (
             <button
               key={idx}
               onClick={() => onViewChange(item.view)}

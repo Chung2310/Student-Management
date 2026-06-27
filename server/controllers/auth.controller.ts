@@ -82,6 +82,7 @@ export class AuthController {
         return res.status(401).json({ success: false, error: "Chưa xác thực." });
       }
       const user = await AuthService.getUserProfile(req.user.uid);
+      const smsSettings = await AuthService.getSmsSettings(req.user.uid);
       if (!user) {
         return res.status(404).json({ success: false, error: "Không tìm thấy người dùng." });
       }
@@ -92,6 +93,8 @@ export class AuthController {
             uid: user._id.toString(),
             email: user.email,
             displayName: user.displayName,
+            role: user.role,
+            centerId: user.centerId,
             gasUrl: user.gasUrl,
             bankAccountNo: user.bankAccountNo,
             bankId: user.bankId,
@@ -102,6 +105,22 @@ export class AuthController {
             smtpPass: user.smtpPass,
             smtpFrom: user.smtpFrom,
             smtpSandboxEmail: user.smtpSandboxEmail,
+            smsSettings: smsSettings ? {
+              provider: smsSettings.provider,
+              twilioAccountSid: smsSettings.twilioAccountSid,
+              twilioAuthToken: smsSettings.twilioAuthToken,
+              twilioFromNumber: smsSettings.twilioFromNumber,
+              twilioMessagingServiceSid: smsSettings.twilioMessagingServiceSid,
+              twilioStatusCallbackUrl: smsSettings.twilioStatusCallbackUrl,
+              stringeeApiUrl: smsSettings.stringeeApiUrl,
+              stringeeApiKey: smsSettings.stringeeApiKey,
+              stringeeSecretKey: smsSettings.stringeeSecretKey,
+              stringeeBrandname: smsSettings.stringeeBrandname,
+              stringeeSender: smsSettings.stringeeSender,
+              stringeeStatusCallbackUrl: smsSettings.stringeeStatusCallbackUrl,
+              tingtingApiKey: smsSettings.tingtingApiKey,
+              tingtingSender: smsSettings.tingtingSender,
+            } : null,
           },
         },
       });
@@ -126,6 +145,8 @@ export class AuthController {
             uid: updatedUser._id.toString(),
             email: updatedUser.email,
             displayName: updatedUser.displayName,
+            role: updatedUser.role,
+            centerId: updatedUser.centerId,
             gasUrl: updatedUser.gasUrl,
             bankAccountNo: updatedUser.bankAccountNo,
             bankId: updatedUser.bankId,
@@ -160,6 +181,8 @@ export class AuthController {
             uid: updatedUser._id.toString(),
             email: updatedUser.email,
             displayName: updatedUser.displayName,
+            role: updatedUser.role,
+            centerId: updatedUser.centerId,
             gasUrl: updatedUser.gasUrl,
             bankAccountNo: updatedUser.bankAccountNo,
             bankId: updatedUser.bankId,
@@ -177,4 +200,85 @@ export class AuthController {
       next(error);
     }
   }
+
+  static async updateSmsSettings(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: "ChÆ°a xÃ¡c thá»±c." });
+      }
+      const settings = await AuthService.updateSmsSettings(req.user.uid, req.body);
+      res.json({
+        success: true,
+        data: {
+          smsSettings: {
+            provider: settings.provider,
+            twilioAccountSid: settings.twilioAccountSid,
+            twilioAuthToken: settings.twilioAuthToken,
+            twilioFromNumber: settings.twilioFromNumber,
+            twilioMessagingServiceSid: settings.twilioMessagingServiceSid,
+            twilioStatusCallbackUrl: settings.twilioStatusCallbackUrl,
+            stringeeApiUrl: settings.stringeeApiUrl,
+            stringeeApiKey: settings.stringeeApiKey,
+            stringeeSecretKey: settings.stringeeSecretKey,
+            stringeeBrandname: settings.stringeeBrandname,
+            stringeeSender: settings.stringeeSender,
+            stringeeStatusCallbackUrl: settings.stringeeStatusCallbackUrl,
+            tingtingApiKey: settings.tingtingApiKey,
+            tingtingSender: settings.tingtingSender,
+          },
+        },
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  static async listUsers(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: "Chua xac thuc." });
+      }
+      const users = await AuthService.listUsers(req.user);
+      res.json({ success: true, data: { users } });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  static async createUser(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: "Chua xac thuc." });
+      }
+      const user = await AuthService.createManagedUser(req.user, req.body);
+      res.status(201).json({ success: true, data: { user } });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  static async updateUser(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: "Chưa xác thực." });
+      }
+      const updatedUser = await AuthService.updateManagedUser(req.user, req.params.id, req.body);
+      res.json({ success: true, data: { user: updatedUser } });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  static async deleteUser(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: "Chưa xác thực." });
+      }
+      await AuthService.deleteManagedUser(req.user, req.params.id);
+      res.json({ success: true, message: "Đã xóa người dùng thành công." });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
 }
