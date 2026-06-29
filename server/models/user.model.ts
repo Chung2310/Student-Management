@@ -38,10 +38,7 @@ const userSchema = new Schema<IUser>(
       trim: true,
       index: true,
     },
-    gasUrl: {
-      type: String,
-      default: "",
-    },
+
     bankAccountNo: {
       type: String,
       default: "",
@@ -95,5 +92,14 @@ const userSchema = new Schema<IUser>(
     timestamps: true,
   }
 );
+
+userSchema.pre("validate", function () {
+  if (this.role === "admin" && (!this.centerId || this.centerId === "undefined")) {
+    this.centerId = this._id.toString();
+  }
+  if (this.role === "superadmin" && this.centerId !== "superadmin") {
+    this.centerId = "superadmin";
+  }
+});
 
 export const User = model<IUser>("User", userSchema);

@@ -149,9 +149,36 @@ export function UserManagementPage() {
   // Submit handler
   const handleSubmit = async () => {
     if (!canManage || !modal) return;
+    const isCenter = modal === 'center';
+
+    // Front-end validations
+    if (!fName.trim()) {
+      toast.error(isCenter ? 'Vui lòng nhập tên trung tâm.' : 'Vui lòng nhập họ tên.');
+      return;
+    }
+    if (!fEmail.trim()) {
+      toast.error('Vui lòng nhập email.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fEmail.trim())) {
+      toast.error('Định dạng email không hợp lệ.');
+      return;
+    }
+    if (!fPass) {
+      toast.error('Vui lòng nhập mật khẩu.');
+      return;
+    }
+    if (fPass.length < 6) {
+      toast.error('Mật khẩu phải từ 6 ký tự trở lên.');
+      return;
+    }
+    if (isSA && !isCenter && !fCenter) {
+      toast.error('Vui lòng chọn trung tâm để gán nhân viên.');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const isCenter = modal === 'center';
       await apiFetch('/auth/users', {
         method: 'POST',
         body: JSON.stringify({
@@ -172,6 +199,29 @@ export function UserManagementPage() {
 
   const handleEditSubmit = async () => {
     if (!canManage || !editingUser) return;
+
+    // Front-end validations
+    if (!fName.trim()) {
+      toast.error(editingUser.role === 'admin' ? 'Vui lòng nhập tên trung tâm.' : 'Vui lòng nhập họ tên.');
+      return;
+    }
+    if (!fEmail.trim()) {
+      toast.error('Vui lòng nhập email.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fEmail.trim())) {
+      toast.error('Định dạng email không hợp lệ.');
+      return;
+    }
+    if (fPass.trim() && fPass.length < 6) {
+      toast.error('Mật khẩu mới phải từ 6 ký tự trở lên.');
+      return;
+    }
+    if (isSA && editingUser.role === 'user' && !fCenter) {
+      toast.error('Vui lòng chọn trung tâm để gán nhân viên.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const payload: Record<string, unknown> = {
@@ -342,8 +392,8 @@ export function UserManagementPage() {
                 <tbody className="divide-y divide-slate-100">
                   {filtered.map(item => {
                     const rc = ROLE_CFG[item.role]; const RI = rc.icon;
-                    const ca = isSA ? centerMap.get(item.centerId)?.admin : null;
-                    const cl = item.role === 'superadmin' ? 'Hệ thống' : item.role === 'admin' ? item.displayName : ca ? ca.displayName : item.centerId.slice(0, 8) + '…';
+                    const ca = centerMap.get(item.centerId)?.admin;
+                    const cl = item.role === 'superadmin' ? 'Hệ thống' : item.role === 'admin' ? item.displayName : ca ? ca.displayName : (item.centerId ? item.centerId.slice(0, 8) + '…' : '—');
                     const isSelf = item.uid === user?.uid;
                     const canEditItem = canManage && (isSA || (user?.role === 'admin' && item.role === 'user' && item.centerId === user?.centerId));
                     return (

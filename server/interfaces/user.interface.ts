@@ -7,7 +7,6 @@ export interface IUser extends Document {
   role: "superadmin" | "admin" | "user";
   centerId: string;
   createdBy?: string;
-  gasUrl?: string;
   bankAccountNo?: string;
   bankId?: string;
   smtpHost?: string;
