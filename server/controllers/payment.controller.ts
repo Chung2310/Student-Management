@@ -1,11 +1,12 @@
 import { Response, NextFunction } from "express";
 import { PaymentService } from "../services/payment.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
+import { getAllowedOwnerIds } from "../utils/auth.util";
 
 export class PaymentController {
   static async create(req: AuthRequest, res: Response) {
     try {
-      const ownerId = req.user!.uid;
+      const ownerId = await getAllowedOwnerIds(req.user!);
       const payment = await PaymentService.createPayment(ownerId, req.body);
       res.status(201).json({ success: true, data: payment });
     } catch (error: unknown) {
@@ -16,7 +17,7 @@ export class PaymentController {
 
   static async getList(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const ownerId = req.user!.uid;
+      const ownerId = await getAllowedOwnerIds(req.user!);
       const result = await PaymentService.getPayments(ownerId, req.query);
       res.json({ success: true, ...result });
     } catch (error: unknown) {
@@ -26,7 +27,7 @@ export class PaymentController {
 
   static async delete(req: AuthRequest, res: Response) {
     try {
-      const ownerId = req.user!.uid;
+      const ownerId = await getAllowedOwnerIds(req.user!);
       const payment = await PaymentService.deletePayment(ownerId, req.params.id);
       if (!payment) {
         return res.status(404).json({ success: false, error: "Không tìm thấy giao dịch thanh toán để xóa." });

@@ -5,15 +5,19 @@ import {
 import { Student } from '../../../types';
 import { cn } from '../../../lib/utils';
 
+type HealthCheckFile = NonNullable<Student['healthCheckFiles']>[number];
+
+interface KskData {
+  status: string;
+  date: string;
+  notes: string;
+  files: HealthCheckFile[];
+}
+
 interface KskTabProps {
   student: Student;
-  kskData: {
-    status: string;
-    date: string;
-    notes: string;
-    files: any[];
-  };
-  setKskData: React.Dispatch<React.SetStateAction<any>>;
+  kskData: KskData;
+  setKskData: React.Dispatch<React.SetStateAction<KskData>>;
   isUpdatingKSK: boolean;
   handleUpdateKSK: () => Promise<void>;
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;

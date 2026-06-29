@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
-  Plus, Download, Printer, Calendar as CalendarIcon, 
-  ChevronDown, UserPlus, Edit3, Trash2,
+  Plus, Download, Printer, 
+  ChevronDown, Trash2,
   ClipboardList, CheckCircle2, Clock, Users as UsersIcon,
-  X, MapPin, Map
+  X
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { cn } from '../../lib/utils';
 import { apiFetch } from '../../lib/api';
 import { useExams } from '../../hooks/useExams';
@@ -14,6 +15,7 @@ import { ExamSession, ExamStatus } from '../../types';
 import { AddExamModal } from '../../components/Exams/AddExamModal';
 import { ExamStatusModal } from '../../components/Exams/ExamStatusModal';
 import { AssignStudentModal } from '../../components/Exams/AssignStudentModal';
+import { ExamCard } from '../../components/Exams/ExamCard';
 import { useToast } from '../../hooks/useToast';
 import { Pagination } from '../../components/ui/Pagination';
 
@@ -166,19 +168,30 @@ export function ExamsPage() {
       exam.failCount
     ]);
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
+    try {
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      
+      // Set column widths
+      ws['!cols'] = [
+        { wch: 25 }, // Tên đợt thi
+        { wch: 10 }, // Hạng
+        { wch: 15 }, // Trạng thái
+        { wch: 15 }, // Ngày dự kiến
+        { wch: 15 }, // Ngày chính thức
+        { wch: 25 }, // Địa điểm
+        { wch: 12 }, // Số học viên
+        { wch: 10 }, // Đậu
+        { wch: 10 }  // Trượt
+      ];
 
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `danh_sach_lich_thi_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Danh sách đợt thi");
+      XLSX.writeFile(wb, `danh_sach_lich_thi_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.xlsx`);
+      toast.success('Xuất file Excel thành công.');
+    } catch (error) {
+      console.error('Error exporting exams to excel:', error);
+      toast.error('Có lỗi xảy ra khi xuất file Excel.');
+    }
   };
 
   const handlePrint = () => {
@@ -373,11 +386,56 @@ export function ExamsPage() {
               <ExamCard 
                 key={exam.id} 
                 exam={exam} 
+                assignedStudents={students.filter(s => s.examId === exam.id)}
                 getStatusInfo={getStatusInfo} 
                 onDelete={() => setDeleteModalExam(exam)}
                 onEdit={() => handleEditExam(exam)}
                 onStatusClick={() => handleStatusUpdate(exam)}
                 onAssignClick={() => handleAssignStudent(exam)}
+                onUnassignStudent={async (studentId) => {
+                  try {
+                    await apiFetch(`/exams/${exam.id}/unassign`, {
+                      method: 'POST',
+                      body: JSON.stringify({ studentId })
+                    });
+                    window.dispatchEvent(new Event("student-mutation"));
+                    window.dispatchEvent(new Event("exam-mutation"));
+                    toast.success("Đã xóa học viên khỏi đợt thi.");
+                  } catch (error) {
+                    console.error("Error unassigning student:", error);
+                    toast.error("Có lỗi xảy ra khi xóa học viên khỏi đợt thi.");
+                  }
+                }}
+                onUpdateStudentResult={async (studentId, overallResult) => {
+                  try {
+                    await apiFetch(`/exams/${exam.id}/students/${studentId}/result`, {
+                      method: 'POST',
+                      body: JSON.stringify({ overallResult })
+                    });
+                    window.dispatchEvent(new Event("student-mutation"));
+                    window.dispatchEvent(new Event("exam-mutation"));
+                    toast.success("Cập nhật kết quả thi thành công.");
+                  } catch (error) {
+                    console.error("Error updating student result:", error);
+                    toast.error("Có lỗi xảy ra khi cập nhật kết quả thi.");
+                  }
+                }}
+                onImportExcelResults={async (results) => {
+                  try {
+                    const res = await apiFetch(`/exams/${exam.id}/import-results`, {
+                      method: 'POST',
+                      body: JSON.stringify({ results })
+                    });
+                    window.dispatchEvent(new Event("student-mutation"));
+                    window.dispatchEvent(new Event("exam-mutation"));
+                    if (res.success) {
+                      toast.success(`Đã cập nhật kết quả: ${res.successCount} thành công, ${res.failedCount} thất bại.`);
+                    }
+                  } catch (error) {
+                    console.error("Error importing exam results:", error);
+                    toast.error("Có lỗi xảy ra khi nhập kết quả thi từ Excel.");
+                  }
+                }}
               />
             ))}
           </div>
@@ -530,131 +588,4 @@ function FilterSelect({ label, value, onChange, options }: FilterSelectProps) {
   );
 }
 
-interface ExamCardProps {
-  key?: string | number;
-  exam: ExamSession;
-  getStatusInfo: (status: ExamStatus) => { 
-    color: string; 
-    icon: React.ComponentType<{ className?: string }>; 
-    label: string; 
-  };
-  onDelete: () => void;
-  onEdit: () => void;
-  onStatusClick: () => void;
-  onAssignClick: () => void;
-}
 
-function ExamCard({ exam, getStatusInfo, onDelete, onEdit, onStatusClick, onAssignClick }: ExamCardProps) {
-  const status = getStatusInfo(exam.status);
-  
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-[2rem] border-l-[4px] shadow-sm hover:shadow-lg transition-all overflow-hidden"
-      style={{ borderLeftColor: exam.status === 'Sắp diễn ra' ? '#f59e0b' : exam.status === 'Đã xác nhận' ? '#3b82f6' : exam.status === 'Đã hoàn thành' ? '#10b981' : '#e2e8f0' }}
-    >
-      <div className="p-5 sm:p-7 flex flex-col xl:flex-row xl:items-center justify-between gap-6 sm:gap-8">
-        <div className="flex-1 space-y-4 sm:space-y-5">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-            <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">{exam.name}</h3>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={cn("flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold border", status.color)}>
-                <status.icon className="w-3 h-3 sm:w-4 h-4" /> {status.label}
-              </span>
-              <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-cyan-50 text-cyan-700 rounded-lg text-[10px] sm:text-xs font-bold border border-cyan-100">
-                {exam.rank}
-              </span>
-              <span className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">
-                <MapPin className="w-3 h-3 sm:w-4 h-4 text-slate-300" /> {exam.area || 'Tất cả khu vực'}
-              </span>
-            </div>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-5 sm:gap-10">
-            <div className="flex items-center gap-2 sm:gap-3 group">
-              <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 group-hover:bg-slate-100 transition-colors border border-slate-100/50">
-                <CalendarIcon className="w-3.5 h-3.5 sm:w-4 h-4 text-slate-400" />
-              </div>
-              <div>
-                <p className="text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wide leading-none">Dự kiến</p>
-                <p className="text-sm sm:text-base font-bold text-slate-700 mt-1 sm:mt-1.5">{exam.tentativeDate}</p>
-              </div>
-            </div>
-
-            {exam.officialDate && (
-              <div className="flex items-center gap-2 sm:gap-3 group">
-                <div className="p-2 sm:p-2.5 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 transition-colors border border-emerald-100/50">
-                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 h-4 text-emerald-500" />
-                </div>
-                <div>
-                  <p className="text-[9px] sm:text-[11px] font-bold text-emerald-400 uppercase tracking-wide leading-none">Chính thức</p>
-                  <p className="text-sm sm:text-base font-bold text-emerald-600 mt-1 sm:mt-1.5">{exam.officialDate}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center gap-2 sm:gap-3 group">
-              <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 group-hover:bg-slate-100 transition-colors border border-slate-100/50">
-                <Map className="w-3.5 h-3.5 sm:w-4 h-4 text-slate-400" />
-              </div>
-              <div>
-                <p className="text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wide leading-none">Địa điểm</p>
-                <p className="text-sm sm:text-base font-bold text-slate-700 mt-1 sm:mt-1.5 truncate max-w-[150px] sm:max-w-[300px]">{exam.location}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 lg:gap-8 pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-50">
-          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-            <div className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-3 bg-slate-50 rounded-2xl text-center min-w-[70px] sm:min-w-[80px] border border-slate-100/50">
-              <p className="text-xl sm:text-2xl font-black text-slate-900 leading-none">{exam.studentCount}</p>
-              <p className="text-[9px] sm:text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-wide">Học viên</p>
-            </div>
-            <div className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-3 bg-emerald-50 rounded-2xl text-center min-w-[60px] sm:min-w-[70px] border border-emerald-100/30">
-              <p className="text-xl sm:text-2xl font-black text-emerald-600 leading-none">{exam.passCount}</p>
-              <p className="text-[9px] sm:text-[11px] font-bold text-emerald-500 mt-1 uppercase tracking-wide">Đậu</p>
-            </div>
-            <div className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-3 bg-rose-50 rounded-2xl text-center min-w-[60px] sm:min-w-[70px] border border-rose-100/30">
-              <p className="text-xl sm:text-2xl font-black text-rose-600 leading-none">{exam.failCount}</p>
-              <p className="text-[9px] sm:text-[11px] font-bold text-rose-500 mt-1 uppercase tracking-wide">Trượt</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end no-print">
-            <button 
-              onClick={(e) => { e.stopPropagation(); onAssignClick(); }}
-              title="Xếp học viên"
-              className="p-2 sm:p-2.5 rounded-xl text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 transition-all border border-slate-200 bg-white shadow-sm active:scale-95"
-            >
-              <UserPlus className="w-5 h-5" />
-            </button>
-            <button 
-              onClick={(e) => { e.stopPropagation(); onEdit(); }}
-              title="Sửa đợt thi"
-              className="p-2 sm:p-2.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all border border-slate-200 bg-white shadow-sm active:scale-95"
-            >
-              <Edit3 className="w-5 h-5" />
-            </button>
-            <button 
-              onClick={(e) => { e.stopPropagation(); onDelete(); }}
-              title="Xóa đợt thi"
-              className="p-2 sm:p-2.5 rounded-xl bg-rose-500 text-white hover:bg-rose-600 transition-all shadow-md shadow-rose-100 active:scale-95"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
-            <div className="hidden sm:block w-px h-8 bg-slate-100 mx-1" />
-            <button 
-              onClick={(e) => { e.stopPropagation(); onStatusClick(); }}
-              title="Cập nhật trạng thái"
-              className="p-2 sm:p-2.5 rounded-xl text-slate-300 hover:text-slate-600 hover:bg-slate-50 transition-all border border-slate-100 active:scale-95"
-            >
-              <ChevronDown className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}

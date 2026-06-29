@@ -13,12 +13,20 @@ export class WebhookService {
   static async matchStudentByDescription(description: string, ownerId: string) {
     logger.info(`[Webhook] Matching student for ownerId: ${ownerId}, description: "${description}"`);
 
+    // Fetch the admin user
+    const adminUser = await User.findById(ownerId);
+    if (!adminUser) return null;
+
+    // Get all users in the center (including the admin themselves)
+    const centerUsers = await User.find({ centerId: adminUser.centerId }).select("_id");
+    const allowedOwnerIds = centerUsers.map(u => u._id.toString());
+
     // 1. Tìm ObjectID 24 ký tự hex
     const objectIdRegex = /[0-9a-fA-F]{24}/;
     const objectIdMatch = description.match(objectIdRegex);
     if (objectIdMatch) {
       const studentId = objectIdMatch[0];
-      const student = await Student.findOne({ _id: studentId, ownerId });
+      const student = await Student.findOne({ _id: studentId, ownerId: { $in: allowedOwnerIds } });
       if (student) {
         logger.info(`[Webhook] Matched student by ID: ${student.fullName} (${student._id})`);
         return student;
@@ -29,7 +37,7 @@ export class WebhookService {
     const digitsRegex = /\d{9,11}/g;
     const digitMatches = description.match(digitsRegex);
     if (digitMatches) {
-      const students = await Student.find({ ownerId });
+      const students = await Student.find({ ownerId: { $in: allowedOwnerIds } });
       
       for (const num of digitMatches) {
         let cleanTarget = num;

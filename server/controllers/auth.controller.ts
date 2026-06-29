@@ -85,6 +85,19 @@ export class AuthController {
       if (!user) {
         return res.status(404).json({ success: false, error: "Không tìm thấy người dùng." });
       }
+      let bankAccountNo = user.bankAccountNo || "";
+      let bankId = user.bankId || "";
+      let bankAccountName = user.bankAccountName || "";
+
+      if (user.role === "user" && user.centerId) {
+        const adminUser = await AuthService.getUserProfile(user.centerId);
+        if (adminUser) {
+          bankAccountNo = adminUser.bankAccountNo || "";
+          bankId = adminUser.bankId || "";
+          bankAccountName = adminUser.bankAccountName || adminUser.displayName || "";
+        }
+      }
+
       res.json({
         success: true,
         data: {
@@ -94,8 +107,9 @@ export class AuthController {
             displayName: user.displayName,
             role: user.role,
             centerId: user.centerId,
-            bankAccountNo: user.bankAccountNo,
-            bankId: user.bankId,
+            bankAccountNo,
+            bankId,
+            bankAccountName,
             smtpHost: user.smtpHost,
             smtpPort: user.smtpPort,
             smtpSecure: user.smtpSecure,
@@ -132,6 +146,9 @@ export class AuthController {
       if (!req.user) {
         return res.status(401).json({ success: false, error: "Chưa xác thực." });
       }
+      if (req.user.role === "user") {
+        return res.status(403).json({ success: false, error: "Nhân viên không có quyền thay đổi cấu hình ngân hàng." });
+      }
       const updatedUser = await AuthService.updateBankSettings(req.user.uid, req.body);
       if (!updatedUser) {
         return res.status(404).json({ success: false, error: "Không tìm thấy người dùng." });
@@ -147,6 +164,7 @@ export class AuthController {
             centerId: updatedUser.centerId,
             bankAccountNo: updatedUser.bankAccountNo,
             bankId: updatedUser.bankId,
+            bankAccountName: updatedUser.bankAccountName,
             smtpHost: updatedUser.smtpHost,
             smtpPort: updatedUser.smtpPort,
             smtpSecure: updatedUser.smtpSecure,

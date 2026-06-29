@@ -4,16 +4,18 @@ import { Check, Loader2, Save, Sparkles, Trophy } from 'lucide-react';
 import { Student } from '../../../types';
 import { cn } from '../../../lib/utils';
 
+interface ProgressData {
+  theory: { completed: boolean; score: number; lastDate: string };
+  sim: { completed: boolean; lastDate: string };
+  cabin: { hoursDone: number; totalHours: number };
+  dat: { kmDone: number; totalKm: number };
+  practice: { hoursDone: number; totalHours: number };
+}
+
 interface ProgressTabProps {
   student: Student;
-  progressData: {
-    theory: { completed: boolean; score: number; lastDate: string };
-    sim: { completed: boolean; lastDate: string };
-    cabin: { hoursDone: number; totalHours: number };
-    dat: { kmDone: number; totalKm: number };
-    practice: { hoursDone: number; totalHours: number };
-  };
-  setProgressData: React.Dispatch<React.SetStateAction<any>>;
+  progressData: ProgressData;
+  setProgressData: React.Dispatch<React.SetStateAction<ProgressData>>;
   isEditingProgress: boolean;
   setIsEditingProgress: (val: boolean) => void;
   isUpdatingProgress: boolean;
@@ -77,21 +79,21 @@ export function ProgressTab({
             label="Lý thuyết & Pháp luật" 
             isEditing={isEditingProgress}
             checked={progressData.theory.completed}
-            onCheck={() => setProgressData((p: any) => ({ ...p, theory: { ...p.theory, completed: !p.theory.completed } }))}
+            onCheck={() => setProgressData((p) => ({ ...p, theory: { ...p.theory, completed: !p.theory.completed } }))}
             info={isEditingProgress ? (
               <div className="mt-2 flex gap-2">
                 <input 
                   type="number" 
                   placeholder="Điểm"
                   value={progressData.theory.score}
-                  onChange={(e) => setProgressData((p: any) => ({ ...p, theory: { ...p.theory, score: parseInt(e.target.value) || 0 } }))}
+                  onChange={(e) => setProgressData((p) => ({ ...p, theory: { ...p.theory, score: parseInt(e.target.value) || 0 } }))}
                   className="w-20 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs" 
                 />
                 <input 
                   type="text" 
                   placeholder="Ngày thi"
                   value={progressData.theory.lastDate}
-                  onChange={(e) => setProgressData((p: any) => ({ ...p, theory: { ...p.theory, lastDate: e.target.value } }))}
+                  onChange={(e) => setProgressData((p) => ({ ...p, theory: { ...p.theory, lastDate: e.target.value } }))}
                   className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs" 
                 />
               </div>
@@ -102,13 +104,13 @@ export function ProgressTab({
             label="Ôn tập Mô phỏng (Sim)" 
             isEditing={isEditingProgress}
             checked={progressData.sim.completed}
-            onCheck={() => setProgressData((p: any) => ({ ...p, sim: { ...p.sim, completed: !p.sim.completed } }))}
+            onCheck={() => setProgressData((p) => ({ ...p, sim: { ...p.sim, completed: !p.sim.completed } }))}
             info={isEditingProgress ? (
               <input 
                 type="text" 
                 placeholder="Ngày cập nhật"
                 value={progressData.sim.lastDate}
-                onChange={(e) => setProgressData((p: any) => ({ ...p, sim: { ...p.sim, lastDate: e.target.value } }))}
+                onChange={(e) => setProgressData((p) => ({ ...p, sim: { ...p.sim, lastDate: e.target.value } }))}
                 className="w-full mt-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs" 
               />
             ) : (progressData.sim.completed ? `Cập nhật: ${progressData.sim.lastDate}` : 'Cần ôn 120 tình huống')}
@@ -126,14 +128,14 @@ export function ProgressTab({
             label="Học Cabin điện tử" 
             isEditing={isEditingProgress}
             progress={{ current: progressData.cabin.hoursDone, total: progressData.cabin.totalHours, unit: 'h' }}
-            onValueChange={(val) => setProgressData((p: any) => ({ ...p, cabin: { ...p.cabin, hoursDone: val } }))}
+            onValueChange={(val) => setProgressData((p) => ({ ...p, cabin: { ...p.cabin, hoursDone: val } }))}
           />
 
           <ProgressControlCard 
             label="Đường trường (DAT)" 
             isEditing={isEditingProgress}
             progress={{ current: progressData.dat.kmDone, total: progressData.dat.totalKm, unit: 'km' }}
-            onValueChange={(val) => setProgressData((p: any) => ({ ...p, dat: { ...p.dat, kmDone: val } }))}
+            onValueChange={(val) => setProgressData((p) => ({ ...p, dat: { ...p.dat, kmDone: val } }))}
           />
         </div>
 
@@ -148,7 +150,7 @@ export function ProgressTab({
             label="Thực hành Sa hình" 
             isEditing={isEditingProgress}
             progress={{ current: progressData.practice.hoursDone, total: progressData.practice.totalHours, unit: 'h' }}
-            onValueChange={(val) => setProgressData((p: any) => ({ ...p, practice: { ...p.practice, hoursDone: val } }))}
+            onValueChange={(val) => setProgressData((p) => ({ ...p, practice: { ...p.practice, hoursDone: val } }))}
           />
           
           <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center text-center">

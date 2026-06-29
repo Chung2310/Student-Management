@@ -47,3 +47,40 @@ export const assignStudentSchema = Joi.object({
   examName: Joi.string().allow("").optional(),
   examDate: Joi.string().allow("").optional(),
 }).or("studentId", "studentIds");
+
+export const unassignStudentSchema = Joi.object({
+  studentId: objectIdSchema.required().messages({
+    "any.required": "ID học viên là bắt buộc.",
+  }),
+});
+
+export const updateStudentResultSchema = Joi.object({
+  overallResult: Joi.string().valid("Đậu", "Trượt", "Chưa có").required().messages({
+    "any.required": "Kết quả thi (overallResult) là bắt buộc.",
+    "any.only": "Kết quả thi chỉ được phép là 'Đậu', 'Trượt' hoặc 'Chưa có'.",
+  }),
+});
+
+export const examStudentParamsSchema = Joi.object({
+  id: objectIdSchema.required(),
+  studentId: objectIdSchema.required(),
+});
+
+export const importResultsSchema = Joi.object({
+  results: Joi.array().items(
+    Joi.object({
+      phone: Joi.string().required().messages({
+        "any.required": "Số điện thoại là bắt buộc.",
+      }),
+      overallResult: Joi.string().valid("Đậu", "Trượt", "Chưa có").required().messages({
+        "any.required": "Kết quả thi là bắt buộc.",
+        "any.only": "Kết quả thi chỉ được phép là 'Đậu', 'Trượt' hoặc 'Chưa có'.",
+      }),
+      theory: Joi.number().optional().default(0),
+      practice: Joi.number().optional().default(0),
+      simulation: Joi.number().optional().default(0),
+    })
+  ).required().messages({
+    "any.required": "Danh sách kết quả cập nhật là bắt buộc.",
+  }),
+});

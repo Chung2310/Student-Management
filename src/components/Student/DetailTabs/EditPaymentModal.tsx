@@ -2,17 +2,19 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Calendar } from 'lucide-react';
 
+interface EditingPaymentData {
+  index: number;
+  id: string;
+  amount: string;
+  date: string;
+  note: string;
+  method: 'Tiền mặt' | 'Chuyển khoản';
+  recipient: string;
+}
+
 interface EditPaymentModalProps {
-  editingPayment: {
-    index: number;
-    id: string;
-    amount: string;
-    date: string;
-    note: string;
-    method: 'Tiền mặt' | 'Chuyển khoản';
-    recipient: string;
-  } | null;
-  setEditingPayment: React.Dispatch<React.SetStateAction<any>>;
+  editingPayment: EditingPaymentData | null;
+  setEditingPayment: React.Dispatch<React.SetStateAction<EditingPaymentData | null>>;
   handleSavePaymentEdit: () => Promise<void>;
 }
 
@@ -58,7 +60,7 @@ export function EditPaymentModal({
                       onChange={(e) => {
                         const raw = e.target.value.replace(/\D/g, '');
                         const formatted = raw ? new Intl.NumberFormat('vi-VN').format(parseInt(raw)) : '';
-                        setEditingPayment((prev: any) => prev ? { ...prev, amount: formatted } : null);
+                        setEditingPayment((prev) => prev ? { ...prev, amount: formatted } : null);
                       }}
                       placeholder="VD: 5.000.000"
                       className="w-full h-14 bg-slate-50 px-5 rounded-2xl border border-slate-200 text-lg font-black text-cyan-600 outline-none focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/5 transition-all"
@@ -84,7 +86,7 @@ export function EditPaymentModal({
                         } else if (val.length > 2) {
                           val = val.substring(0, 2) + '/' + val.substring(2);
                         }
-                        setEditingPayment((prev: any) => prev ? { ...prev, date: val } : null);
+                        setEditingPayment((prev) => prev ? { ...prev, date: val } : null);
                       }}
                       className="w-full h-14 bg-slate-50 px-5 rounded-2xl border border-slate-200 text-base font-bold text-slate-800 outline-none focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/5 transition-all"
                     />
@@ -96,7 +98,7 @@ export function EditPaymentModal({
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Phương thức</label>
                   <select
                     value={editingPayment.method}
-                    onChange={(e) => setEditingPayment((prev: any) => prev ? { ...prev, method: e.target.value as any } : null)}
+                    onChange={(e) => setEditingPayment((prev) => prev ? { ...prev, method: e.target.value as 'Tiền mặt' | 'Chuyển khoản' } : null)}
                     className="w-full h-14 bg-slate-50 px-5 rounded-2xl border border-slate-200 text-sm font-bold text-slate-800 outline-none focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/5 transition-all"
                   >
                     <option value="Chuyển khoản">Chuyển khoản</option>
@@ -109,7 +111,7 @@ export function EditPaymentModal({
                   <textarea
                     rows={3}
                     value={editingPayment.note}
-                    onChange={(e) => setEditingPayment((prev: any) => prev ? { ...prev, note: e.target.value } : null)}
+                    onChange={(e) => setEditingPayment((prev) => prev ? { ...prev, note: e.target.value } : null)}
                     placeholder="Ghi chú đóng tiền..."
                     className="w-full p-5 bg-slate-50 rounded-2xl border border-slate-200 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/5 transition-all resize-none"
                   />

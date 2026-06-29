@@ -3,10 +3,11 @@ import { Loader2, Save, Calendar, Trophy, Plus, Trash2 } from 'lucide-react';
 import { Student } from '../../../types';
 import { cn } from '../../../lib/utils';
 
+type StudentExam = NonNullable<Student['exams']>[number];
+
 interface ExamsTabProps {
-  student: Student;
-  examData: any[];
-  setExamData: React.Dispatch<React.SetStateAction<any[]>>;
+  examData: StudentExam[];
+  setExamData: React.Dispatch<React.SetStateAction<StudentExam[]>>;
   isEditingExams: boolean;
   setIsEditingExams: (val: boolean) => void;
   isUpdatingExams: boolean;
@@ -14,7 +15,6 @@ interface ExamsTabProps {
 }
 
 export function ExamsTab({
-  student,
   examData,
   setExamData,
   isEditingExams,
@@ -251,7 +251,7 @@ export function ExamsTab({
                       <span className={cn(
                         "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
                         exam.result?.overall === 'Đậu' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
-                        exam.result?.overall === 'Sát hạch' ? "bg-amber-50 text-amber-600 border border-amber-100" :
+                        exam.result?.overall === 'Chưa có' ? "bg-amber-50 text-amber-600 border border-amber-100" :
                         "bg-rose-50 text-rose-600 border border-rose-100"
                       )}>
                         {exam.result?.overall || 'CHỜ KQ'}

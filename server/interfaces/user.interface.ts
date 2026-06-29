@@ -9,6 +9,7 @@ export interface IUser extends Document {
   createdBy?: string;
   bankAccountNo?: string;
   bankId?: string;
+  bankAccountName?: string;
   smtpHost?: string;
   smtpPort?: number;
   smtpSecure?: boolean;

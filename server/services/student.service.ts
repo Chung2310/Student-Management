@@ -40,13 +40,16 @@ export class StudentService {
     return savedStudent;
   }
 
-  static async getStudents(ownerId: string, filters: StudentFilters) {
+  static async getStudents(ownerId: string | string[], filters: StudentFilters) {
     logger.info(`[Student] Fetching students list for ownerId=${ownerId} with filters: ${JSON.stringify(filters)}`);
     const page = filters.page ? parseInt(String(filters.page)) : 1;
     const limit = filters.limit ? parseInt(String(filters.limit)) : 1000;
     const skip = (page - 1) * limit;
 
-    const query: Record<string, unknown> = { ownerId };
+    const query: Record<string, unknown> = {};
+    if (ownerId !== "ALL") {
+      query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
+    }
 
     if (filters.status) query.status = filters.status;
     if (filters.rank) query.rank = filters.rank;
@@ -72,39 +75,49 @@ export class StudentService {
     };
   }
 
-  static async getStudentById(ownerId: string, id: string): Promise<IStudent | null> {
+  static async getStudentById(ownerId: string | string[], id: string): Promise<IStudent | null> {
     logger.info(`[Student] Fetching student detail: id=${id}, ownerId=${ownerId}`);
-    return await Student.findOne({ _id: id, ownerId });
+    const query: Record<string, unknown> = { _id: id };
+    if (ownerId !== "ALL") {
+      query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
+    }
+    return await Student.findOne(query);
   }
 
-  static async updateStudent(ownerId: string, id: string, data: StudentUpdateData): Promise<IStudent | null> {
+  static async updateStudent(ownerId: string | string[], id: string, data: StudentUpdateData): Promise<IStudent | null> {
     logger.info(`[Student] Updating student: id=${id}, ownerId=${ownerId}`);
     
     if (data.fullName) {
       data.slug = slugify(String(data.fullName));
     }
     
+    const query: Record<string, unknown> = { _id: id };
+    if (ownerId !== "ALL") {
+      query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
+    }
+
     if (data.paymentHistory && Array.isArray(data.paymentHistory)) {
       const history = data.paymentHistory as Record<string, unknown>[];
       data.paidAmount = history.reduce((sum: number, item) => sum + (Number(item?.amount) || 0), 0);
 
       // Sync with Payment collection
       try {
-        const oldStudent = await Student.findOne({ _id: id, ownerId });
+        const oldStudent = await Student.findOne(query);
         if (oldStudent && oldStudent.paymentHistory) {
           const oldHistory = oldStudent.paymentHistory;
-          const newHistory = data.paymentHistory;
+          const newHistory = (data.paymentHistory || []) as Record<string, unknown>[];
+          const studentOwnerId = oldStudent.ownerId;
 
           // Find deleted payments
           for (const oldItem of oldHistory) {
-            const stillExists = newHistory.some((newItem: any) => String(newItem.id) === String(oldItem.id));
+            const stillExists = newHistory.some((newItem) => String(newItem.id) === String(oldItem.id));
             if (!stillExists) {
-              await Payment.deleteOne({ _id: oldItem.id, ownerId });
+              await Payment.deleteOne({ _id: oldItem.id, ownerId: studentOwnerId });
             }
           }
 
           // Find updated payments
-          for (const newItem of newHistory as any[]) {
+          for (const newItem of newHistory) {
             const oldItem = oldHistory.find((oi) => String(oi.id) === String(newItem.id));
             if (oldItem) {
               const amountChanged = Number(newItem.amount) !== Number(oldItem.amount);
@@ -113,7 +126,7 @@ export class StudentService {
               
               if (amountChanged || dateChanged || noteChanged) {
                 await Payment.updateOne(
-                  { _id: newItem.id, ownerId },
+                  { _id: newItem.id as string, ownerId: studentOwnerId },
                   {
                     $set: {
                       amount: Number(newItem.amount),
@@ -132,7 +145,7 @@ export class StudentService {
     }
 
     const updatedStudent = await Student.findOneAndUpdate(
-      { _id: id, ownerId },
+      query,
       { $set: data },
       { new: true, runValidators: true }
     );
@@ -144,9 +157,13 @@ export class StudentService {
     return updatedStudent;
   }
 
-  static async deleteStudent(ownerId: string, id: string): Promise<IStudent | null> {
+  static async deleteStudent(ownerId: string | string[], id: string): Promise<IStudent | null> {
     logger.info(`[Student] Deleting student: id=${id}, ownerId=${ownerId}`);
-    const deletedStudent = await Student.findOneAndDelete({ _id: id, ownerId });
+    const query: Record<string, unknown> = { _id: id };
+    if (ownerId !== "ALL") {
+      query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
+    }
+    const deletedStudent = await Student.findOneAndDelete(query);
     if (deletedStudent) {
       logger.info(`[Student] Student deleted successfully: id=${id}`);
     } else {
@@ -156,8 +173,8 @@ export class StudentService {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static async bulkCreateStudents(ownerId: string, studentsData: any[]) {
-    logger.info(`[Student] Bulk importing ${studentsData.length} students for ownerId=${ownerId}`);
+  static async bulkCreateStudents(creatorId: string, ownerId: string | string[], studentsData: any[]) {
+    logger.info(`[Student] Bulk importing ${studentsData.length} students: creatorId=${creatorId}, ownerId=${ownerId}`);
     
     let importedCount = 0;
     let skippedCount = 0;
@@ -168,8 +185,12 @@ export class StudentService {
     // Track unique phone numbers within this batch to prevent duplicates inside the file itself
     const seenPhonesInBatch = new Set<string>();
 
-    // Fetch all existing student phone numbers for this ownerId to check in memory
-    const existingStudents = await Student.find({ ownerId }).select("phone");
+    // Fetch all existing student phone numbers for the allowed ownerId(s) to check in memory
+    const query: Record<string, unknown> = {};
+    if (ownerId !== "ALL") {
+      query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
+    }
+    const existingStudents = await Student.find(query).select("phone");
     const existingPhones = new Set(existingStudents.map(s => s.phone));
 
     for (let i = 0; i < studentsData.length; i++) {
@@ -259,7 +280,7 @@ export class StudentService {
         paymentHistory,
         address,
         status,
-        ownerId,
+        ownerId: creatorId,
       });
     }
 

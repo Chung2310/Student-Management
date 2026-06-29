@@ -278,7 +278,7 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
     }));
   };
 
-  const handleStartEditPayment = (p: any, idx: number) => {
+  const handleStartEditPayment = (p: NonNullable<Student['paymentHistory']>[number], idx: number) => {
     setEditingPayment({
       index: idx,
       id: p.id,
@@ -330,7 +330,7 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
     }
   };
 
-  const handleDeletePaymentClick = async (p: any, idx: number) => {
+  const handleDeletePaymentClick = async (p: NonNullable<Student['paymentHistory']>[number], idx: number) => {
     if (!student || !student.paymentHistory) return;
     const confirmDelete = window.confirm(`Bạn có chắc chắn muốn xóa đợt thanh toán ${new Intl.NumberFormat('vi-VN').format(p.amount)}đ ngày ${p.date} không?`);
     if (!confirmDelete) return;
@@ -506,7 +506,6 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
 
                 {student && activeTab === 'Lịch thi & KQ' && (
                   <ExamsTab
-                    student={student}
                     examData={examData}
                     setExamData={setExamData}
                     isEditingExams={isEditingExams}

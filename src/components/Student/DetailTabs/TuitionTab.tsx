@@ -1,11 +1,14 @@
-import React from 'react';
-import { CreditCard, History, Trash2, Pencil, Zap, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { CreditCard, History, Trash2, Pencil, Zap, AlertCircle, QrCode, Copy, Check, Info, Download } from 'lucide-react';
 import { Student } from '../../../types';
 import { cn, formatVND, parseVND } from '../../../lib/utils';
+import { useAuth } from '../../../hooks/useAuth';
 
 interface TuitionTabProps {
   student: Student;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   handleStartEditPayment: (p: any, idx: number) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   handleDeletePaymentClick: (p: any, idx: number) => Promise<void>;
 }
 
@@ -14,26 +17,102 @@ export function TuitionTab({
   handleStartEditPayment,
   handleDeletePaymentClick
 }: TuitionTabProps) {
+  const { user } = useAuth();
+  const totalFee = parseInt(parseVND(student.fee)) || 0;
+  const paid = student.paidAmount || 0;
+  const remaining = totalFee - paid;
+
+  const [paymentAmount, setPaymentAmount] = useState<number>(remaining > 0 ? remaining : 0);
+  const [paymentAmountInput, setPaymentAmountInput] = useState<string>(formatVND(remaining > 0 ? remaining : 0));
+  const [copied, setCopied] = useState(false);
+  const [localQrConfig] = useState(() => {
+    const saved = localStorage.getItem('vietqrConfig');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Error loading vietqrConfig in TuitionTab", e);
+      }
+    }
+    return null;
+  });
+
+  // Adjust state when remaining changes
+  const [prevRemaining, setPrevRemaining] = useState(remaining);
+  if (remaining !== prevRemaining) {
+    setPaymentAmount(remaining > 0 ? remaining : 0);
+    setPaymentAmountInput(formatVND(remaining > 0 ? remaining : 0));
+    setPrevRemaining(remaining);
+  }
+
+  const handleCopyMemo = () => {
+    navigator.clipboard.writeText(student.id);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleAmountInputChange = (val: string) => {
+    const raw = val.replace(/\D/g, '');
+    if (!raw) {
+      setPaymentAmountInput('');
+      setPaymentAmount(0);
+      return;
+    }
+    const num = parseInt(raw, 10);
+    const capped = Math.min(remaining, num);
+    setPaymentAmount(capped);
+    setPaymentAmountInput(formatVND(capped));
+  };
+
+  const handleDownloadQR = async () => {
+    try {
+      const response = await fetch(qrCodeUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `vietqr_${student.id}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Lỗi khi tải ảnh QR:", error);
+      // Fallback: Open in new tab
+      window.open(qrCodeUrl, '_blank');
+    }
+  };
+
+  const bankId = localQrConfig?.bankId || user?.bankId || '';
+  const accountNo = localQrConfig?.accountNo || user?.bankAccountNo || '';
+  const accountName = localQrConfig?.accountName || user?.bankAccountName || user?.displayName || '';
+  const enabled = localQrConfig ? localQrConfig.enabled : (!!user?.bankAccountNo && !!user?.bankId);
+
+  const hasValidConfig = enabled && !!accountNo && !!bankId;
+  const qrCodeUrl = hasValidConfig 
+    ? `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${paymentAmount}&addInfo=${student.id}&accountName=${encodeURIComponent(accountName)}`
+    : '';
+
   return (
     <div className="space-y-6">
       {/* Fee Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <FeeCard 
           label="Tổng học phí" 
-          amount={parseInt(parseVND(student.fee)) || 0} 
+          amount={totalFee} 
           icon={CreditCard}
           color="text-slate-800"
         />
         <FeeCard 
           label="Đã đóng" 
-          amount={student.paidAmount || 0} 
+          amount={paid} 
           icon={CreditCard}
           color="text-emerald-600"
           isPaid
         />
         <FeeCard 
           label="Còn nợ" 
-          amount={(parseInt(parseVND(student.fee)) || 0) - (student.paidAmount || 0)} 
+          amount={remaining} 
           icon={AlertCircle}
           color="text-rose-600"
           isWarning
@@ -95,46 +174,158 @@ export function TuitionTab({
           </div>
         </div>
 
-        {/* Quick Payment Info */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center text-center">
-          <div className="w-16 h-16 rounded-2xl bg-cyan-50 flex items-center justify-center text-cyan-500 mb-4 shadow-inner shadow-cyan-100/50">
-            <Zap className="w-8 h-8" />
-          </div>
-          <h4 className="text-sm font-bold text-slate-800">Thông tin đóng phí</h4>
-          <p className="text-xs text-slate-400 mt-1 max-w-[180px]">Học viên cần hoàn tất học phí trước ngày thi sát hạch 15 ngày.</p>
-          
-          <div className="w-full mt-6 space-y-3">
-            {(() => {
-              const totalFee = parseInt(parseVND(student.fee)) || 0;
-              const paid = student.paidAmount || 0;
-              const remaining = totalFee - paid;
-              
-              let statusLabel = 'Chưa đóng';
-              let statusColor = 'text-rose-500';
-              let bgColor = 'bg-rose-50 border-rose-100';
-              
-              if (remaining <= 0 && totalFee > 0) {
-                statusLabel = 'Đã đóng đủ';
-                statusColor = 'text-emerald-600';
-                bgColor = 'bg-emerald-50 border-emerald-100';
-              } else if (paid > 0) {
-                statusLabel = 'Còn thiếu';
-                statusColor = 'text-amber-600';
-                bgColor = 'bg-amber-50 border-amber-100';
-              }
+        {/* VietQR & Quick Payment Info */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* VietQR Section */}
+          <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center">
+            <div className="w-full flex items-center justify-between mb-4">
+              <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <QrCode className="w-4 h-4 text-cyan-500" /> Thanh toán VietQR
+              </h4>
+              {hasValidConfig && remaining > 0 && (
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+              )}
+            </div>
 
-              return (
-                <div className={cn("p-3 rounded-xl text-left border shadow-sm", bgColor)}>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Trạng thái hiện tại</p>
-                  <p className={cn("text-xs font-black mt-1", statusColor)}>
-                    {statusLabel}
-                  </p>
+            {remaining <= 0 ? (
+              <div className="w-full py-8 text-center text-slate-400 text-xs italic">
+                Học viên đã hoàn tất đóng học phí.
+              </div>
+            ) : !hasValidConfig ? (
+              <div className="w-full py-6 text-center space-y-3">
+                <Info className="w-8 h-8 text-amber-500 mx-auto" />
+                <p className="text-xs text-slate-500 leading-relaxed px-2">
+                  Chưa cấu hình thông tin tài khoản ngân hàng nhận tiền.
+                </p>
+                <p className="text-[10px] text-slate-400">
+                  Vui lòng truy cập trang <strong>Cài đặt</strong> để thiết lập VietQR.
+                </p>
+              </div>
+            ) : (
+              <div className="w-full space-y-4">
+                {/* Custom payment amount input */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Số tiền thanh toán</label>
+                  <input
+                    type="text"
+                    value={paymentAmountInput}
+                    onChange={(e) => handleAmountInputChange(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:border-cyan-500 transition-colors"
+                  />
+                  <div className="flex justify-between text-[9px] text-slate-400 font-medium">
+                    <span>Còn nợ: {formatVND(remaining)}đ</span>
+                    <button 
+                      onClick={() => {
+                        setPaymentAmount(remaining);
+                        setPaymentAmountInput(formatVND(remaining));
+                      }}
+                      className="text-cyan-600 hover:underline font-bold"
+                    >
+                      Đóng hết
+                    </button>
+                  </div>
                 </div>
-              );
-            })()}
-            <button className="w-full py-3 bg-cyan-600 text-white rounded-xl text-xs font-bold hover:bg-cyan-700 transition-all active:scale-95 shadow-lg shadow-cyan-100 mt-2">
-              Nhắc nhở đóng phí
-            </button>
+
+                {/* QR Code Container */}
+                <div className="w-full bg-slate-50 rounded-2xl p-4 flex flex-col items-center border border-slate-100 shadow-inner">
+                  <div className="bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm mb-3">
+                    <img 
+                      src={qrCodeUrl} 
+                      alt="VietQR Payment Code" 
+                      className="w-36 h-36 object-contain"
+                    />
+                  </div>
+
+                  <button
+                    onClick={handleDownloadQR}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 hover:text-cyan-600 rounded-xl text-[10px] font-bold transition-all shadow-sm mb-3 active:scale-95"
+                    title="Tải ảnh mã QR về máy"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Tải mã QR
+                  </button>
+
+                  {/* Transfer Details */}
+                  <div className="w-full space-y-1.5 text-xs text-slate-600">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Ngân hàng:</span>
+                      <span className="font-bold text-slate-800 uppercase">{bankId}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Số tài khoản:</span>
+                      <span className="font-bold text-slate-800">{accountNo}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Chủ tài khoản:</span>
+                      <span className="font-bold text-slate-800">{accountName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Số tiền:</span>
+                      <span className="font-bold text-cyan-600">{formatVND(paymentAmount)}đ</span>
+                    </div>
+                    <div className="pt-1.5 border-t border-slate-200/60 mt-1 flex flex-col gap-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Nội dung chuyển khoản</span>
+                      <div className="flex items-center justify-between bg-white px-3 py-1.5 rounded-lg border border-slate-100">
+                        <span className="font-mono text-[10px] font-black text-slate-800 tracking-wider select-all">{student.id}</span>
+                        <button
+                          onClick={handleCopyMemo}
+                          className="text-slate-400 hover:text-cyan-600 p-0.5 rounded transition-colors"
+                          title="Sao chép nội dung"
+                        >
+                          {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-slate-400 leading-normal text-center italic">
+                  * Hệ thống tự động ghi nhận học phí ngay lập tức sau khi nhận được tiền từ ngân hàng.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Payment Info */}
+          <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center text-center">
+            <div className="w-16 h-16 rounded-2xl bg-cyan-50 flex items-center justify-center text-cyan-500 mb-4 shadow-inner shadow-cyan-100/50">
+              <Zap className="w-8 h-8" />
+            </div>
+            <h4 className="text-sm font-bold text-slate-800">Thông tin đóng phí</h4>
+            <p className="text-xs text-slate-400 mt-1 max-w-[180px]">Học viên cần hoàn tất học phí trước ngày thi sát hạch 15 ngày.</p>
+            
+            <div className="w-full mt-6 space-y-3">
+              {(() => {
+                let statusLabel = 'Chưa đóng';
+                let statusColor = 'text-rose-500';
+                let bgColor = 'bg-rose-50 border-rose-100';
+                
+                if (remaining <= 0 && totalFee > 0) {
+                  statusLabel = 'Đã đóng đủ';
+                  statusColor = 'text-emerald-600';
+                  bgColor = 'bg-emerald-50 border-emerald-100';
+                } else if (paid > 0) {
+                  statusLabel = 'Còn thiếu';
+                  statusColor = 'text-amber-600';
+                  bgColor = 'bg-amber-50 border-amber-100';
+                }
+
+                return (
+                  <div className={cn("p-3 rounded-xl text-left border shadow-sm", bgColor)}>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Trạng thái hiện tại</p>
+                    <p className={cn("text-xs font-black mt-1", statusColor)}>
+                      {statusLabel}
+                    </p>
+                  </div>
+                );
+              })()}
+              <button className="w-full py-3 bg-cyan-600 text-white rounded-xl text-xs font-bold hover:bg-cyan-700 transition-all active:scale-95 shadow-lg shadow-cyan-100 mt-2">
+                Nhắc nhở đóng phí
+              </button>
+            </div>
           </div>
         </div>
       </div>
