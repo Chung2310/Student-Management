@@ -43,39 +43,40 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState('');
-  const [vietqrConfig, setVietqrConfig] = useState(() => {
+  const getMergedVietqrConfig = React.useCallback(() => {
     const saved = localStorage.getItem('vietqrConfig');
+    let localConfig: {
+      bankId?: string;
+      accountNo?: string;
+      accountName?: string;
+      enabled?: boolean;
+      template?: string;
+    } | null = null;
     if (saved) {
       try {
-        return JSON.parse(saved);
+        localConfig = JSON.parse(saved);
       } catch (e) {
         console.error("Error parsing vietqrConfig in AddPaymentModal", e);
       }
     }
-    return {
-      enabled: false,
-      bankId: '',
-      accountNo: '',
-      accountName: '',
-      template: ''
-    };
-  });
+    const bankId = localConfig?.bankId || user?.bankId || '';
+    const accountNo = localConfig?.accountNo || user?.bankAccountNo || '';
+    const accountName = localConfig?.accountName || user?.bankAccountName || user?.displayName || '';
+    const enabled = localConfig ? localConfig.enabled : (!!user?.bankAccountNo && !!user?.bankId);
+    const template = localConfig?.template || '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}';
+    return { enabled, bankId, accountNo, accountName, template };
+  }, [user]);
+
+  const [vietqrConfig, setVietqrConfig] = useState(getMergedVietqrConfig);
 
   React.useEffect(() => {
     if (isOpen) {
       const timer = setTimeout(() => {
-        const saved = localStorage.getItem('vietqrConfig');
-        if (saved) {
-          try {
-            setVietqrConfig(JSON.parse(saved));
-          } catch (e) {
-            console.error("Error parsing vietqrConfig in AddPaymentModal", e);
-          }
-        }
+        setVietqrConfig(getMergedVietqrConfig());
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [isOpen]);
+  }, [isOpen, getMergedVietqrConfig]);
 
   React.useEffect(() => {
     if (isOpen && student) {
@@ -89,31 +90,21 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
         }
 
         // Set initial note from VietQR template if enabled
-        const saved = localStorage.getItem('vietqrConfig');
-        if (saved) {
-          try {
-            const config = JSON.parse(saved);
-            if (config && config.enabled && config.template) {
-              const compiled = config.template
-                .replace(/\[Mã HV\]|\[Ma HV\]/gi, student.id || student.idCard || '')
-                .replace(/\[Họ tên\]|\[Ho ten\]/gi, student.fullName || '')
-                .replace(/\{hang\}|\{rank\}/gi, student.rank || '');
-              const normalized = removeVietnameseTones(compiled);
-              setNote(normalized);
-            } else {
-              setNote('');
-            }
-          } catch (e) {
-            console.error("Error setting initial VietQR note", e);
-            setNote('');
-          }
+        const config = getMergedVietqrConfig();
+        if (config && config.enabled && config.template) {
+          const compiled = config.template
+            .replace(/\[Mã HV\]|\[Ma HV\]/gi, student.id || student.idCard || '')
+            .replace(/\[Họ tên\]|\[Ho ten\]/gi, student.fullName || '')
+            .replace(/\{hang\}|\{rank\}/gi, student.rank || '');
+          const normalized = removeVietnameseTones(compiled);
+          setNote(normalized);
         } else {
           setNote('');
         }
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [isOpen, student]);
+  }, [isOpen, student, getMergedVietqrConfig]);
 
   if (!isOpen || !student || !user) return null;
 
@@ -272,36 +263,47 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
                 </div>
               </div>
 
-              {vietqrConfig.enabled && vietqrConfig.bankId && vietqrConfig.accountNo && (
-                <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                      <QrCode className="w-3.5 h-3.5 text-cyan-600" /> Quét mã thanh toán (VietQR)
-                    </span>
-                    <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md">Tự động điền số tiền</span>
-                  </div>
-                  <div className="flex gap-4 items-center">
-                    <div className="bg-white p-2 border border-slate-100 rounded-xl shrink-0 flex items-center justify-center">
-                      <img
-                        src={`https://img.vietqr.io/image/${vietqrConfig.bankId}-${vietqrConfig.accountNo}-compact2.png?amount=${amount.replace(/\D/g, '') || '0'}&addInfo=${encodeURIComponent(note)}&accountName=${encodeURIComponent(vietqrConfig.accountName)}`}
-                        alt="VietQR Chuyển khoản"
-                        className="w-24 h-24 object-contain"
-                      />
+              {vietqrConfig.enabled && vietqrConfig.bankId && vietqrConfig.accountNo && (() => {
+                const qrCodeMemo = (() => {
+                  let m = note;
+                  const objectIdRegex = /[0-9a-fA-F]{24}/;
+                  if (student.id && !objectIdRegex.test(m)) {
+                    m = `${m} ${student.id}`.trim();
+                  }
+                  return m;
+                })();
+
+                return (
+                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <QrCode className="w-3.5 h-3.5 text-cyan-600" /> Quét mã thanh toán (VietQR)
+                      </span>
+                      <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md">Tự động điền số tiền</span>
                     </div>
-                    <div className="text-xs space-y-1.5 select-all flex-1 min-w-0">
-                      <p className="font-medium text-slate-500">Ngân hàng: <span className="text-slate-800 font-bold uppercase">{BANK_NAMES[vietqrConfig.bankId] || vietqrConfig.bankId.toUpperCase()}</span></p>
-                      <p className="font-medium text-slate-500">Số tài khoản: <span className="text-slate-800 font-bold">{vietqrConfig.accountNo}</span></p>
-                      <p className="font-medium text-slate-500">Chủ tài khoản: <span className="text-slate-800 font-bold uppercase">{vietqrConfig.accountName}</span></p>
-                      <p className="font-medium text-slate-500 flex flex-col gap-0.5">
-                        <span>Nội dung:</span>
-                        <span className="bg-slate-200/80 text-slate-800 font-mono px-1.5 py-0.5 rounded text-[10px] font-semibold break-all inline-block select-all">
-                          {note || '(Trống)'}
-                        </span>
-                      </p>
+                    <div className="flex gap-4 items-center">
+                      <div className="bg-white p-2 border border-slate-100 rounded-xl shrink-0 flex items-center justify-center">
+                        <img
+                          src={`https://img.vietqr.io/image/${vietqrConfig.bankId}-${vietqrConfig.accountNo}-compact2.png?amount=${amount.replace(/\D/g, '') || '0'}&addInfo=${encodeURIComponent(qrCodeMemo)}&accountName=${encodeURIComponent(vietqrConfig.accountName)}`}
+                          alt="VietQR Chuyển khoản"
+                          className="w-24 h-24 object-contain"
+                        />
+                      </div>
+                      <div className="text-xs space-y-1.5 select-all flex-1 min-w-0">
+                        <p className="font-medium text-slate-500">Ngân hàng: <span className="text-slate-800 font-bold uppercase">{BANK_NAMES[vietqrConfig.bankId] || vietqrConfig.bankId.toUpperCase()}</span></p>
+                        <p className="font-medium text-slate-500">Số tài khoản: <span className="text-slate-800 font-bold">{vietqrConfig.accountNo}</span></p>
+                        <p className="font-medium text-slate-500">Chủ tài khoản: <span className="text-slate-800 font-bold uppercase">{vietqrConfig.accountName}</span></p>
+                        <p className="font-medium text-slate-500 flex flex-col gap-0.5">
+                          <span>Nội dung chuyển khoản QR:</span>
+                          <span className="bg-slate-200/80 text-slate-800 font-mono px-1.5 py-0.5 rounded text-[10px] font-semibold break-all inline-block select-all">
+                            {qrCodeMemo || '(Trống)'}
+                          </span>
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
 
             <div className="flex items-center gap-4 pt-2">

@@ -20,6 +20,7 @@ interface ParsedStudent {
   rank: string;
   area: string;
   fee: string;
+  paidAmount?: number;
   birthday?: string;
   idCard?: string;
   email?: string;
@@ -58,13 +59,13 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
   const handleDownloadTemplate = () => {
     try {
       const headers = [
-        'Họ và tên', 'Số điện thoại', 'Hạng bằng', 'Khu vực', 'Học phí', 
+        'Họ và tên', 'Số điện thoại', 'Hạng bằng', 'Khu vực', 'Học phí', 'Đã đóng', 'Còn nợ',
         'Ngày sinh', 'CCCD / CMND', 'Email', 'Người giới thiệu', 'Địa chỉ'
       ];
       const data = [
-        ['Nguyễn Văn A', '0912345678', 'B2', 'Nội thành', '15.000.000', '25/12/1995', '123456789012', 'nva@gmail.com', 'Trần Văn B', '123 Đường Lê Lợi, Q.1'],
-        ['Trần Thị B', '0987654321', 'A1', 'Ngoại thành', '3.500.000', '10/05/2000', '987654321098', 'ttb@gmail.com', '', '456 Đường Nguyễn Huệ, H.Hóc Môn'],
-        ['Lê Văn C', '0905123456', 'C', 'Tỉnh lân cận', '18.000.000', '15/08/1990', '031090123456', 'lvc@gmail.com', '', 'Thành phố Biên Hòa, Đồng Nai']
+        ['Nguyễn Văn A', '0912345678', 'B2', 'Nội thành', '15.000.000', '15.000.000', '0', '25/12/1995', '123456789012', 'nva@gmail.com', 'Trần Văn B', '123 Đường Lê Lợi, Q.1'],
+        ['Trần Thị B', '0987654321', 'A1', 'Ngoại thành', '3.500.000', '0', '3.500.000', '10/05/2000', '987654321098', 'ttb@gmail.com', '', '456 Đường Nguyễn Huệ, H.Hóc Môn'],
+        ['Lê Văn C', '0905123456', 'C', 'Tỉnh lân cận', '18.000.000', '10.000.000', '8.000.000', '15/08/1990', '031090123456', 'lvc@gmail.com', '', 'Thành phố Biên Hòa, Đồng Nai']
       ];
       
       const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
@@ -76,6 +77,8 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
         { wch: 10 }, // Hạng bằng
         { wch: 15 }, // Khu vực
         { wch: 15 }, // Học phí
+        { wch: 15 }, // Đã đóng
+        { wch: 15 }, // Còn nợ
         { wch: 12 }, // Ngày sinh
         { wch: 18 }, // CCCD / CMND
         { wch: 22 }, // Email
@@ -110,6 +113,8 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
         map['area'] = idx;
       } else if (val.includes('học phí') || val.includes('hoc phi')) {
         map['fee'] = idx;
+      } else if (val.includes('đã đóng') || val.includes('da dong') || val === 'dong') {
+        map['paidAmount'] = idx;
       } else if (val.includes('ngày sinh') || val.includes('ngay sinh') || val === 'năm sinh') {
         map['birthday'] = idx;
       } else if (val.includes('cccd') || val.includes('cmnd') || val.includes('định danh')) {
@@ -215,12 +220,16 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
           const cleanFeeNum = parseInt(rawFee.replace(/\D/g, ''), 10) || 0;
           const formattedFee = cleanFeeNum > 0 ? cleanFeeNum.toLocaleString('vi-VN') : '0';
 
+          const rawPaid = getCellValue('paidAmount');
+          const cleanPaidNum = parseInt(rawPaid.replace(/\D/g, ''), 10) || 0;
+
           const studentData: ParsedStudent = {
             fullName: getCellValue('fullName'),
             phone: getCellValue('phone'),
             rank: getCellValue('rank').toUpperCase(),
             area: getCellValue('area'),
             fee: formattedFee,
+            paidAmount: cleanPaidNum,
             birthday: getCellValue('birthday'),
             idCard: getCellValue('idCard'),
             email: getCellValue('email'),
@@ -231,6 +240,9 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
           // Validation
           const errors: string[] = [];
           if (!studentData.fullName) errors.push('Họ tên không được trống');
+          if (cleanPaidNum > cleanFeeNum) {
+            errors.push(`Số tiền đã đóng (${cleanPaidNum.toLocaleString('vi-VN')}đ) không được vượt quá học phí (${formattedFee}đ)`);
+          }
           if (!studentData.phone) {
             errors.push('Số điện thoại không được trống');
           } else if (seenPhones.has(studentData.phone)) {
@@ -541,6 +553,7 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
                           <th className="px-3 py-3 text-slate-400 font-bold text-center w-16">Hạng</th>
                           <th className="px-3 py-3 text-slate-400 font-bold text-center w-28">Khu vực</th>
                           <th className="px-3 py-3 text-slate-400 font-bold w-24">Học phí</th>
+                          <th className="px-3 py-3 text-slate-400 font-bold w-24">Đã đóng</th>
                           <th className="px-4 py-3 text-slate-400 font-bold">Trạng thái / Chi tiết lỗi</th>
                         </tr>
                       </thead>
@@ -569,6 +582,7 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
                               </span>
                             </td>
                             <td className="px-3 py-3 text-slate-600 font-semibold">{row.data.fee}đ</td>
+                            <td className="px-3 py-3 text-emerald-600 font-semibold">{(row.data.paidAmount || 0).toLocaleString('vi-VN')}đ</td>
                             <td className="px-4 py-3">
                               {row.isValid ? (
                                 <div className="flex items-center gap-1.5 text-emerald-600 font-bold">

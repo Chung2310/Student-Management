@@ -143,13 +143,7 @@ export function NotificationsPage() {
 
   const [apiStatus, setApiStatus] = useState<'Checking' | 'Ready' | 'Missing Key' | 'Error'>('Checking');
   const [smsApiStatus, setSmsApiStatus] = useState<'Checking' | 'Ready' | 'Sandbox' | 'Error'>('Checking');
-  const [vietqrConfig] = useState<{
-    enabled: boolean;
-    bankId: string;
-    accountNo: string;
-    accountName: string;
-    template: string;
-  } | null>(() => {
+  const [localVietqrConfig] = useState(() => {
     try {
       const cfg = localStorage.getItem("vietqrConfig");
       return cfg ? JSON.parse(cfg) : null;
@@ -158,6 +152,14 @@ export function NotificationsPage() {
       return null;
     }
   });
+
+  const vietqrConfig = {
+    enabled: localVietqrConfig ? localVietqrConfig.enabled : (!!user?.bankAccountNo && !!user?.bankId),
+    bankId: localVietqrConfig?.bankId || user?.bankId || '',
+    accountNo: localVietqrConfig?.accountNo || user?.bankAccountNo || '',
+    accountName: localVietqrConfig?.accountName || user?.bankAccountName || user?.displayName || '',
+    template: localVietqrConfig?.template || '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}'
+  };
   const [selectedStudentForPayment, setSelectedStudentForPayment] = useState<Student | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
@@ -305,9 +307,16 @@ export function NotificationsPage() {
     const debtAmount = totalFee - (student.paidAmount || 0);
     
     let note = config.template || "Nop hoc phi {ten} {phone}";
-    note = note.replace(/{ten}/g, student.fullName)
-               .replace(/{phone}/g, student.phone)
-               .replace(/{id}/g, student.id || "");
+    note = note
+      .replace(/\[Mã HV\]|\[Ma HV\]|\{id\}|\{ma\}|\{mahv\}/gi, student.id || '')
+      .replace(/\[Họ tên\]|\[Ho ten\]|\{ten\}|\{hoten\}/gi, student.fullName || '')
+      .replace(/\{phone\}|\{sdt\}/gi, student.phone || '')
+      .replace(/\{hang\}|\{rank\}/gi, student.rank || '');
+
+    const objectIdRegex = /[0-9a-fA-F]{24}/;
+    if (student.id && !objectIdRegex.test(note)) {
+      note = `${note} ${student.id}`.trim();
+    }
                
     const removeVietnameseTones = (str: string) => {
       str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g,"a");

@@ -15,6 +15,7 @@ import { StatusTransitionModal } from '../../components/Student/StatusTransition
 import { EditStudentModal } from '../../components/Student/EditStudentModal';
 import { ImportStudentModal } from '../../components/Student/ImportStudentModal';
 import { Pagination } from '../../components/ui/Pagination';
+import * as XLSX from 'xlsx';
 
 interface StudentsPageProps {
   onSelectStudent: (student: Student) => void;
@@ -34,6 +35,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
   const [endDate, setEndDate] = useState('');
   const [rankFilter, setRankFilter] = useState('Tất cả hạng');
   const [areaFilter, setAreaFilter] = useState('Tất cả khu vực');
+  const [feeStatusFilter, setFeeStatusFilter] = useState('Tất cả học phí');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
       setCurrentPage(1);
     }, 0);
     return () => clearTimeout(timer);
-  }, [category, status, searchQuery, startDate, endDate, rankFilter, areaFilter]);
+  }, [category, status, searchQuery, startDate, endDate, rankFilter, areaFilter, feeStatusFilter]);
 
   // Helper to parse DD/MM/YYYY to Date object
   const parseDate = (dateStr: string) => {
@@ -97,6 +99,21 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
       const matchPhone = student.phone.includes(query);
       const matchId = student.idCard?.toLowerCase().includes(query);
       if (!matchName && !matchPhone && !matchId) return false;
+    }
+
+    // 7. Tuition Status Filter
+    if (feeStatusFilter !== 'Tất cả học phí') {
+      const totalFeeNum = parseInt(String(student.fee).replace(/\D/g, ''), 10) || 0;
+      const paidSoFar = student.paidAmount || 0;
+      const remaining = totalFeeNum - paidSoFar;
+
+      if (feeStatusFilter === 'Đã đóng đủ') {
+        if (remaining > 0 || totalFeeNum === 0) return false;
+      } else if (feeStatusFilter === 'Chưa đóng') {
+        if (paidSoFar > 0) return false;
+      } else if (feeStatusFilter === 'Còn thiếu') {
+        if (paidSoFar === 0 || remaining <= 0) return false;
+      }
     }
 
     return true;
@@ -156,44 +173,63 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
     }
 
     const headers = [
-      'Họ và tên', 'Số điện thoại', 'Hạng', 'Khu vực', 'Ngày đăng ký',
-      'Tổng học phí', 'Đã đóng', 'Còn nợ', 'Trạng thái'
+      'Họ và tên', 'Số điện thoại', 'Hạng bằng', 'Khu vực', 'Ngày đăng ký',
+      'Học phí', 'Đã đóng', 'Còn nợ', 'Trạng thái học phí', 'Trạng thái học tập'
     ];
 
-    const rows = filteredStudents.map(student => {
+    const data = filteredStudents.map(student => {
       const totalFeeNum = parseInt(String(student.fee).replace(/\D/g, ''), 10) || 0;
       const paidSoFar = student.paidAmount || 0;
       const remaining = totalFeeNum - paidSoFar;
 
+      let feeStatusStr = 'Chưa đóng';
+      if (remaining <= 0 && totalFeeNum > 0) {
+        feeStatusStr = 'Đã đóng đủ';
+      } else if (paidSoFar > 0) {
+        feeStatusStr = 'Còn thiếu';
+      }
+
       return [
         student.fullName,
-        `\t${student.phone}`,
+        student.phone,
         student.rank,
         student.area,
         student.registrationDate,
-        totalFeeNum,
-        paidSoFar,
-        remaining,
+        totalFeeNum.toLocaleString('vi-VN'),
+        paidSoFar.toLocaleString('vi-VN'),
+        remaining.toLocaleString('vi-VN'),
+        feeStatusStr,
         student.status
       ];
     });
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => {
-        const cellStr = String(cell ?? '').replace(/"/g, '""');
-        return `"${cellStr}"`;
-      }).join(','))
-    ].join('\n');
+    try {
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+      
+      // Set column widths for better readability
+      ws['!cols'] = [
+        { wch: 20 }, // Họ và tên
+        { wch: 15 }, // Số điện thoại
+        { wch: 10 }, // Hạng bằng
+        { wch: 15 }, // Khu vực
+        { wch: 15 }, // Ngày đăng ký
+        { wch: 15 }, // Học phí
+        { wch: 15 }, // Đã đóng
+        { wch: 15 }, // Còn nợ
+        { wch: 18 }, // Trạng thái học phí
+        { wch: 18 }  // Trạng thái học tập
+      ];
 
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `danh_sach_hoc_vien_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Danh sách học viên");
+      
+      const fileName = `danh_sach_hoc_vien_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      toast.success('Đã xuất file Excel thành công!');
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      toast.error('Có lỗi xảy ra khi xuất file Excel.');
+    }
   };
 
   const handlePrint = () => {
@@ -355,7 +391,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
       </div>
 
       {/* Filters Bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm filters-bar">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm filters-bar">
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Từ ngày</label>
           <div className="relative">
@@ -411,6 +447,22 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
               <option>Nội thành</option>
               <option>Ngoại thành</option>
               <option>Tỉnh lân cận</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Học phí</label>
+          <div className="relative">
+            <select
+              value={feeStatusFilter}
+              onChange={(e) => setFeeStatusFilter(e.target.value)}
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-cyan-600"
+            >
+              <option>Tất cả học phí</option>
+              <option>Đã đóng đủ</option>
+              <option>Chưa đóng</option>
+              <option>Còn thiếu</option>
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>

@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { 
   Download, Search,
   ChevronDown, CreditCard, Clock, Users as UsersIcon,
-  Banknote
+  Banknote, History
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
@@ -12,7 +12,11 @@ import { Student } from '../../types';
 import { AddPaymentModal } from '../../components/Fees/AddPaymentModal';
 import { Pagination } from '../../components/ui/Pagination';
 
-export function FeesPage() {
+interface FeesPageProps {
+  onSelectStudent?: (student: Student, tab: string) => void;
+}
+
+export function FeesPage({ onSelectStudent }: FeesPageProps) {
   const { students, loading } = useStudents();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
@@ -260,8 +264,13 @@ export function FeesPage() {
                 return (
                   <tr key={student.id} className="group hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-5 border-b border-slate-50">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-black text-slate-800 tracking-tight">{student.fullName}</span>
+                      <div className="flex flex-col items-start">
+                        <button
+                          onClick={() => onSelectStudent?.(student, 'Học phí')}
+                          className="text-left text-sm font-black text-slate-800 hover:text-cyan-600 hover:underline tracking-tight transition-all"
+                        >
+                          {student.fullName}
+                        </button>
                         <span className="text-[10px] font-bold text-slate-400 mt-0.5">{student.phone}</span>
                       </div>
                     </td>
@@ -322,16 +331,25 @@ export function FeesPage() {
                       </span>
                     </td>
                     <td className="px-6 py-5 border-b border-slate-50 text-right">
-                      <button 
-                        onClick={() => {
-                          setSelectedStudentForPayment(student);
-                          setIsPaymentModalOpen(true);
-                        }}
-                        title="Thu học phí"
-                        className="p-2.5 rounded-2xl bg-white border border-slate-100 text-slate-300 hover:text-cyan-600 hover:border-cyan-100 hover:shadow-xl hover:shadow-cyan-50/50 transition-all group-hover:scale-105 active:scale-95"
-                      >
-                        <CreditCard className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button 
+                          onClick={() => {
+                            setSelectedStudentForPayment(student);
+                            setIsPaymentModalOpen(true);
+                          }}
+                          title="Thu học phí"
+                          className="p-2.5 rounded-2xl bg-white border border-slate-100 text-slate-300 hover:text-cyan-600 hover:border-cyan-100 hover:shadow-xl hover:shadow-cyan-50/50 transition-all group-hover:scale-105 active:scale-95"
+                        >
+                          <CreditCard className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => onSelectStudent?.(student, 'Học phí')}
+                          title="Nhật ký & Sửa học phí"
+                          className="p-2.5 rounded-2xl bg-white border border-slate-100 text-slate-300 hover:text-cyan-600 hover:border-cyan-100 hover:shadow-xl hover:shadow-cyan-50/50 transition-all group-hover:scale-105 active:scale-95"
+                        >
+                          <History className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
