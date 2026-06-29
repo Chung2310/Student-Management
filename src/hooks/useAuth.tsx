@@ -11,7 +11,6 @@ export interface AuthUser {
   role: "superadmin" | "admin" | "user";
   centerId: string;
   createdBy?: string;
-  gasUrl?: string;
   bankAccountNo?: string;
   bankId?: string;
   smtpHost?: string;
@@ -45,7 +44,7 @@ interface AuthContextType {
   isLoggingIn: boolean;
   login: () => Promise<void>;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
-  registerWithEmail: (email: string, pass: string, displayName: string, gasUrl: string) => Promise<void>;
+  registerWithEmail: (email: string, pass: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
   fetchMe: () => Promise<void>;
 }
@@ -70,7 +69,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role: res.data.user.role,
           centerId: res.data.user.centerId,
           createdBy: res.data.user.createdBy,
-          gasUrl: res.data.user.gasUrl,
           bankAccountNo: res.data.user.bankAccountNo,
           bankId: res.data.user.bankId,
           smtpHost: res.data.user.smtpHost,
@@ -131,13 +129,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const registerWithEmail = async (email: string, pass: string, displayName: string, gasUrl: string) => {
+  const registerWithEmail = async (email: string, pass: string, displayName: string) => {
     if (isLoggingIn) return;
     setIsLoggingIn(true);
     try {
       const res = await apiFetch("/auth/register", {
         method: "POST",
-        body: JSON.stringify({ email, password: pass, displayName, gasUrl }),
+        body: JSON.stringify({ email, password: pass, displayName }),
       });
       if (res.success) {
         await loginWithEmail(email, pass);
