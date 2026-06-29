@@ -64,13 +64,31 @@ export function LoginPage() {
     }
   };
 
+  const handleBirthdayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    if (value.length > 8) value = value.slice(0, 8); // Max 8 digits
+
+    let formatted = '';
+    if (value.length > 0) {
+      formatted += value.slice(0, 2);
+    }
+    if (value.length > 2) {
+      formatted += '/' + value.slice(2, 4);
+    }
+    if (value.length > 4) {
+      formatted += '/' + value.slice(4, 8);
+    }
+    setBirthday(formatted);
+    setErrorMsg('');
+  };
+
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setIsRegistering(true);
 
-    if (!fullName || !phone || !rank || !area) {
-      setErrorMsg("Vui lòng điền các trường bắt buộc.");
+    if (!fullName || !phone || !emailReg || !birthday || !idCard || !rank || !area || !address) {
+      setErrorMsg("Vui lòng điền đầy đủ tất cả các trường thông tin.");
       setIsRegistering(false);
       return;
     }
@@ -83,21 +101,19 @@ export function LoginPage() {
       return;
     }
 
-    // Validate email if provided
-    if (emailReg && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailReg.trim())) {
+    // Validate email format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailReg.trim())) {
       setErrorMsg("Địa chỉ email không đúng định dạng.");
       setIsRegistering(false);
       return;
     }
 
-    // Validate birthday format (dd/mm/yyyy) if provided
-    if (birthday) {
-      const birthdateRegex = /^([0-2][0-9]|3[0-1])\/(0[1-9]|1[0-2])\/\d{4}$/;
-      if (!birthdateRegex.test(birthday.trim())) {
-        setErrorMsg("Ngày sinh phải đúng định dạng ngày/tháng/năm (Ví dụ: 20/10/2000).");
-        setIsRegistering(false);
-        return;
-      }
+    // Validate birthday format (dd/mm/yyyy)
+    const birthdateRegex = /^([0-2][0-9]|3[0-1])\/(0[1-9]|1[0-2])\/\d{4}$/;
+    if (!birthdateRegex.test(birthday.trim())) {
+      setErrorMsg("Ngày sinh phải đúng định dạng ngày/tháng/năm (Ví dụ: 20/10/2000).");
+      setIsRegistering(false);
+      return;
     }
 
     try {
@@ -106,12 +122,12 @@ export function LoginPage() {
         body: JSON.stringify({
           fullName,
           phone,
-          email: emailReg || undefined,
-          birthday: birthday || undefined,
-          idCard: idCard || undefined,
+          email: emailReg,
+          birthday,
+          idCard,
           rank,
           area,
-          address: address || undefined,
+          address,
           teacherId,
         }),
       });
@@ -382,14 +398,15 @@ export function LoginPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Ngày sinh</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Ngày sinh *</label>
                       <div className="relative">
                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                           type="text"
+                          required
                           placeholder="dd/mm/yyyy"
                           value={birthday}
-                          onChange={(e) => setBirthday(e.target.value)}
+                          onChange={handleBirthdayChange}
                           className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-100 focus:border-cyan-600 focus:bg-white outline-none transition-all font-medium text-slate-900 text-sm"
                         />
                       </div>
@@ -428,9 +445,10 @@ export function LoginPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Số CCCD/CMND</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Số CCCD/CMND *</label>
                       <input
                         type="text"
+                        required
                         placeholder="Số CCCD..."
                         value={idCard}
                         onChange={(e) => setIdCard(e.target.value)}
@@ -439,9 +457,10 @@ export function LoginPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email *</label>
                       <input
                         type="email"
+                        required
                         placeholder="name@example.com"
                         value={emailReg}
                         onChange={(e) => { setEmailReg(e.target.value); setErrorMsg(''); }}
@@ -451,11 +470,12 @@ export function LoginPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Địa chỉ</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Địa chỉ *</label>
                     <div className="relative">
                       <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input
                         type="text"
+                        required
                         placeholder="Nhập địa chỉ của bạn..."
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
