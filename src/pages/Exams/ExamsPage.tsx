@@ -625,18 +625,21 @@ function ExamCard({ exam, getStatusInfo, onDelete, onEdit, onStatusClick, onAssi
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end no-print">
             <button 
               onClick={(e) => { e.stopPropagation(); onAssignClick(); }}
+              title="Xếp học viên"
               className="p-2 sm:p-2.5 rounded-xl text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 transition-all border border-slate-200 bg-white shadow-sm active:scale-95"
             >
               <UserPlus className="w-5 h-5" />
             </button>
             <button 
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              title="Sửa đợt thi"
               className="p-2 sm:p-2.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all border border-slate-200 bg-white shadow-sm active:scale-95"
             >
               <Edit3 className="w-5 h-5" />
             </button>
             <button 
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              title="Xóa đợt thi"
               className="p-2 sm:p-2.5 rounded-xl bg-rose-500 text-white hover:bg-rose-600 transition-all shadow-md shadow-rose-100 active:scale-95"
             >
               <Trash2 className="w-5 h-5" />
@@ -644,6 +647,7 @@ function ExamCard({ exam, getStatusInfo, onDelete, onEdit, onStatusClick, onAssi
             <div className="hidden sm:block w-px h-8 bg-slate-100 mx-1" />
             <button 
               onClick={(e) => { e.stopPropagation(); onStatusClick(); }}
+              title="Cập nhật trạng thái"
               className="p-2 sm:p-2.5 rounded-xl text-slate-300 hover:text-slate-600 hover:bg-slate-50 transition-all border border-slate-100 active:scale-95"
             >
               <ChevronDown className="w-5 h-5" />

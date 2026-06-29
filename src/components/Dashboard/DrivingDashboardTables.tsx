@@ -225,6 +225,7 @@ export function DrivingDashboardTables({ onSelectStudent, onNavigate }: DrivingD
               <button 
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
+                title="Trang trước"
                 className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-cyan-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -232,6 +233,7 @@ export function DrivingDashboardTables({ onSelectStudent, onNavigate }: DrivingD
               <button 
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
+                title="Trang sau"
                 className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-cyan-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 <ChevronRight className="w-4 h-4" />

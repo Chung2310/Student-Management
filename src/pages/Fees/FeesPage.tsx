@@ -327,6 +327,7 @@ export function FeesPage() {
                           setSelectedStudentForPayment(student);
                           setIsPaymentModalOpen(true);
                         }}
+                        title="Thu học phí"
                         className="p-2.5 rounded-2xl bg-white border border-slate-100 text-slate-300 hover:text-cyan-600 hover:border-cyan-100 hover:shadow-xl hover:shadow-cyan-50/50 transition-all group-hover:scale-105 active:scale-95"
                       >
                         <CreditCard className="w-4 h-4" />

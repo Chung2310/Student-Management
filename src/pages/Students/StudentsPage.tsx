@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { 
-  Search, Download, Printer, Plus, 
+import {
+  Search, Download, Printer, Plus,
   Eye, ChevronRight, Trash2, Pencil,
   X, Calendar as CalendarIcon, ChevronDown,
   Users, Bike, Car, Upload
@@ -63,7 +63,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
 
     // 2. Status Filter
     if (status !== 'Tất cả') {
-      const statusMap: Record<string, string> = { 
+      const statusMap: Record<string, string> = {
         'Nộp HS': 'Đã nộp HS',
         'KSK': 'Chờ KSK'
       };
@@ -156,10 +156,10 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
     }
 
     const headers = [
-      'Họ và tên', 'Số điện thoại', 'Hạng', 'Khu vực', 'Ngày đăng ký', 
+      'Họ và tên', 'Số điện thoại', 'Hạng', 'Khu vực', 'Ngày đăng ký',
       'Tổng học phí', 'Đã đóng', 'Còn nợ', 'Trạng thái'
     ];
-    
+
     const rows = filteredStudents.map(student => {
       const totalFeeNum = parseInt(String(student.fee).replace(/\D/g, ''), 10) || 0;
       const paidSoFar = student.paidAmount || 0;
@@ -277,25 +277,25 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
           <p className="text-slate-400 text-sm font-medium mt-1">{loading ? '...' : `${filteredStudents.length} / ${students.length}`} học viên</p>
         </div>
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={handleExport}
             className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all"
           >
             <Download className="w-4 h-4" /> Xuất
           </button>
-          <button 
+          <button
             onClick={handlePrint}
             className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all"
           >
             <Printer className="w-4 h-4" /> In
           </button>
-          <button 
+          <button
             onClick={() => setIsImportOpen(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all"
           >
             <Upload className="w-4 h-4" /> Nhập Excel
           </button>
-          <button 
+          <button
             onClick={onAddStudent}
             className="flex items-center gap-2 px-6 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-cyan-100 hover:bg-brand-primary/95 transition-all"
           >
@@ -336,8 +336,8 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
             onClick={() => setStatus(tab.label)}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all whitespace-nowrap",
-              status === tab.label 
-                ? "bg-slate-900 border-slate-900 text-white shadow-lg" 
+              status === tab.label
+                ? "bg-slate-900 border-slate-900 text-white shadow-lg"
                 : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
             )}
           >
@@ -359,11 +359,11 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Từ ngày</label>
           <div className="relative">
-            <input 
-              type="date" 
+            <input
+              type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-cyan-600 transition-all" 
+              className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-cyan-600 transition-all"
             />
             <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
@@ -371,11 +371,11 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Đến ngày</label>
           <div className="relative">
-            <input 
-              type="date" 
+            <input
+              type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-cyan-600 transition-all" 
+              className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-cyan-600 transition-all"
             />
             <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
@@ -383,7 +383,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Hạng bằng</label>
           <div className="relative">
-            <select 
+            <select
               value={rankFilter}
               onChange={(e) => setRankFilter(e.target.value)}
               className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-cyan-600"
@@ -402,7 +402,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Khu vực</label>
           <div className="relative">
-            <select 
+            <select
               value={areaFilter}
               onChange={(e) => setAreaFilter(e.target.value)}
               className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-cyan-600"
@@ -418,16 +418,16 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         <div className="space-y-1 col-span-2 lg:col-span-1">
           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Tìm kiếm</label>
           <div className="relative">
-            <input 
-              type="text" 
-              placeholder="Tên / SĐT / CCCD..." 
+            <input
+              type="text"
+              placeholder="Tên / SĐT / CCCD..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-10 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-cyan-600" 
+              className="w-full px-10 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-cyan-600"
             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             {searchQuery && (
-              <button 
+              <button
                 onClick={() => setSearchQuery('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-200 rounded-full transition-colors"
               >
@@ -487,12 +487,12 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
                   <td className="px-4 py-4 text-center">
                     <div className="flex items-center justify-center gap-1">
                       {[1, 2, 3, 4, 5].map((dot) => (
-                        <div 
-                          key={dot} 
+                        <div
+                          key={dot}
                           className={cn(
                             "w-2 h-2 rounded-full",
                             dot <= 3 ? "bg-emerald-500" : "bg-slate-200"
-                          )} 
+                          )}
                         />
                       ))}
                     </div>
@@ -501,38 +501,38 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
                     <div className="flex flex-col gap-1 w-28">
                       <div className="flex items-center text-xs font-bold">
                         {(() => {
-                           const totalFeeNum = parseInt(String(student.fee).replace(/\D/g, ''), 10) || 0;
-                           const paidSoFar = student.paidAmount || 0;
-                           const remaining = totalFeeNum - paidSoFar;
-                           return (
-                             <>
-                               {remaining > 0 ? (
-                                 <span className="text-rose-500 whitespace-nowrap">-{formatVND(remaining)}đ</span>
-                               ) : (
-                                 <span className="text-emerald-600 whitespace-nowrap">Đã hoàn tất</span>
-                               )}
-                             </>
-                           );
+                          const totalFeeNum = parseInt(String(student.fee).replace(/\D/g, ''), 10) || 0;
+                          const paidSoFar = student.paidAmount || 0;
+                          const remaining = totalFeeNum - paidSoFar;
+                          return (
+                            <>
+                              {remaining > 0 ? (
+                                <span className="text-rose-500 whitespace-nowrap">-{formatVND(remaining)}đ</span>
+                              ) : (
+                                <span className="text-emerald-600 whitespace-nowrap">Đã hoàn tất</span>
+                              )}
+                            </>
+                          );
                         })()}
                       </div>
                       <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         {(() => {
-                           const totalFeeNum = parseInt(String(student.fee).replace(/\D/g, ''), 10) || 0;
-                           const paidSoFar = student.paidAmount || 0;
-                           const percentage = totalFeeNum > 0 ? (paidSoFar / totalFeeNum) * 100 : 0;
-                           return (
-                             <div 
-                               className="h-full bg-cyan-600 transition-all duration-500 ease-in-out" 
-                               style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }} 
-                             />
-                           );
+                          const totalFeeNum = parseInt(String(student.fee).replace(/\D/g, ''), 10) || 0;
+                          const paidSoFar = student.paidAmount || 0;
+                          const percentage = totalFeeNum > 0 ? (paidSoFar / totalFeeNum) * 100 : 0;
+                          return (
+                            <div
+                              className="h-full bg-cyan-600 transition-all duration-500 ease-in-out"
+                              style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+                            />
+                          );
                         })()}
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-4 text-center">
                     <span className={cn(
-                       "px-4 py-1.5 rounded-full text-xs font-bold border shadow-sm whitespace-nowrap",
+                      "px-4 py-1.5 rounded-full text-xs font-bold border shadow-sm whitespace-nowrap",
                       getStatusBadgeClass(student.status)
                     )}>
                       {student.status}
@@ -540,33 +540,37 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
                   </td>
                   <td className="px-6 py-4 no-print">
                     <div className="flex items-center justify-end gap-2">
-                       <button 
+                      <button
                         onClick={() => setTransitioningStudent(student)}
+                        title="Chuyển trạng thái"
                         className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
                       >
                         <ChevronRight className="w-4 h-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => setEditingStudent(student)}
+                        title="Sửa thông tin"
                         className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 transition-colors"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => onSelectStudent(student)}
+                        title="Xem chi tiết"
                         className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 transition-colors"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      
+
                       <div className="relative">
-                        <button 
+                        <button
                           onClick={() => setConfirmDeleteId(confirmDeleteId === student.id ? null : student.id)}
                           disabled={isDeleting === student.id}
+                          title="Xóa"
                           className={cn(
                             "p-1.5 rounded-lg transition-colors disabled:opacity-50",
-                            confirmDeleteId === student.id 
-                              ? "bg-rose-600 text-white" 
+                            confirmDeleteId === student.id
+                              ? "bg-rose-600 text-white"
                               : "text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                           )}
                         >
@@ -575,20 +579,20 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
 
                         {confirmDeleteId === student.id && (
                           <div className="absolute right-0 bottom-full mb-2 z-20">
-                            <motion.div 
+                            <motion.div
                               initial={{ opacity: 0, y: 10, scale: 0.9 }}
                               animate={{ opacity: 1, y: 0, scale: 1 }}
                               className="bg-white border border-slate-200 rounded-xl shadow-xl p-3 flex flex-col gap-2 min-w-[140px]"
                             >
                               <p className="text-[10px] font-bold text-slate-800 text-center">Xóa học viên này?</p>
                               <div className="flex gap-2">
-                                <button 
+                                <button
                                   onClick={() => setConfirmDeleteId(null)}
                                   className="flex-1 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
                                 >
                                   Hủy
                                 </button>
-                                <button 
+                                <button
                                   onClick={() => handleDelete(student)}
                                   className="flex-1 py-1 text-[10px] font-bold bg-rose-600 text-white hover:bg-rose-700 rounded-lg transition-all shadow-md shadow-rose-100"
                                 >
@@ -621,14 +625,14 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
       </div>
 
       {/* Status Transition Modal */}
-      <StatusTransitionModal 
+      <StatusTransitionModal
         student={transitioningStudent}
         isOpen={!!transitioningStudent}
         onClose={() => setTransitioningStudent(null)}
       />
 
       {/* Edit Student Modal */}
-      <EditStudentModal 
+      <EditStudentModal
         student={editingStudent}
         isOpen={!!editingStudent}
         onClose={() => setEditingStudent(null)}
