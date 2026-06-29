@@ -277,4 +277,22 @@ export class AuthController {
     }
   }
 
+  static async getTeacherPublicInfo(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = await AuthService.getUserProfile(req.params.id);
+      if (!user || user.isActive === false) {
+        return res.status(404).json({ success: false, error: "Không tìm thấy thông tin giáo viên hoặc tài khoản đã bị khóa." });
+      }
+      res.json({
+        success: true,
+        data: {
+          displayName: user.displayName,
+          centerId: user.centerId,
+        },
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
 }

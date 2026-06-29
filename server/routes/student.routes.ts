@@ -2,9 +2,11 @@ import { Router } from "express";
 import { StudentController } from "../controllers/student.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
-import { createStudentSchema, updateStudentSchema, idParamSchema } from "../validations/student.validation";
+import { createStudentSchema, updateStudentSchema, idParamSchema, publicRegisterStudentSchema } from "../validations/student.validation";
 
 const router = Router();
+
+router.post("/public-register", validate(publicRegisterStudentSchema), StudentController.publicRegister);
 
 router.use(authMiddleware);
 

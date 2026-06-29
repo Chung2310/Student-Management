@@ -94,3 +94,32 @@ export const updateStudentSchema = Joi.object({
   examName: Joi.string().allow("").optional(),
   examDate: Joi.string().allow("").optional(),
 });
+
+export const publicRegisterStudentSchema = Joi.object({
+  fullName: Joi.string().required().messages({
+    "any.required": "Họ và tên là bắt buộc.",
+    "string.empty": "Họ và tên không được để trống.",
+  }),
+  phone: Joi.string().required().messages({
+    "any.required": "Số điện thoại là bắt buộc.",
+    "string.empty": "Số điện thoại không được để trống.",
+  }),
+  email: Joi.string().email().allow("").optional().messages({
+    "string.email": "Định dạng email không hợp lệ.",
+  }),
+  birthday: Joi.string().allow("").optional(),
+  idCard: Joi.string().allow("").optional(),
+  rank: Joi.string().valid("A1", "A2", "B1", "B2", "C").required().messages({
+    "any.required": "Hạng bằng là bắt buộc.",
+    "any.only": "Hạng bằng không hợp lệ.",
+  }),
+  area: Joi.string().valid("Nội thành", "Ngoại thành", "Tỉnh lân cận").required().messages({
+    "any.required": "Khu vực là bắt buộc.",
+    "any.only": "Khu vực không hợp lệ.",
+  }),
+  address: Joi.string().allow("").optional(),
+  teacherId: objectIdSchema.required().messages({
+    "any.required": "ID giáo viên là bắt buộc.",
+    "string.empty": "ID giáo viên không được để trống.",
+  }),
+});
