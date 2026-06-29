@@ -14,20 +14,47 @@ import { useStudents } from './hooks/useStudents';
 import { Loader2 } from 'lucide-react';
 import { cn, toSlug } from './lib/utils';
 
+// Helper wrapper to handle dynamic import (chunk load) failures after server updates
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  importFn: () => Promise<{ default: T }>
+): React.LazyExoticComponent<T> {
+  return lazy(async () => {
+    try {
+      const result = await importFn();
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('chunk-load-reload');
+      }
+      return result;
+    } catch (error) {
+      console.error("Lỗi tải module/chunk:", error);
+      if (typeof window !== 'undefined') {
+        const hasReloaded = sessionStorage.getItem('chunk-load-reload');
+        if (!hasReloaded) {
+          sessionStorage.setItem('chunk-load-reload', 'true');
+          window.location.reload();
+          return new Promise<{ default: T }>(() => {});
+        }
+      }
+      throw error;
+    }
+  });
+}
+
 // Lazy load pages
-const LoginPage = lazy(() => import('./pages/Auth/LoginPage').then(m => ({ default: m.LoginPage })));
-const DashboardPage = lazy(() => import('./pages/Dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })));
-const StudentsPage = lazy(() => import('./pages/Students/StudentsPage').then(m => ({ default: m.StudentsPage })));
-const ExamsPage = lazy(() => import('./pages/Exams/ExamsPage').then(m => ({ default: m.ExamsPage })));
-const FeesPage = lazy(() => import('./pages/Fees/FeesPage').then(m => ({ default: m.FeesPage })));
-const NotificationsPage = lazy(() => import('./pages/Notifications/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
-const UserManagementPage = lazy(() => import('./pages/UserManagement/UserManagementPage').then(m => ({ default: m.UserManagementPage })));
-const SettingsPage = lazy(() => import('./pages/Settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const LoginPage = lazyWithRetry(() => import('./pages/Auth/LoginPage').then(m => ({ default: m.LoginPage })));
+const DashboardPage = lazyWithRetry(() => import('./pages/Dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const StudentsPage = lazyWithRetry(() => import('./pages/Students/StudentsPage').then(m => ({ default: m.StudentsPage })));
+const ExamsPage = lazyWithRetry(() => import('./pages/Exams/ExamsPage').then(m => ({ default: m.ExamsPage })));
+const FeesPage = lazyWithRetry(() => import('./pages/Fees/FeesPage').then(m => ({ default: m.FeesPage })));
+const NotificationsPage = lazyWithRetry(() => import('./pages/Notifications/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
+const UserManagementPage = lazyWithRetry(() => import('./pages/UserManagement/UserManagementPage').then(m => ({ default: m.UserManagementPage })));
+const SettingsPage = lazyWithRetry(() => import('./pages/Settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
 
 // Lazy load modals and heavy widgets
-const AddStudentModal = lazy(() => import('./components/Student/AddStudentModal').then(m => ({ default: m.AddStudentModal })));
-const StudentDetailModal = lazy(() => import('./components/Student/StudentDetailModal').then(m => ({ default: m.StudentDetailModal })));
-const ChatbotWidget = lazy(() => import('./components/Chatbot/ChatbotWidget').then(m => ({ default: m.ChatbotWidget })));
+const AddStudentModal = lazyWithRetry(() => import('./components/Student/AddStudentModal').then(m => ({ default: m.AddStudentModal })));
+const StudentDetailModal = lazyWithRetry(() => import('./components/Student/StudentDetailModal').then(m => ({ default: m.StudentDetailModal })));
+const ChatbotWidget = lazyWithRetry(() => import('./components/Chatbot/ChatbotWidget').then(m => ({ default: m.ChatbotWidget })));
 
 const PageLoader = () => (
   <div className="min-h-[50vh] flex flex-col items-center justify-center">
