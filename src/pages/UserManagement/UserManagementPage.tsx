@@ -455,8 +455,8 @@ export function UserManagementPage() {
                                       title={item.isActive === false ? "Mở khóa" : "Khóa tài khoản"}
                                       className={cn(
                                         "rounded-lg p-1.5 transition-all cursor-pointer",
-                                        item.isActive === false 
-                                          ? "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700" 
+                                        item.isActive === false
+                                          ? "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
                                           : "text-amber-600 hover:bg-amber-50 hover:text-amber-700"
                                       )}
                                     >
@@ -510,7 +510,7 @@ export function UserManagementPage() {
               </button>
             </div>
           </div>
-          
+
           <div className="border-t border-slate-100 pt-4 space-y-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Cấu hình đồng bộ & Thanh toán</h3>
             <div className="grid grid-cols-2 gap-4">
