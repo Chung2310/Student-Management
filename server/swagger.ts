@@ -29,7 +29,6 @@ const swaggerDefinition = {
           uid: { type: "string" },
           email: { type: "string" },
           displayName: { type: "string" },
-          gasUrl: { type: "string" },
         },
       },
       Student: {
@@ -79,7 +78,6 @@ const swaggerDefinition = {
                   email: { type: "string", example: "admin@igen.vn" },
                   password: { type: "string", example: "123456" },
                   displayName: { type: "string", example: "Nguyễn Văn Admin" },
-                  gasUrl: { type: "string", example: "https://script.google.com/macros/s/..." },
                 },
               },
             },

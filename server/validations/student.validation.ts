@@ -94,3 +94,43 @@ export const updateStudentSchema = Joi.object({
   examName: Joi.string().allow("").optional(),
   examDate: Joi.string().allow("").optional(),
 });
+
+export const publicRegisterStudentSchema = Joi.object({
+  fullName: Joi.string().required().messages({
+    "any.required": "Họ và tên là bắt buộc.",
+    "string.empty": "Họ và tên không được để trống.",
+  }),
+  phone: Joi.string().required().messages({
+    "any.required": "Số điện thoại là bắt buộc.",
+    "string.empty": "Số điện thoại không được để trống.",
+  }),
+  email: Joi.string().email().required().messages({
+    "any.required": "Email là bắt buộc.",
+    "string.empty": "Email không được để trống.",
+    "string.email": "Định dạng email không hợp lệ.",
+  }),
+  birthday: Joi.string().required().messages({
+    "any.required": "Ngày sinh là bắt buộc.",
+    "string.empty": "Ngày sinh không được để trống.",
+  }),
+  idCard: Joi.string().required().messages({
+    "any.required": "Số CCCD/CMND là bắt buộc.",
+    "string.empty": "Số CCCD/CMND không được để trống.",
+  }),
+  rank: Joi.string().valid("A1", "A2", "B1", "B2", "C").required().messages({
+    "any.required": "Hạng bằng là bắt buộc.",
+    "any.only": "Hạng bằng không hợp lệ.",
+  }),
+  area: Joi.string().valid("Nội thành", "Ngoại thành", "Tỉnh lân cận").required().messages({
+    "any.required": "Khu vực là bắt buộc.",
+    "any.only": "Khu vực không hợp lệ.",
+  }),
+  address: Joi.string().required().messages({
+    "any.required": "Địa chỉ là bắt buộc.",
+    "string.empty": "Địa chỉ không được để trống.",
+  }),
+  teacherId: objectIdSchema.required().messages({
+    "any.required": "ID giáo viên là bắt buộc.",
+    "string.empty": "ID giáo viên không được để trống.",
+  }),
+});

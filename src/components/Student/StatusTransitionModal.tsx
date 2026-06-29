@@ -37,8 +37,8 @@ export function StatusTransitionModal({ student, isOpen, onClose }: StatusTransi
   if (!student || !isOpen) return null;
 
   const currentIndex = statusWorkflow.indexOf(student.status);
-  const nextStatus = currentIndex !== -1 && currentIndex < statusWorkflow.length - 1 
-    ? statusWorkflow[currentIndex + 1] 
+  const nextStatus = currentIndex !== -1 && currentIndex < statusWorkflow.length - 1
+    ? statusWorkflow[currentIndex + 1]
     : null;
 
   const handleConfirm = async () => {
@@ -53,7 +53,7 @@ export function StatusTransitionModal({ student, isOpen, onClose }: StatusTransi
         return;
       }
     }
-    
+
     setIsSubmitting(true);
     setFeeError(null);
     try {
@@ -81,7 +81,7 @@ export function StatusTransitionModal({ student, isOpen, onClose }: StatusTransi
           onClick={onClose}
           className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
         />
-        
+
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -105,7 +105,7 @@ export function StatusTransitionModal({ student, isOpen, onClose }: StatusTransi
               <p className="text-sm font-medium text-slate-600 mb-2">
                 Chuyển bước học viên <span className="font-bold text-slate-900">{student.fullName}</span>?
               </p>
-              
+
               {nextStatus ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 py-3 px-4 bg-slate-50 rounded-2xl border border-slate-100">
@@ -123,14 +123,14 @@ export function StatusTransitionModal({ student, isOpen, onClose }: StatusTransi
             </div>
 
             <div className="flex items-center justify-end gap-3">
-              <button 
+              <button
                 onClick={onClose}
                 disabled={isSubmitting}
                 className="px-6 py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-all"
               >
                 Hủy
               </button>
-              <button 
+              <button
                 onClick={handleConfirm}
                 disabled={isSubmitting || !nextStatus}
                 className="flex items-center gap-2 px-8 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-rose-100 transition-all active:scale-[0.98] disabled:opacity-50"

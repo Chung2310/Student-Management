@@ -1,4 +1,4 @@
-import { Student } from "../models/student.model";
+import { Student, slugify } from "../models/student.model";
 import { IStudent } from "../interfaces/student.interface";
 import { logger } from "../config/logger";
 
@@ -77,6 +77,10 @@ export class StudentService {
 
   static async updateStudent(ownerId: string, id: string, data: StudentUpdateData): Promise<IStudent | null> {
     logger.info(`[Student] Updating student: id=${id}, ownerId=${ownerId}`);
+    
+    if (data.fullName) {
+      data.slug = slugify(String(data.fullName));
+    }
     
     if (data.paymentHistory && Array.isArray(data.paymentHistory)) {
       const history = data.paymentHistory as Record<string, unknown>[];
@@ -182,6 +186,7 @@ export class StudentService {
 
       validStudents.push({
         fullName,
+        slug: slugify(fullName),
         phone,
         email: email || undefined,
         referral,

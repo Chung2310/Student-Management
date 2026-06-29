@@ -13,7 +13,7 @@ import { cn } from '../../lib/utils';
 type ManagedUser = {
   uid: string; email: string; displayName: string;
   role: 'superadmin' | 'admin' | 'user'; centerId: string; createdBy?: string; isActive?: boolean;
-  gasUrl?: string; bankAccountNo?: string; bankId?: string;
+  bankAccountNo?: string; bankId?: string;
 };
 type RoleFilter = 'all' | 'superadmin' | 'admin' | 'user';
 type ModalMode = null | 'center' | 'user' | 'edit-user' | 'edit-center';
@@ -83,7 +83,6 @@ export function UserManagementPage() {
   const [fPass, setFPass] = useState('');
   const [fCenter, setFCenter] = useState('');
   const [fActive, setFActive] = useState(true);
-  const [fGasUrl, setFGasUrl] = useState('');
   const [fBankAccountNo, setFBankAccountNo] = useState('');
   const [fBankId, setFBankId] = useState('mbbank');
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
@@ -94,7 +93,6 @@ export function UserManagementPage() {
     setFPass('');
     setFCenter('');
     setFActive(true);
-    setFGasUrl('');
     setFBankAccountNo('');
     setFBankId('mbbank');
     setEditingUser(null);
@@ -108,7 +106,6 @@ export function UserManagementPage() {
     setFEmail(item.email);
     setFCenter(item.centerId);
     setFActive(item.isActive !== false);
-    setFGasUrl(item.gasUrl || '');
     setFBankAccountNo(item.bankAccountNo || '');
     setFBankId(item.bankId || 'mbbank');
     setModal(item.role === 'admin' ? 'edit-center' : 'edit-user');
@@ -152,16 +149,42 @@ export function UserManagementPage() {
   // Submit handler
   const handleSubmit = async () => {
     if (!canManage || !modal) return;
+    const isCenter = modal === 'center';
+
+    // Front-end validations
+    if (!fName.trim()) {
+      toast.error(isCenter ? 'Vui lòng nhập tên trung tâm.' : 'Vui lòng nhập họ tên.');
+      return;
+    }
+    if (!fEmail.trim()) {
+      toast.error('Vui lòng nhập email.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fEmail.trim())) {
+      toast.error('Định dạng email không hợp lệ.');
+      return;
+    }
+    if (!fPass) {
+      toast.error('Vui lòng nhập mật khẩu.');
+      return;
+    }
+    if (fPass.length < 6) {
+      toast.error('Mật khẩu phải từ 6 ký tự trở lên.');
+      return;
+    }
+    if (isSA && !isCenter && !fCenter) {
+      toast.error('Vui lòng chọn trung tâm để gán nhân viên.');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const isCenter = modal === 'center';
       await apiFetch('/auth/users', {
         method: 'POST',
         body: JSON.stringify({
           displayName: fName, email: fEmail, password: fPass,
           role: isCenter ? 'admin' : 'user',
           centerId: isCenter ? '' : (isSA ? fCenter : user?.centerId),
-          gasUrl: fGasUrl,
           bankAccountNo: fBankAccountNo,
           bankId: fBankId,
         }),
@@ -176,13 +199,35 @@ export function UserManagementPage() {
 
   const handleEditSubmit = async () => {
     if (!canManage || !editingUser) return;
+
+    // Front-end validations
+    if (!fName.trim()) {
+      toast.error(editingUser.role === 'admin' ? 'Vui lòng nhập tên trung tâm.' : 'Vui lòng nhập họ tên.');
+      return;
+    }
+    if (!fEmail.trim()) {
+      toast.error('Vui lòng nhập email.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fEmail.trim())) {
+      toast.error('Định dạng email không hợp lệ.');
+      return;
+    }
+    if (fPass.trim() && fPass.length < 6) {
+      toast.error('Mật khẩu mới phải từ 6 ký tự trở lên.');
+      return;
+    }
+    if (isSA && editingUser.role === 'user' && !fCenter) {
+      toast.error('Vui lòng chọn trung tâm để gán nhân viên.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const payload: Record<string, unknown> = {
         displayName: fName,
         email: fEmail,
         isActive: fActive,
-        gasUrl: fGasUrl,
         bankAccountNo: fBankAccountNo,
         bankId: fBankId,
       };
@@ -347,8 +392,8 @@ export function UserManagementPage() {
                 <tbody className="divide-y divide-slate-100">
                   {filtered.map(item => {
                     const rc = ROLE_CFG[item.role]; const RI = rc.icon;
-                    const ca = isSA ? centerMap.get(item.centerId)?.admin : null;
-                    const cl = item.role === 'superadmin' ? 'Hệ thống' : item.role === 'admin' ? item.displayName : ca ? ca.displayName : item.centerId.slice(0, 8) + '…';
+                    const ca = centerMap.get(item.centerId)?.admin;
+                    const cl = item.role === 'superadmin' ? 'Hệ thống' : item.role === 'admin' ? item.displayName : ca ? ca.displayName : (item.centerId ? item.centerId.slice(0, 8) + '…' : '—');
                     const isSelf = item.uid === user?.uid;
                     const canEditItem = canManage && (isSA || (user?.role === 'admin' && item.role === 'user' && item.centerId === user?.centerId));
                     return (
@@ -410,8 +455,8 @@ export function UserManagementPage() {
                                       title={item.isActive === false ? "Mở khóa" : "Khóa tài khoản"}
                                       className={cn(
                                         "rounded-lg p-1.5 transition-all cursor-pointer",
-                                        item.isActive === false 
-                                          ? "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700" 
+                                        item.isActive === false
+                                          ? "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
                                           : "text-amber-600 hover:bg-amber-50 hover:text-amber-700"
                                       )}
                                     >
@@ -445,26 +490,6 @@ export function UserManagementPage() {
           )}
         </div>
 
-        {/* Center Overview – superadmin only */}
-        {isSA && !loading && centerMap.size > 0 && roleFilter === 'all' && !search && (
-          <div className="space-y-3">
-            <h2 className="text-base font-bold text-slate-800">Tổng quan theo trung tâm</h2>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from(centerMap.entries()).map(([cid, { admin, users: cUsers }]) => (
-                <div key={cid} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="mb-3 flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600"><Building2 className="h-4 w-4" /></div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-slate-900">{admin?.displayName || 'Chưa có Admin'}</p>
-                      {admin && <p className="truncate text-[11px] text-slate-500">{admin.email}</p>}
-                    </div>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-xs text-slate-500"><Users className="h-3 w-3" />{cUsers.length} nhân viên</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ═══ Modal: Thêm trung tâm ═══ */}
@@ -485,7 +510,7 @@ export function UserManagementPage() {
               </button>
             </div>
           </div>
-          
+
           <div className="border-t border-slate-100 pt-4 space-y-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Cấu hình đồng bộ & Thanh toán</h3>
             <div className="grid grid-cols-2 gap-4">
@@ -508,10 +533,6 @@ export function UserManagementPage() {
                 <label className={LABEL}>Số tài khoản</label>
                 <input type="text" value={fBankAccountNo} onChange={e => setFBankAccountNo(e.target.value.replace(/\D/g, ''))} placeholder="Nhập số tài khoản..." className={INPUT} />
               </div>
-            </div>
-            <div>
-              <label className={LABEL}>Google Sheets GAS URL</label>
-              <input type="text" value={fGasUrl} onChange={e => setFGasUrl(e.target.value)} placeholder="https://script.google.com/macros/s/..." className={INPUT} />
             </div>
           </div>
 
@@ -614,10 +635,6 @@ export function UserManagementPage() {
                 <label className={LABEL}>Số tài khoản</label>
                 <input type="text" value={fBankAccountNo} onChange={e => setFBankAccountNo(e.target.value.replace(/\D/g, ''))} placeholder="Nhập số tài khoản..." className={INPUT} />
               </div>
-            </div>
-            <div>
-              <label className={LABEL}>Google Sheets GAS URL</label>
-              <input type="text" value={fGasUrl} onChange={e => setFGasUrl(e.target.value)} placeholder="https://script.google.com/macros/s/..." className={INPUT} />
             </div>
           </div>
 

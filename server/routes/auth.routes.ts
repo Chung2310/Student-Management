@@ -10,6 +10,7 @@ router.post("/register", validate(registerSchema), AuthController.register);
 router.post("/login", validate(loginSchema), AuthController.login);
 router.post("/refresh-token", AuthController.refreshToken);
 router.post("/logout", AuthController.logout);
+router.get("/teacher/:id", AuthController.getTeacherPublicInfo);
 router.get("/me", authMiddleware, AuthController.getMe);
 router.patch("/bank-settings", authMiddleware, validate(bankSettingsSchema), AuthController.updateBankSettings);
 router.patch("/smtp-settings", authMiddleware, validate(smtpSettingsSchema), AuthController.updateSmtpSettings);

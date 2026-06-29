@@ -12,7 +12,6 @@ export class AuthController {
           uid: user._id.toString(),
           email: user.email,
           displayName: user.displayName,
-          gasUrl: user.gasUrl,
         },
       });
     } catch (error: unknown) {
@@ -95,7 +94,6 @@ export class AuthController {
             displayName: user.displayName,
             role: user.role,
             centerId: user.centerId,
-            gasUrl: user.gasUrl,
             bankAccountNo: user.bankAccountNo,
             bankId: user.bankId,
             smtpHost: user.smtpHost,
@@ -147,7 +145,6 @@ export class AuthController {
             displayName: updatedUser.displayName,
             role: updatedUser.role,
             centerId: updatedUser.centerId,
-            gasUrl: updatedUser.gasUrl,
             bankAccountNo: updatedUser.bankAccountNo,
             bankId: updatedUser.bankId,
             smtpHost: updatedUser.smtpHost,
@@ -183,7 +180,6 @@ export class AuthController {
             displayName: updatedUser.displayName,
             role: updatedUser.role,
             centerId: updatedUser.centerId,
-            gasUrl: updatedUser.gasUrl,
             bankAccountNo: updatedUser.bankAccountNo,
             bankId: updatedUser.bankId,
             smtpHost: updatedUser.smtpHost,
@@ -276,6 +272,24 @@ export class AuthController {
       }
       await AuthService.deleteManagedUser(req.user, req.params.id);
       res.json({ success: true, message: "Đã xóa người dùng thành công." });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  static async getTeacherPublicInfo(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = await AuthService.getUserProfile(req.params.id);
+      if (!user || user.isActive === false) {
+        return res.status(404).json({ success: false, error: "Không tìm thấy thông tin giáo viên hoặc tài khoản đã bị khóa." });
+      }
+      res.json({
+        success: true,
+        data: {
+          displayName: user.displayName,
+          centerId: user.centerId,
+        },
+      });
     } catch (error: unknown) {
       next(error);
     }

@@ -132,7 +132,7 @@ export function SettingsPage() {
     }
   };
 
-  const [smtpHost, setSmtpHost] = useState(user?.smtpHost || '');
+  const [smtpHost, setSmtpHost] = useState(user?.smtpHost || 'smtp.gmail.com');
   const [smtpPort, setSmtpPort] = useState(user?.smtpPort !== undefined ? String(user.smtpPort) : '587');
   const [smtpSecure, setSmtpSecure] = useState(user?.smtpSecure !== undefined ? user.smtpSecure : false);
   const [smtpUser, setSmtpUser] = useState(user?.smtpUser || '');
@@ -150,7 +150,7 @@ export function SettingsPage() {
   useEffect(() => {
     if (user) {
       setTimeout(() => {
-        setSmtpHost(user.smtpHost || '');
+        setSmtpHost(user.smtpHost || 'smtp.gmail.com');
         setSmtpPort(user.smtpPort !== undefined ? String(user.smtpPort) : '587');
         setSmtpSecure(user.smtpSecure !== undefined ? user.smtpSecure : false);
         setSmtpUser(user.smtpUser || '');
@@ -167,16 +167,17 @@ export function SettingsPage() {
   const handleSaveSmtpSettings = async () => {
     setIsSavingSmtp(true);
     try {
+      const isConfiguring = smtpUser.trim() !== '' && smtpPass.trim() !== '';
       await apiFetch('/auth/smtp-settings', {
         method: 'PATCH',
         body: JSON.stringify({
-          smtpHost,
-          smtpPort: smtpPort ? parseInt(smtpPort, 10) : 587,
-          smtpSecure,
-          smtpUser,
-          smtpPass,
-          smtpFrom,
-          smtpSandboxEmail
+          smtpHost: isConfiguring ? (smtpHost || 'smtp.gmail.com') : '',
+          smtpPort: isConfiguring ? (smtpPort ? parseInt(smtpPort, 10) : 587) : 587,
+          smtpSecure: isConfiguring ? smtpSecure : false,
+          smtpUser: isConfiguring ? smtpUser.trim() : '',
+          smtpPass: isConfiguring ? smtpPass.trim() : '',
+          smtpFrom: isConfiguring ? smtpFrom.trim() : '',
+          smtpSandboxEmail: isConfiguring ? smtpSandboxEmail.trim() : ''
         })
       });
       await fetchMe();
@@ -971,94 +972,50 @@ export function SettingsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-4">
+              <div className="space-y-4">
+                {/* Guideline */}
+                <div className="bg-rose-50/40 rounded-2xl border border-rose-100/30 p-4 text-xs text-rose-800 leading-relaxed space-y-1">
+                  <p className="font-bold">💡 Hướng dẫn lấy Mật khẩu ứng dụng (App Password):</p>
+                  <p>
+                    1. Bật **Bảo mật 2 lớp (2-Step Verification)** cho tài khoản Google của bạn.<br />
+                    2. Truy cập trang tạo mật khẩu ứng dụng:{" "}
+                    <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" className="font-bold underline hover:text-rose-600">
+                      myaccount.google.com/apppasswords
+                    </a>.<br />
+                    3. Tạo mật khẩu ứng dụng mới cho ứng dụng "Thư" hoặc "Khác" và sao chép mã 16 ký tự dán vào ô mật khẩu dưới đây.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Máy chủ SMTP (Host)</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tài khoản SMTP (User)</label>
                     <input
                       type="text"
-                      placeholder="VD: smtp.gmail.com"
-                      value={smtpHost}
-                      onChange={(e) => setSmtpHost(e.target.value)}
+                      placeholder="VD: account@gmail.com"
+                      value={smtpUser}
+                      onChange={(e) => setSmtpUser(e.target.value)}
                       className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
                     />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cổng (Port)</label>
-                      <input
-                        type="text"
-                        placeholder="587"
-                        value={smtpPort}
-                        onChange={(e) => setSmtpPort(e.target.value.replace(/\D/g, ''))}
-                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
-                      />
-                    </div>
-                    <div className="space-y-1 flex flex-col justify-end">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Secure (SSL/TLS)</label>
-                      <button
-                        type="button"
-                        onClick={() => setSmtpSecure(!smtpSecure)}
-                        className="flex items-center gap-2 group cursor-pointer h-11 px-2"
-                      >
-                        <div className={cn(
-                          "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
-                          smtpSecure ? "bg-rose-500 border-rose-500" : "border-slate-300 group-hover:border-slate-400"
-                        )}>
-                          {smtpSecure && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-                        </div>
-                        <span className="text-xs font-bold text-slate-600">SSL/TLS</span>
-                      </button>
-                    </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mật khẩu ứng dụng (Password)</label>
+                    <input
+                      type="password"
+                      placeholder="Nhập mật khẩu ứng dụng 16 ký tự..."
+                      value={smtpPass}
+                      onChange={(e) => setSmtpPass(e.target.value)}
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
+                    />
                   </div>
-                </div>
-
-                <div className="md:col-span-2 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tài khoản SMTP (User)</label>
-                      <input
-                        type="text"
-                        placeholder="VD: account@gmail.com"
-                        value={smtpUser}
-                        onChange={(e) => setSmtpUser(e.target.value)}
-                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mật khẩu ứng dụng (Password)</label>
-                      <input
-                        type="password"
-                        placeholder="Nhập mật khẩu SMTP..."
-                        value={smtpPass}
-                        onChange={(e) => setSmtpPass(e.target.value)}
-                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email gửi đi (From)</label>
-                      <input
-                        type="text"
-                        placeholder='VD: "Hệ thống" <account@gmail.com>'
-                        value={smtpFrom}
-                        onChange={(e) => setSmtpFrom(e.target.value)}
-                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Sandbox (Không bắt buộc)</label>
-                      <input
-                        type="email"
-                        placeholder="Nhận toàn bộ mail test tại đây..."
-                        value={smtpSandboxEmail}
-                        onChange={(e) => setSmtpSandboxEmail(e.target.value)}
-                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
-                      />
-                    </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email gửi đi (From)</label>
+                    <input
+                      type="text"
+                      placeholder='VD: "Hệ thống" <account@gmail.com>'
+                      value={smtpFrom}
+                      onChange={(e) => setSmtpFrom(e.target.value)}
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
+                    />
                   </div>
                 </div>
               </div>

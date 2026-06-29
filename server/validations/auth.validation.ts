@@ -2,53 +2,65 @@ import Joi from "joi";
 
 export const registerSchema = Joi.object({
   email: Joi.string().email().required().messages({
-    "string.email": "Dinh dang email khong hop le.",
-    "any.required": "Email la bat buoc.",
-    "string.empty": "Email khong duoc de trong.",
+    "string.email": "Định dạng email không hợp lệ.",
+    "any.required": "Email là bắt buộc.",
+    "string.empty": "Email không được để trống.",
   }),
   password: Joi.string().min(6).required().messages({
-    "string.min": "Mat khau phai tu 6 ky tu tro len.",
-    "any.required": "Mat khau la bat buoc.",
-    "string.empty": "Mat khau khong duoc de trong.",
+    "string.min": "Mật khẩu phải từ 6 ký tự trở lên.",
+    "any.required": "Mật khẩu là bắt buộc.",
+    "string.empty": "Mật khẩu không được để trống.",
   }),
   displayName: Joi.string().required().messages({
-    "any.required": "Ten hien thi la bat buoc.",
-    "string.empty": "Ten hien thi khong duoc de trong.",
+    "any.required": "Tên hiển thị là bắt buộc.",
+    "string.empty": "Tên hiển thị không được để trống.",
   }),
-  gasUrl: Joi.string().uri().allow("").optional().messages({
-    "string.uri": "GAS URL phai o dang duong dan hop le.",
-  }),
+
 });
 
 export const createManagedUserSchema = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).required(),
-  displayName: Joi.string().required(),
-  role: Joi.string().valid("admin", "user").required(),
+  email: Joi.string().email().required().messages({
+    "string.email": "Định dạng email không hợp lệ.",
+    "any.required": "Email là bắt buộc.",
+    "string.empty": "Email không được để trống.",
+  }),
+  password: Joi.string().min(6).required().messages({
+    "string.min": "Mật khẩu phải từ 6 ký tự trở lên.",
+    "any.required": "Mật khẩu là bắt buộc.",
+    "string.empty": "Mật khẩu không được để trống.",
+  }),
+  displayName: Joi.string().required().messages({
+    "any.required": "Họ tên là bắt buộc.",
+    "string.empty": "Họ tên không được để trống.",
+  }),
+  role: Joi.string().valid("admin", "user").required().messages({
+    "any.required": "Vai trò là bắt buộc.",
+    "any.only": "Vai trò không hợp lệ.",
+  }),
   centerId: Joi.string().allow("").optional(),
-  gasUrl: Joi.string().uri().allow("").optional(),
+
   bankAccountNo: Joi.string().allow("").optional(),
   bankId: Joi.string().allow("").optional(),
 });
 
 export const loginSchema = Joi.object({
   email: Joi.string().email().required().messages({
-    "string.email": "Dinh dang email khong hop le.",
-    "any.required": "Email la bat buoc.",
-    "string.empty": "Email khong duoc de trong.",
+    "string.email": "Định dạng email không hợp lệ.",
+    "any.required": "Email là bắt buộc.",
+    "string.empty": "Email không được để trống.",
   }),
   password: Joi.string().required().messages({
-    "any.required": "Mat khau la bat buoc.",
-    "string.empty": "Mat khau khong duoc de trong.",
+    "any.required": "Mật khẩu là bắt buộc.",
+    "string.empty": "Mật khẩu không được để trống.",
   }),
 });
 
 export const bankSettingsSchema = Joi.object({
   bankAccountNo: Joi.string().allow("").optional().messages({
-    "string.base": "So tai khoan khong hop le.",
+    "string.base": "Số tài khoản không hợp lệ.",
   }),
   bankId: Joi.string().allow("").optional().messages({
-    "string.base": "Ma ngan hang khong hop le.",
+    "string.base": "Mã ngân hàng không hợp lệ.",
   }),
 });
 

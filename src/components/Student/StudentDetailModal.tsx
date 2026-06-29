@@ -331,11 +331,15 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
                   {student.status}
                 </span>
                 <div className="flex items-center gap-2">
-                  <button className="p-2 sm:p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all active:scale-95">
+                  <button 
+                    title="In thông tin"
+                    className="p-2 sm:p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all active:scale-95"
+                  >
                     <Printer className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                   <button 
                     onClick={onClose}
+                    title="Đóng"
                     className="p-2 sm:p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all active:scale-95"
                   >
                     <X className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -987,6 +991,7 @@ export function StudentDetailModal({ student: initialStudent, onClose }: Student
                                       onClick={() => {
                                         setExamData(prev => prev.filter((_, i) => i !== idx));
                                       }}
+                                      title="Xóa"
                                       className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg"
                                     >
                                       <Trash2 className="w-3 h-3" />

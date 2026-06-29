@@ -10,6 +10,7 @@ import { useStudents } from '../../hooks/useStudents';
 import { useToast } from '../../hooks/useToast';
 import { Student } from '../../types';
 import { AddPaymentModal } from '../../components/Fees/AddPaymentModal';
+import { Pagination } from '../../components/ui/Pagination';
 
 export function FeesPage() {
   const { students, loading } = useStudents();
@@ -326,6 +327,7 @@ export function FeesPage() {
                           setSelectedStudentForPayment(student);
                           setIsPaymentModalOpen(true);
                         }}
+                        title="Thu học phí"
                         className="p-2.5 rounded-2xl bg-white border border-slate-100 text-slate-300 hover:text-cyan-600 hover:border-cyan-100 hover:shadow-xl hover:shadow-cyan-50/50 transition-all group-hover:scale-105 active:scale-95"
                       >
                         <CreditCard className="w-4 h-4" />
@@ -339,29 +341,15 @@ export function FeesPage() {
         </div>
         
         {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50 pagination-bar">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Trang {currentPage} / {totalPages}
-            </p>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-cyan-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-              >
-                Trước
-              </button>
-              <button 
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-cyan-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-              >
-                Sau
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalItems={filteredStudents.length}
+          pageSize={itemsPerPage}
+          itemName="học viên"
+          className="pagination-bar"
+        />
       </div>
 
       <AddPaymentModal 

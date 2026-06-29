@@ -36,7 +36,6 @@ export class AuthService {
       role: user.role,
       centerId: user.centerId,
       createdBy: user.createdBy,
-      gasUrl: user.gasUrl,
       bankAccountNo: user.bankAccountNo,
       bankId: user.bankId,
       smtpHost: user.smtpHost,
@@ -214,11 +213,10 @@ export class AuthService {
       email: data.email,
       password: hashedPassword,
       displayName: data.displayName,
-      gasUrl: data.gasUrl || "",
       bankAccountNo: data.bankAccountNo || "",
       bankId: data.bankId || "",
       role: data.role,
-      centerId: requester.role === "admin" ? requester.centerId : (data.centerId || ""),
+      centerId: requester.role === "admin" ? (requester.centerId || requester.uid) : (data.centerId || ""),
       createdBy: requester.uid,
     });
 
@@ -242,7 +240,6 @@ export class AuthService {
       isActive?: boolean;
       role?: "admin" | "user";
       centerId?: string;
-      gasUrl?: string;
       bankAccountNo?: string;
       bankId?: string;
     }
@@ -287,7 +284,6 @@ export class AuthService {
       }
       updates.isActive = data.isActive;
     }
-    if (data.gasUrl !== undefined) updates.gasUrl = data.gasUrl;
     if (data.bankAccountNo !== undefined) updates.bankAccountNo = data.bankAccountNo;
     if (data.bankId !== undefined) updates.bankId = data.bankId;
 
@@ -398,10 +394,65 @@ export class AuthService {
         await adminUser.save();
         logger.info(`>>> Seeded admin account successfully: ${adminEmail}`);
       } else {
-        logger.info(`>>> Admin account already exists: ${adminEmail}`);
+        if (!existingAdmin.centerId || existingAdmin.centerId === "undefined") {
+          existingAdmin.centerId = "system_admin";
+          await existingAdmin.save();
+          logger.info(`>>> Updated existing admin account centerId to 'system_admin'`);
+        } else {
+          logger.info(`>>> Admin account already exists: ${adminEmail}`);
+        }
       }
     } catch (error) {
       logger.error(">>> Error seeding admin account:", error);
+    }
+
+    // 3. Self-healing migration for missing or invalid centerId
+    try {
+      const adminsToFix = await User.find({
+        $and: [
+          {
+            $or: [
+              { role: "admin" },
+              { role: { $exists: false } },
+              { role: null },
+            ]
+          },
+          {
+            $or: [
+              { centerId: { $exists: false } },
+              { centerId: null },
+              { centerId: "" },
+              { centerId: "undefined" },
+            ]
+          }
+        ]
+      });
+      for (const admin of adminsToFix) {
+        if (!admin.role) {
+          admin.role = "admin";
+        }
+        admin.centerId = admin._id.toString();
+        await admin.save();
+        logger.info(`>>> Migrated admin user ${admin.email} centerId to ${admin.centerId}`);
+      }
+
+      const superadminsToFix = await User.find({
+        role: "superadmin",
+        $or: [
+          { centerId: { $exists: false } },
+          { centerId: null },
+          { centerId: "" },
+          { centerId: "undefined" },
+          { centerId: { $ne: "superadmin" } },
+        ],
+      });
+      for (const sa of superadminsToFix) {
+        sa.centerId = "superadmin";
+        await sa.save();
+        logger.info(`>>> Migrated superadmin user ${sa.email} centerId to superadmin`);
+      }
+    } catch (error) {
+      logger.error(">>> Error running centerId self-healing migration:", error);
     }
   }
 }
