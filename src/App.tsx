@@ -87,6 +87,7 @@ export default function App() {
   const [currentView, setCurrentView] = React.useState<ViewType>(getViewFromPath);
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null);
+  const [initialTab, setInitialTab] = React.useState<string>('Hồ sơ');
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
 
   const currentDate = new Date();
@@ -117,8 +118,9 @@ export default function App() {
     }
   };
 
-  const handleOpenProfile = (student: Student) => {
+  const handleOpenProfile = (student: Student, tab: string = 'Hồ sơ') => {
     setSelectedStudent(student);
+    setInitialTab(tab);
     const slug = student.slug || toSlug(student.fullName);
     updateUrlForView('Students', slug);
   };
@@ -203,7 +205,7 @@ export default function App() {
       case 'Exams':
         return <ExamsPage />;
       case 'Fees':
-        return <FeesPage />;
+        return <FeesPage onSelectStudent={handleOpenProfile} />;
       case 'Bot':
         return <NotificationsPage />;
       case 'UserManagement':
@@ -268,6 +270,7 @@ export default function App() {
           <StudentDetailModal
             student={selectedStudent}
             onClose={handleCloseProfile}
+            initialTab={initialTab as any}
           />
         </Suspense>
       )}

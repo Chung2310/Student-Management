@@ -1,6 +1,8 @@
 import { Student, slugify } from "../models/student.model";
 import { IStudent } from "../interfaces/student.interface";
+import { Payment } from "../models/payment.model";
 import { logger } from "../config/logger";
+import { Types } from "mongoose";
 
 interface StudentFilters {
   page?: number | string;
@@ -85,6 +87,48 @@ export class StudentService {
     if (data.paymentHistory && Array.isArray(data.paymentHistory)) {
       const history = data.paymentHistory as Record<string, unknown>[];
       data.paidAmount = history.reduce((sum: number, item) => sum + (Number(item?.amount) || 0), 0);
+
+      // Sync with Payment collection
+      try {
+        const oldStudent = await Student.findOne({ _id: id, ownerId });
+        if (oldStudent && oldStudent.paymentHistory) {
+          const oldHistory = oldStudent.paymentHistory;
+          const newHistory = data.paymentHistory;
+
+          // Find deleted payments
+          for (const oldItem of oldHistory) {
+            const stillExists = newHistory.some((newItem: any) => String(newItem.id) === String(oldItem.id));
+            if (!stillExists) {
+              await Payment.deleteOne({ _id: oldItem.id, ownerId });
+            }
+          }
+
+          // Find updated payments
+          for (const newItem of newHistory as any[]) {
+            const oldItem = oldHistory.find((oi) => String(oi.id) === String(newItem.id));
+            if (oldItem) {
+              const amountChanged = Number(newItem.amount) !== Number(oldItem.amount);
+              const dateChanged = String(newItem.date) !== String(oldItem.date);
+              const noteChanged = String(newItem.note || '') !== String(oldItem.note || '');
+              
+              if (amountChanged || dateChanged || noteChanged) {
+                await Payment.updateOne(
+                  { _id: newItem.id, ownerId },
+                  {
+                    $set: {
+                      amount: Number(newItem.amount),
+                      date: newItem.date,
+                      note: newItem.note,
+                    }
+                  }
+                );
+              }
+            }
+          }
+        }
+      } catch (err) {
+        logger.error(`[Student] Failed to sync paymentHistory changes with Payment collection: %o`, err);
+      }
     }
 
     const updatedStudent = await Student.findOneAndUpdate(
@@ -184,6 +228,21 @@ export class StudentService {
       const registrationDate = String(data.registrationDate || new Date().toLocaleDateString('vi-VN')).trim();
       const status = String(data.status || "Chờ KSK").trim();
 
+      const feeNum = parseInt(fee.replace(/\D/g, ""), 10) || 0;
+      const paidAmount = parseInt(String(data.paidAmount || "0").replace(/\D/g, ""), 10) || 0;
+
+      const paymentHistory = [];
+      if (paidAmount > 0) {
+        paymentHistory.push({
+          id: new Types.ObjectId().toString(),
+          amount: Math.min(paidAmount, feeNum),
+          date: registrationDate,
+          method: "Chuyển khoản",
+          note: "Nhập từ file Excel",
+          recipient: "Hệ thống"
+        });
+      }
+
       validStudents.push({
         fullName,
         slug: slugify(fullName),
@@ -196,7 +255,8 @@ export class StudentService {
         area,
         registrationDate,
         fee,
-        paidAmount: 0,
+        paidAmount: Math.min(paidAmount, feeNum),
+        paymentHistory,
         address,
         status,
         ownerId,
