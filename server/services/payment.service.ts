@@ -28,9 +28,14 @@ interface PaymentHistoryEntry {
 }
 
 export class PaymentService {
-  static async createPayment(ownerId: string, data: PaymentCreateData): Promise<IPayment> {
+  static async createPayment(ownerId: string | string[], data: PaymentCreateData): Promise<IPayment> {
     logger.info(`[Payment] Creating payment: studentId=${data.studentId}, ownerId=${ownerId}, amount=${data.amount}`);
-    const student = await Student.findOne({ _id: data.studentId, ownerId });
+    
+    const studentQuery: Record<string, unknown> = { _id: data.studentId };
+    if (ownerId !== "ALL") {
+      studentQuery.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
+    }
+    const student = await Student.findOne(studentQuery);
     if (!student) {
       logger.warn(`[Payment] Create payment failed - Student ${data.studentId} not found for ownerId=${ownerId}`);
       throw new Error("Không tìm thấy học viên.");
@@ -46,10 +51,11 @@ export class PaymentService {
       throw new Error("Số tiền đóng vượt quá số tiền còn nợ. Vui lòng kiểm tra lại!");
     }
 
+    // Set ownerId of the payment record to the student's actual ownerId to maintain consistency
     const payment = new Payment({
       ...data,
       studentName: student.fullName,
-      ownerId,
+      ownerId: student.ownerId,
     });
     const savedPayment = await payment.save();
     logger.info(`[Payment] Giao dịch thanh toán đã tạo: id=${savedPayment._id}, studentId=${savedPayment.studentId}`);
@@ -75,13 +81,16 @@ export class PaymentService {
     return savedPayment;
   }
 
-  static async getPayments(ownerId: string, filters: PaymentFilters) {
+  static async getPayments(ownerId: string | string[], filters: PaymentFilters) {
     logger.info(`[Payment] Fetching payments for ownerId=${ownerId} with filters: ${JSON.stringify(filters)}`);
     const page = filters.page ? parseInt(String(filters.page)) : 1;
     const limit = filters.limit ? parseInt(String(filters.limit)) : 1000;
     const skip = (page - 1) * limit;
 
-    const query: Record<string, unknown> = { ownerId };
+    const query: Record<string, unknown> = {};
+    if (ownerId !== "ALL") {
+      query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
+    }
     if (filters.studentId) query.studentId = filters.studentId;
 
     const total = await Payment.countDocuments(query);
@@ -100,15 +109,23 @@ export class PaymentService {
     };
   }
 
-  static async deletePayment(ownerId: string, id: string): Promise<IPayment | null> {
+  static async deletePayment(ownerId: string | string[], id: string): Promise<IPayment | null> {
     logger.info(`[Payment] Deleting payment: id=${id}, ownerId=${ownerId}`);
-    const payment = await Payment.findOne({ _id: id, ownerId });
+    const paymentQuery: Record<string, unknown> = { _id: id };
+    if (ownerId !== "ALL") {
+      paymentQuery.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
+    }
+    const payment = await Payment.findOne(paymentQuery);
     if (!payment) {
       logger.warn(`[Payment] Delete payment failed - Payment not found: id=${id}, ownerId=${ownerId}`);
       throw new Error("Không tìm thấy giao dịch thanh toán.");
     }
 
-    const student = await Student.findOne({ _id: payment.studentId, ownerId });
+    const studentQuery: Record<string, unknown> = { _id: payment.studentId };
+    if (ownerId !== "ALL") {
+      studentQuery.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
+    }
+    const student = await Student.findOne(studentQuery);
     if (student) {
       student.paidAmount = Math.max(0, (student.paidAmount || 0) - payment.amount);
       if (student.paymentHistory) {
@@ -120,7 +137,7 @@ export class PaymentService {
       logger.info(`[Payment] Cập nhật hoàn tiền học phí thành công cho học viên: id=${student._id}`);
     }
 
-    const deleted = await Payment.findOneAndDelete({ _id: id, ownerId });
+    const deleted = await Payment.findOneAndDelete(paymentQuery);
     logger.info(`[Payment] Giao dịch thanh toán đã xóa thành công: id=${id}`);
     return deleted;
   }

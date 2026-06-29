@@ -68,23 +68,14 @@ export function SettingsPage() {
     toast.success(`Đã cập nhật cấu hình trường bắt buộc`);
   };
 
-  const [vietqrConfig, setVietqrConfig] = useState(() => {
-    const saved = localStorage.getItem('vietqrConfig');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Error parsing vietqrConfig", e);
-      }
-    }
-    return {
-      enabled: true,
-      bankId: 'mbbank',
-      accountNo: '',
-      accountName: '',
-      template: '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}'
-    };
-  });
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+
+  const [vietqrEnabled, setVietqrEnabled] = useState(true);
+  const [vietqrBankId, setVietqrBankId] = useState('mbbank');
+  const [vietqrAccountNo, setVietqrAccountNo] = useState('');
+  const [vietqrAccountName, setVietqrAccountName] = useState('');
+  const [vietqrTemplate, setVietqrTemplate] = useState('[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}');
+  const [isSavingVietqr, setIsSavingVietqr] = useState(false);
 
   // Đồng bộ cấu hình từ Backend về LocalStorage nếu có sự khác biệt
   useEffect(() => {
@@ -96,39 +87,69 @@ export function SettingsPage() {
           enabled: true,
           bankId: user.bankId || 'mbbank',
           accountNo: user.bankAccountNo || '',
-          accountName: user.displayName || '',
+          accountName: user.bankAccountName || user.displayName || '',
           template: '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}'
         };
         localStorage.setItem('vietqrConfig', JSON.stringify(localConfig));
-        const cfg = localConfig;
-        setTimeout(() => setVietqrConfig(cfg), 0);
-      } else if (user.bankAccountNo && (localConfig.accountNo !== user.bankAccountNo || localConfig.bankId !== user.bankId)) {
-        const newConfig = {
-          ...localConfig,
-          accountNo: user.bankAccountNo,
-          bankId: user.bankId || 'mbbank'
-        };
-        localStorage.setItem('vietqrConfig', JSON.stringify(newConfig));
-        setTimeout(() => setVietqrConfig(newConfig), 0);
+      } else {
+        let hasChanges = false;
+        if (user.bankAccountNo !== undefined && localConfig.accountNo !== user.bankAccountNo) {
+          localConfig.accountNo = user.bankAccountNo;
+          hasChanges = true;
+        }
+        if (user.bankId !== undefined && localConfig.bankId !== user.bankId) {
+          localConfig.bankId = user.bankId;
+          hasChanges = true;
+        }
+        if (user.bankAccountName !== undefined && localConfig.accountName !== user.bankAccountName) {
+          localConfig.accountName = user.bankAccountName;
+          hasChanges = true;
+        }
+        if (hasChanges) {
+          localStorage.setItem('vietqrConfig', JSON.stringify(localConfig));
+        }
       }
+
+      const timer = setTimeout(() => {
+        setVietqrEnabled(localConfig.enabled);
+        setVietqrBankId(localConfig.bankId);
+        setVietqrAccountNo(localConfig.accountNo);
+        setVietqrAccountName(localConfig.accountName);
+        setVietqrTemplate(localConfig.template);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [user]);
 
-  const saveVietqrConfig = async (updated: typeof vietqrConfig) => {
-    setVietqrConfig(updated);
+  const handleSaveVietqrConfig = async () => {
+    setIsSavingVietqr(true);
+    const updated = {
+      enabled: vietqrEnabled,
+      bankId: vietqrBankId,
+      accountNo: vietqrAccountNo,
+      accountName: vietqrAccountName,
+      template: vietqrTemplate
+    };
     localStorage.setItem('vietqrConfig', JSON.stringify(updated));
+    window.dispatchEvent(new Event('storage'));
 
-    // Đồng bộ lên backend để phục vụ đối soát webhook thanh toán tự động
     try {
       await apiFetch('/auth/bank-settings', {
         method: 'PATCH',
         body: JSON.stringify({
-          bankAccountNo: updated.accountNo || "",
-          bankId: updated.bankId || ""
+          bankAccountNo: vietqrAccountNo,
+          bankId: vietqrBankId,
+          bankAccountName: vietqrAccountName
         })
       });
-    } catch (e) {
+      await fetchMe();
+      toast.success("Đã lưu cấu hình ngân hàng VietQR thành công!");
+    } catch (e: unknown) {
       console.error("Lỗi đồng bộ cấu hình ngân hàng lên server:", e);
+      const errMsg = e instanceof Error ? e.message : String(e);
+      toast.error("Lỗi khi lưu cấu hình ngân hàng: " + errMsg);
+    } finally {
+      setIsSavingVietqr(false);
     }
   };
 
@@ -605,7 +626,12 @@ export function SettingsPage() {
           }
           if (configsObj.vietqrConfig) {
             localStorage.setItem('vietqrConfig', JSON.stringify(configsObj.vietqrConfig));
-            setVietqrConfig(configsObj.vietqrConfig);
+            const cfg = configsObj.vietqrConfig;
+            if (cfg.enabled !== undefined) setVietqrEnabled(cfg.enabled);
+            if (cfg.bankId !== undefined) setVietqrBankId(cfg.bankId);
+            if (cfg.accountNo !== undefined) setVietqrAccountNo(cfg.accountNo);
+            if (cfg.accountName !== undefined) setVietqrAccountName(cfg.accountName);
+            if (cfg.template !== undefined) setVietqrTemplate(cfg.template);
           }
           if (configsObj.tuitionStagesConfig) {
             localStorage.setItem('tuitionStagesConfig', JSON.stringify(configsObj.tuitionStagesConfig));
@@ -843,9 +869,28 @@ export function SettingsPage() {
 
             {/* VietQR Settings */}
             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 p-6 space-y-6 lg:col-span-2">
-              <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
-                <QrCode className="w-5 h-5 text-cyan-600" />
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Cấu hình VietQR & Chuyển khoản</h3>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-50 pb-4 gap-4">
+                <div className="flex items-center gap-3">
+                  <QrCode className="w-5 h-5 text-cyan-600" />
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Cấu hình VietQR & Chuyển khoản</h3>
+                </div>
+                {isAdmin && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveVietqrConfig}
+                      disabled={isSavingVietqr}
+                      className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-850 active:scale-95 text-xs font-bold text-white transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                    >
+                      {isSavingVietqr ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      )}
+                      Lưu cấu hình
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-4">
@@ -853,19 +898,21 @@ export function SettingsPage() {
                     <label className="text-xs font-bold text-slate-600">Trạng thái VietQR</label>
                     <button 
                       type="button"
-                      onClick={() => saveVietqrConfig({ ...vietqrConfig, enabled: !vietqrConfig.enabled })}
+                      disabled={!isAdmin}
+                      onClick={() => setVietqrEnabled(!vietqrEnabled)}
                       className={cn(
                         "font-bold text-xs flex items-center gap-1 transition-all",
-                        vietqrConfig.enabled ? "text-emerald-500" : "text-slate-400"
+                        vietqrEnabled ? "text-emerald-500" : "text-slate-400",
+                        !isAdmin && "opacity-60 cursor-not-allowed"
                       )}
                     >
-                      <CheckCircle2 size={14} /> {vietqrConfig.enabled ? "Đang bật" : "Đang tắt"}
+                      <CheckCircle2 size={14} /> {vietqrEnabled ? "Đang bật" : "Đang tắt"}
                     </button>
                   </div>
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center justify-center min-h-[160px]">
-                    {vietqrConfig.enabled && vietqrConfig.bankId && vietqrConfig.accountNo ? (
+                    {vietqrEnabled && vietqrBankId && vietqrAccountNo ? (
                       <img 
-                        src={`https://img.vietqr.io/image/${vietqrConfig.bankId}-${vietqrConfig.accountNo}-compact2.png?amount=0&addInfo=TEST&accountName=${encodeURIComponent(vietqrConfig.accountName)}`} 
+                        src={`https://img.vietqr.io/image/${vietqrBankId}-${vietqrAccountNo}-compact2.png?amount=0&addInfo=TEST&accountName=${encodeURIComponent(vietqrAccountName)}`} 
                         alt="VietQR Code"
                         className="w-32 h-32 object-contain rounded-lg shadow-sm bg-white"
                       />
@@ -882,9 +929,10 @@ export function SettingsPage() {
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ngân hàng</label>
                       <select 
-                        value={vietqrConfig.bankId}
-                        onChange={(e) => saveVietqrConfig({ ...vietqrConfig, bankId: e.target.value })}
-                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all"
+                        disabled={!isAdmin}
+                        value={vietqrBankId}
+                        onChange={(e) => setVietqrBankId(e.target.value)}
+                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <option value="mbbank">MBBank (MB)</option>
                         <option value="vietcombank">Vietcombank (VCB)</option>
@@ -902,10 +950,11 @@ export function SettingsPage() {
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Số tài khoản</label>
                       <input 
                         type="text"
+                        disabled={!isAdmin}
                         placeholder="Nhập số tài khoản..."
-                        value={vietqrConfig.accountNo}
-                        onChange={(e) => saveVietqrConfig({ ...vietqrConfig, accountNo: e.target.value.replace(/\D/g, '') })}
-                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all"
+                        value={vietqrAccountNo}
+                        onChange={(e) => setVietqrAccountNo(e.target.value.replace(/\D/g, ''))}
+                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -914,23 +963,34 @@ export function SettingsPage() {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tên chủ tài khoản (Không dấu)</label>
                     <input 
                       type="text"
+                      disabled={!isAdmin}
                       placeholder="VD: NGUYEN VAN A"
-                      value={vietqrConfig.accountName}
-                      onChange={(e) => saveVietqrConfig({ ...vietqrConfig, accountName: e.target.value.toUpperCase() })}
-                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all"
+                      value={vietqrAccountName}
+                      onChange={(e) => setVietqrAccountName(e.target.value.toUpperCase())}
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     />
                   </div>
 
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Nội dung chuyển khoản mặc định</label>
                     <textarea 
-                      className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600"
+                      disabled={!isAdmin}
+                      className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 disabled:opacity-60 disabled:cursor-not-allowed"
                       rows={3}
-                      value={vietqrConfig.template}
-                      onChange={(e) => saveVietqrConfig({ ...vietqrConfig, template: e.target.value })}
+                      value={vietqrTemplate}
+                      onChange={(e) => setVietqrTemplate(e.target.value)}
                     />
                     <p className="text-[10px] text-slate-400 italic font-medium">* Sử dụng các biến tương tự BOT Thông báo để cá nhân hóa nội dung.</p>
                   </div>
+
+                  {!isAdmin && (
+                    <div className="bg-amber-50 border border-amber-150 rounded-2xl p-4 flex items-start gap-2.5">
+                      <Info size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-700 font-medium leading-relaxed">
+                        Bạn đang đăng nhập với tài khoản Nhân viên. Hệ thống tự động kế thừa và sử dụng cấu hình tài khoản ngân hàng của Quản trị viên (Admin) thiết lập.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

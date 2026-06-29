@@ -50,6 +50,11 @@ const userSchema = new Schema<IUser>(
       trim: true,
       lowercase: true,
     },
+    bankAccountName: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     smtpHost: {
       type: String,
       default: "",

@@ -38,6 +38,7 @@ export class AuthService {
       createdBy: user.createdBy,
       bankAccountNo: user.bankAccountNo,
       bankId: user.bankId,
+      bankAccountName: user.bankAccountName,
       smtpHost: user.smtpHost,
       smtpPort: user.smtpPort,
       smtpSecure: user.smtpSecure,
@@ -144,7 +145,7 @@ export class AuthService {
     }
   }
 
-  static async updateBankSettings(uid: string, data: { bankAccountNo?: string; bankId?: string }): Promise<IUser | null> {
+  static async updateBankSettings(uid: string, data: { bankAccountNo?: string; bankId?: string; bankAccountName?: string }): Promise<IUser | null> {
     logger.info(`[Auth] Updating bank settings for uid: ${uid}`);
     return await User.findByIdAndUpdate(
       uid,
@@ -152,6 +153,7 @@ export class AuthService {
         $set: {
           bankAccountNo: data.bankAccountNo || "",
           bankId: data.bankId ? data.bankId.trim().toLowerCase() : "",
+          bankAccountName: data.bankAccountName || "",
         },
       },
       { new: true }

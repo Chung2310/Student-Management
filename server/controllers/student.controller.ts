@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { StudentService } from "../services/student.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { AuthService } from "../services/auth.service";
+import { getAllowedOwnerIds } from "../utils/auth.util";
 
 export class StudentController {
   static async create(req: AuthRequest, res: Response) {
@@ -17,7 +18,7 @@ export class StudentController {
 
   static async getList(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const ownerId = req.user!.uid;
+      const ownerId = await getAllowedOwnerIds(req.user!);
       const result = await StudentService.getStudents(ownerId, req.query);
       res.json({ success: true, ...result });
     } catch (error: unknown) {
@@ -27,7 +28,7 @@ export class StudentController {
 
   static async getDetail(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const ownerId = req.user!.uid;
+      const ownerId = await getAllowedOwnerIds(req.user!);
       const student = await StudentService.getStudentById(ownerId, req.params.id);
       if (!student) {
         return res.status(404).json({ success: false, error: "Không tìm thấy học viên." });
@@ -40,7 +41,7 @@ export class StudentController {
 
   static async update(req: AuthRequest, res: Response) {
     try {
-      const ownerId = req.user!.uid;
+      const ownerId = await getAllowedOwnerIds(req.user!);
       const student = await StudentService.updateStudent(ownerId, req.params.id, req.body);
       if (!student) {
         return res.status(404).json({ success: false, error: "Không tìm thấy học viên để cập nhật." });
@@ -54,7 +55,7 @@ export class StudentController {
 
   static async delete(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const ownerId = req.user!.uid;
+      const ownerId = await getAllowedOwnerIds(req.user!);
       const student = await StudentService.deleteStudent(ownerId, req.params.id);
       if (!student) {
         return res.status(404).json({ success: false, error: "Không tìm thấy học viên để xóa." });
@@ -67,12 +68,13 @@ export class StudentController {
 
   static async bulkCreate(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const ownerId = req.user!.uid;
+      const creatorId = req.user!.uid;
+      const ownerId = await getAllowedOwnerIds(req.user!);
       const students = req.body.students;
       if (!Array.isArray(students)) {
         return res.status(400).json({ success: false, error: "Dữ liệu học viên không hợp lệ (phải là danh sách)." });
       }
-      const result = await StudentService.bulkCreateStudents(ownerId, students);
+      const result = await StudentService.bulkCreateStudents(creatorId, ownerId, students);
       res.status(200).json({ success: true, ...result });
     } catch (error: unknown) {
       next(error);
