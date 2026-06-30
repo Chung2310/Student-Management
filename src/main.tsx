@@ -43,7 +43,11 @@ class ErrorBoundary extends React.Component<Props, State> {
       },
       body: JSON.stringify({
         error: errString,
-        info: errorInfo,
+        info: {
+          componentStack: errorInfo.componentStack,
+          userAgent: navigator.userAgent,
+          url: window.location.href,
+        },
       }),
     }).catch(err => console.error("Failed to log error to server:", err));
   }
@@ -76,18 +80,22 @@ class ErrorBoundary extends React.Component<Props, State> {
 
 // Helper function to detect chunk/asset loading errors and automatically reload
 function checkAndReloadOnChunkError(errorStr: string) {
-  const isChunkError = 
+  const isChunkError =
     errorStr.includes("Failed to fetch dynamically imported module") ||
     errorStr.includes("ChunkLoadError") ||
     errorStr.includes("Loading chunk") ||
     errorStr.includes("Unexpected token '<'") ||
-    errorStr.includes("unexpected token: '<'");
+    errorStr.includes("unexpected token: '<'") ||
+    // Safari/WebKit (Zalo iOS WebView): stale asset returns HTML parsed as JS
+    (errorStr.includes("global code@") && errorStr.includes(window.location.origin)) ||
+    errorStr.includes("SyntaxError: Unexpected identifier") ||
+    errorStr.includes("SyntaxError: Unexpected token '!'");
 
   if (isChunkError) {
     console.warn("Đã phát hiện lỗi tải chunk/script. Đang tự động tải lại trang...");
     const lastReload = sessionStorage.getItem("chunk-error-reload");
     const now = Date.now();
-    
+
     // Giới hạn chỉ tự động tải lại tối đa 1 lần mỗi 10 giây để tránh lặp vô hạn
     if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
       sessionStorage.setItem("chunk-error-reload", now.toString());
@@ -108,7 +116,13 @@ window.addEventListener("error", (event) => {
     },
     body: JSON.stringify({
       error: errString,
-      info: { filename: event.filename, lineno: event.lineno, colno: event.colno },
+      info: {
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+      },
     }),
   }).catch(err => console.error(err));
 });
@@ -124,7 +138,11 @@ window.addEventListener("unhandledrejection", (event) => {
     },
     body: JSON.stringify({
       error: errString,
-      info: "Unhandled Promise Rejection",
+      info: {
+        type: "Unhandled Promise Rejection",
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+      },
     }),
   }).catch(err => console.error(err));
 });
