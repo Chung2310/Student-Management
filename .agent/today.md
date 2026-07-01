@@ -1,4 +1,4 @@
 # Today's Progress & Focus
-- Date: 2026-06-24
-- Goal: Fix white screen error caused by browser caching index.html and chunk load failures after long usage/redeployments.
-- Current Task: Configured index.html in server.ts to not be cached and return 404 for missing static assets (instead of 200 index.html fallback). Integrated global checkAndReloadOnChunkError self-healing handlers in src/main.tsx to automatically refresh browser upon detecting ChunkLoadError or SyntaxError from outdated files. Verified linting & typecheck.
+- Date: 2026-07-01
+- Goal: Migrate AI profile analysis and chatbot assistant from direct Gemini API integration to OpenRouter.
+- Current Task: Renamed env keys to OPENROUTER_API_KEY and OPENROUTER_MODEL, updated Vite configuration, switched backend endpoints in ai.service.ts and chatbot.service.ts to use OpenRouter, updated headers, and verified that build, lint, and typechecks pass successfully.

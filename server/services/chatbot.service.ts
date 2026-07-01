@@ -5,11 +5,11 @@ import { Payment } from "../models/payment.model";
 
 export class ChatbotService {
   static async getResponse(ownerId: string, messages: { role: string; content: string }[]): Promise<string> {
-    const apiKey = process.env.GEMINI_API_KEY?.trim();
-    const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+    const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+    const model = process.env.OPENROUTER_MODEL?.trim() || "google/gemini-2.5-flash";
 
     if (!apiKey) {
-      throw new Error("Cấu hình khóa API (GEMINI_API_KEY) chưa được thiết lập trên Server.");
+      throw new Error("Cấu hình khóa API (OPENROUTER_API_KEY) chưa được thiết lập trên Server.");
     }
 
     // 1. Query MongoDB database for data owned by this teacher (ownerId)
@@ -124,20 +124,21 @@ QUY TẮC PHẢN HỒI:
     };
 
     try {
-      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/chat/completions", {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${apiKey}`,
-          "x-goog-api-key": apiKey,
+          "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "https://student.igentechsolutions.com/",
+          "X-Title": "Student Management System",
         },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const errText = await response.text();
-        logger.error("[Gemini API Error Response]: %s", errText);
-        throw new Error(`Lỗi kết nối dịch vụ Gemini AI (Mã lỗi: ${response.status} ${response.statusText}).`);
+        logger.error("[OpenRouter API Error Response]: %s", errText);
+        throw new Error(`Lỗi kết nối dịch vụ OpenRouter AI (Mã lỗi: ${response.status} ${response.statusText}).`);
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
