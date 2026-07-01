@@ -7,7 +7,7 @@ import {
   FileJson, RotateCcw, ToggleLeft, ToggleRight, Activity,
   Mail, Loader2, Smartphone
 } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { cn, getVietQRBankCode } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch, getAccessToken } from '../../lib/api';
@@ -77,38 +77,22 @@ export function SettingsPage() {
   const [vietqrTemplate, setVietqrTemplate] = useState('[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}');
   const [isSavingVietqr, setIsSavingVietqr] = useState(false);
 
-  // Đồng bộ cấu hình từ Backend về LocalStorage nếu có sự khác biệt
+  // Đồng bộ cấu hình từ Backend về LocalStorage. "enabled" luôn lấy từ backend
+  // (bankQrEnabled) để tránh bị "kẹt" theo giá trị cũ lưu cục bộ trên trình duyệt.
   useEffect(() => {
     if (user) {
       const saved = localStorage.getItem('vietqrConfig');
-      let localConfig = saved ? JSON.parse(saved) : null;
-      if (!localConfig) {
-        localConfig = {
-          enabled: true,
-          bankId: user.bankId || 'mbbank',
-          accountNo: user.bankAccountNo || '',
-          accountName: user.bankAccountName || user.displayName || '',
-          template: '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}'
-        };
-        localStorage.setItem('vietqrConfig', JSON.stringify(localConfig));
-      } else {
-        let hasChanges = false;
-        if (user.bankAccountNo !== undefined && localConfig.accountNo !== user.bankAccountNo) {
-          localConfig.accountNo = user.bankAccountNo;
-          hasChanges = true;
-        }
-        if (user.bankId !== undefined && localConfig.bankId !== user.bankId) {
-          localConfig.bankId = user.bankId;
-          hasChanges = true;
-        }
-        if (user.bankAccountName !== undefined && localConfig.accountName !== user.bankAccountName) {
-          localConfig.accountName = user.bankAccountName;
-          hasChanges = true;
-        }
-        if (hasChanges) {
-          localStorage.setItem('vietqrConfig', JSON.stringify(localConfig));
-        }
-      }
+      const localConfig = saved ? JSON.parse(saved) : {
+        bankId: user.bankId || 'mbbank',
+        accountNo: user.bankAccountNo || '',
+        accountName: user.bankAccountName || user.displayName || '',
+        template: '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}'
+      };
+      if (user.bankAccountNo !== undefined) localConfig.accountNo = user.bankAccountNo;
+      if (user.bankId) localConfig.bankId = user.bankId;
+      if (user.bankAccountName !== undefined) localConfig.accountName = user.bankAccountName;
+      localConfig.enabled = user.bankQrEnabled !== false;
+      localStorage.setItem('vietqrConfig', JSON.stringify(localConfig));
 
       const timer = setTimeout(() => {
         setVietqrEnabled(localConfig.enabled);
@@ -123,25 +107,24 @@ export function SettingsPage() {
 
   const handleSaveVietqrConfig = async () => {
     setIsSavingVietqr(true);
-    const updated = {
-      enabled: vietqrEnabled,
-      bankId: vietqrBankId,
-      accountNo: vietqrAccountNo,
-      accountName: vietqrAccountName,
-      template: vietqrTemplate
-    };
-    localStorage.setItem('vietqrConfig', JSON.stringify(updated));
-    window.dispatchEvent(new Event('storage'));
-
     try {
       await apiFetch('/auth/bank-settings', {
         method: 'PATCH',
         body: JSON.stringify({
           bankAccountNo: vietqrAccountNo,
           bankId: vietqrBankId,
-          bankAccountName: vietqrAccountName
+          bankAccountName: vietqrAccountName,
+          bankQrEnabled: vietqrEnabled
         })
       });
+      localStorage.setItem('vietqrConfig', JSON.stringify({
+        enabled: vietqrEnabled,
+        bankId: vietqrBankId,
+        accountNo: vietqrAccountNo,
+        accountName: vietqrAccountName,
+        template: vietqrTemplate
+      }));
+      window.dispatchEvent(new Event('storage'));
       await fetchMe();
       toast.success("Đã lưu cấu hình ngân hàng VietQR thành công!");
     } catch (e: unknown) {
@@ -632,6 +615,21 @@ export function SettingsPage() {
             if (cfg.accountNo !== undefined) setVietqrAccountNo(cfg.accountNo);
             if (cfg.accountName !== undefined) setVietqrAccountName(cfg.accountName);
             if (cfg.template !== undefined) setVietqrTemplate(cfg.template);
+            // Đồng bộ luôn xuống backend để tránh lệch với bankQrEnabled đã lưu ở server
+            try {
+              await apiFetch('/auth/bank-settings', {
+                method: 'PATCH',
+                body: JSON.stringify({
+                  bankAccountNo: cfg.accountNo || '',
+                  bankId: cfg.bankId || '',
+                  bankAccountName: cfg.accountName || '',
+                  bankQrEnabled: cfg.enabled !== false
+                })
+              });
+              await fetchMe();
+            } catch (syncErr) {
+              console.error("Lỗi đồng bộ cấu hình VietQR lên server sau khi khôi phục:", syncErr);
+            }
           }
           if (configsObj.tuitionStagesConfig) {
             localStorage.setItem('tuitionStagesConfig', JSON.stringify(configsObj.tuitionStagesConfig));
@@ -912,7 +910,7 @@ export function SettingsPage() {
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center justify-center min-h-[160px]">
                     {vietqrEnabled && vietqrBankId && vietqrAccountNo ? (
                       <img 
-                        src={`https://img.vietqr.io/image/${vietqrBankId}-${vietqrAccountNo}-compact2.png?amount=0&addInfo=TEST&accountName=${encodeURIComponent(vietqrAccountName)}`} 
+                        src={`https://img.vietqr.io/image/${getVietQRBankCode(vietqrBankId)}-${vietqrAccountNo}-compact2.png?amount=0&addInfo=TEST&accountName=${encodeURIComponent(vietqrAccountName)}`} 
                         alt="VietQR Code"
                         className="w-32 h-32 object-contain rounded-lg shadow-sm bg-white"
                       />
@@ -1002,34 +1000,36 @@ export function SettingsPage() {
                   <Mail className="w-5 h-5 text-rose-500" />
                   <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Cấu hình máy chủ SMTP gửi Mail</h3>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleTestSmtpConnection}
-                    disabled={isTestingSmtp}
-                    className="h-9 px-4 rounded-xl border border-slate-200 hover:border-slate-300 text-xs font-bold text-slate-600 hover:text-slate-800 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                  >
-                    {isTestingSmtp ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" />
-                    ) : (
-                      <Activity className="w-3.5 h-3.5 text-slate-400" />
-                    )}
-                    Kiểm tra kết nối
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveSmtpSettings}
-                    disabled={isSavingSmtp}
-                    className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-850 active:scale-95 text-xs font-bold text-white transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                  >
-                    {isSavingSmtp ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                    )}
-                    Lưu cấu hình
-                  </button>
-                </div>
+                {isAdmin && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleTestSmtpConnection}
+                      disabled={isTestingSmtp}
+                      className="h-9 px-4 rounded-xl border border-slate-200 hover:border-slate-300 text-xs font-bold text-slate-600 hover:text-slate-800 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                    >
+                      {isTestingSmtp ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" />
+                      ) : (
+                        <Activity className="w-3.5 h-3.5 text-slate-400" />
+                      )}
+                      Kiểm tra kết nối
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveSmtpSettings}
+                      disabled={isSavingSmtp}
+                      className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-850 active:scale-95 text-xs font-bold text-white transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                    >
+                      {isSavingSmtp ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      )}
+                      Lưu cấu hình
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -1051,33 +1051,45 @@ export function SettingsPage() {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tài khoản SMTP (User)</label>
                     <input
                       type="text"
+                      disabled={!isAdmin}
                       placeholder="VD: account@gmail.com"
                       value={smtpUser}
                       onChange={(e) => setSmtpUser(e.target.value)}
-                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mật khẩu ứng dụng (Password)</label>
                     <input
                       type="password"
+                      disabled={!isAdmin}
                       placeholder="Nhập mật khẩu ứng dụng 16 ký tự..."
                       value={smtpPass}
                       onChange={(e) => setSmtpPass(e.target.value)}
-                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email gửi đi (From)</label>
                     <input
                       type="text"
+                      disabled={!isAdmin}
                       placeholder='VD: "Hệ thống" <account@gmail.com>'
                       value={smtpFrom}
                       onChange={(e) => setSmtpFrom(e.target.value)}
-                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     />
                   </div>
                 </div>
+
+                {!isAdmin && (
+                  <div className="bg-amber-50 border border-amber-150 rounded-2xl p-4 flex items-start gap-2.5">
+                    <Info size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-700 font-medium leading-relaxed">
+                      Bạn đang đăng nhập với tài khoản Nhân viên. Hệ thống tự động kế thừa và sử dụng cấu hình SMTP của Quản trị viên (Admin) thiết lập để gửi email cho học viên.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
             {/* SMS / eSMS Settings */}

@@ -6,7 +6,7 @@ import {
   AlertCircle, MessageCircle, Smartphone, Mail,
   Inbox, Loader2, CheckCircle2, X, Trash2, Lock
 } from 'lucide-react';
-import { cn, parseVND } from '../../lib/utils';
+import { cn, parseVND, getVietQRBankCode } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch, getAccessToken } from '../../lib/api';
@@ -154,7 +154,8 @@ export function NotificationsPage() {
   });
 
   const vietqrConfig = {
-    enabled: localVietqrConfig ? localVietqrConfig.enabled : (!!user?.bankAccountNo && !!user?.bankId),
+    // "enabled" luôn lấy từ backend (bankQrEnabled) để không bị kẹt theo giá trị cũ trong localStorage
+    enabled: user?.bankQrEnabled !== false,
     bankId: localVietqrConfig?.bankId || user?.bankId || '',
     accountNo: localVietqrConfig?.accountNo || user?.bankAccountNo || '',
     accountName: localVietqrConfig?.accountName || user?.bankAccountName || user?.displayName || '',
@@ -338,7 +339,7 @@ export function NotificationsPage() {
     };
     note = removeVietnameseTones(note);
 
-    const qrUrl = `https://img.vietqr.io/image/${config.bankId}-${config.accountNo}-compact2.png?amount=${debtAmount}&addInfo=${encodeURIComponent(note)}&accountName=${encodeURIComponent(config.accountName)}`;
+    const qrUrl = `https://img.vietqr.io/image/${getVietQRBankCode(config.bankId)}-${config.accountNo}-compact2.png?amount=${debtAmount}&addInfo=${encodeURIComponent(note)}&accountName=${encodeURIComponent(config.accountName)}`;
 
     return `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">

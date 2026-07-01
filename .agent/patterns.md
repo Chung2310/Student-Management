@@ -36,4 +36,4 @@
 
 - **OpenRouter API Adaptation**: When routing requests to OpenRouter, ensure standard header formatting is applied (including `Authorization: Bearer <key>`) alongside diagnostic headers (`HTTP-Referer` and `X-Title`). Ensure error logs specify the model broker (OpenRouter) instead of the underlying model provider to facilitate cleaner debugging context.
 
-
+- **Safe Configuration Checks**: When validating optional service integrations (such as SMTP, SMS, or banking gateways) during automated checks or initialization, missing setup/keys must be logged as warnings (`logger.warn`) instead of errors (`logger.error`). This prevents trace pollution and false positives in application monitoring systems under default settings.

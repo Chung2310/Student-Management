@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CreditCard, History, Trash2, Pencil, Zap, AlertCircle, QrCode, Copy, Check, Info, Download } from 'lucide-react';
 import { Student } from '../../../types';
-import { cn, formatVND, parseVND } from '../../../lib/utils';
+import { cn, formatVND, parseVND, getVietQRBankCode } from '../../../lib/utils';
 import { useAuth } from '../../../hooks/useAuth';
 
 interface TuitionTabProps {
@@ -86,11 +86,12 @@ export function TuitionTab({
   const bankId = localQrConfig?.bankId || user?.bankId || '';
   const accountNo = localQrConfig?.accountNo || user?.bankAccountNo || '';
   const accountName = localQrConfig?.accountName || user?.bankAccountName || user?.displayName || '';
-  const enabled = localQrConfig ? localQrConfig.enabled : (!!user?.bankAccountNo && !!user?.bankId);
+  // "enabled" luôn lấy từ backend (bankQrEnabled) để không bị kẹt theo giá trị cũ trong localStorage
+  const enabled = user?.bankQrEnabled !== false;
 
   const hasValidConfig = enabled && !!accountNo && !!bankId;
   const qrCodeUrl = hasValidConfig 
-    ? `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${paymentAmount}&addInfo=${student.id}&accountName=${encodeURIComponent(accountName)}`
+    ? `https://img.vietqr.io/image/${getVietQRBankCode(bankId)}-${accountNo}-compact2.png?amount=${paymentAmount}&addInfo=${student.id}&accountName=${encodeURIComponent(accountName)}`
     : '';
 
   return (

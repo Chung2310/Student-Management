@@ -62,6 +62,10 @@ export const bankSettingsSchema = Joi.object({
   bankId: Joi.string().allow("").optional().messages({
     "string.base": "Mã ngân hàng không hợp lệ.",
   }),
+  bankAccountName: Joi.string().allow("").optional().messages({
+    "string.base": "Tên chủ tài khoản không hợp lệ.",
+  }),
+  bankQrEnabled: Joi.boolean().optional(),
 });
 
 export const smtpSettingsSchema = Joi.object({
