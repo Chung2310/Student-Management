@@ -526,7 +526,7 @@ export function NotificationsPage() {
     {
       name: 'Nhắc phí',
       title: 'THÔNG BÁO HOÀN THÀNH HỌC PHÍ - {ten}',
-      content: 'Kính gửi học viên {ten}, Trung tâm xin thông báo học phí khóa học hạng {hang} của bạn hiện vẫn còn nợ {sotien}. Để đảm bảo tiến độ học tập và dự thi đúng hạn, bạn vui lòng hoàn tất học phí trong tuần này tại {kv}. Trân trọng.'
+      content: 'Kính gửi học viên {ten}, Trung tâm xin thông báo học phí khóa học hạng {hang} của bạn hiện vẫn còn nợ {sotien}. {nhac_dong_phi} Để đảm bảo tiến độ học tập và dự thi đúng hạn, bạn vui lòng hoàn tất học phí trong tuần này tại {kv}. Trân trọng.'
     },
     {
       name: 'Lịch thi',
@@ -736,6 +736,8 @@ export function NotificationsPage() {
                     <VariableTag name="email" label="Email" />
                     <VariableTag name="ngaythi" label="Ngày thi" />
                     <VariableTag name="sotien" label="Tiền nợ" />
+                    <VariableTag name="tiendot" label="Tiền đợt (50% nợ)" />
+                    <VariableTag name="nhac_dong_phi" label="Gợi ý đóng phí" />
                   </div>
                 </div>
               </div>
