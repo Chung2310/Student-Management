@@ -89,6 +89,13 @@ export class AuthController {
       let bankId = user.bankId || "";
       let bankAccountName = user.bankAccountName || "";
       let bankQrEnabled = user.bankQrEnabled !== false;
+      let smtpHost = user.smtpHost || "";
+      let smtpPort = user.smtpPort;
+      let smtpSecure = user.smtpSecure;
+      let smtpUser = user.smtpUser || "";
+      let smtpPass = user.smtpPass || "";
+      let smtpFrom = user.smtpFrom || "";
+      let smtpSandboxEmail = user.smtpSandboxEmail || "";
 
       if (user.role === "user" && user.centerId) {
         const adminUser = await AuthService.getUserProfile(user.centerId);
@@ -97,6 +104,13 @@ export class AuthController {
           bankId = adminUser.bankId || "";
           bankAccountName = adminUser.bankAccountName || adminUser.displayName || "";
           bankQrEnabled = adminUser.bankQrEnabled !== false;
+          smtpHost = adminUser.smtpHost || "";
+          smtpPort = adminUser.smtpPort;
+          smtpSecure = adminUser.smtpSecure;
+          smtpUser = adminUser.smtpUser || "";
+          smtpPass = adminUser.smtpPass || "";
+          smtpFrom = adminUser.smtpFrom || "";
+          smtpSandboxEmail = adminUser.smtpSandboxEmail || "";
         }
       }
 
@@ -113,13 +127,13 @@ export class AuthController {
             bankId,
             bankAccountName,
             bankQrEnabled,
-            smtpHost: user.smtpHost,
-            smtpPort: user.smtpPort,
-            smtpSecure: user.smtpSecure,
-            smtpUser: user.smtpUser,
-            smtpPass: user.smtpPass,
-            smtpFrom: user.smtpFrom,
-            smtpSandboxEmail: user.smtpSandboxEmail,
+            smtpHost,
+            smtpPort,
+            smtpSecure,
+            smtpUser,
+            smtpPass,
+            smtpFrom,
+            smtpSandboxEmail,
             smsSettings: smsSettings ? {
               provider: smsSettings.provider,
               twilioAccountSid: smsSettings.twilioAccountSid,
@@ -188,6 +202,9 @@ export class AuthController {
     try {
       if (!req.user) {
         return res.status(401).json({ success: false, error: "Chưa xác thực." });
+      }
+      if (req.user.role === "user") {
+        return res.status(403).json({ success: false, error: "Nhân viên không có quyền thay đổi cấu hình SMTP." });
       }
       const updatedUser = await AuthService.updateSmtpSettings(req.user.uid, req.body);
       if (!updatedUser) {
