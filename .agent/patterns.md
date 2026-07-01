@@ -34,3 +34,6 @@
   2. Map the static asset wildcard routing to return a `404` for missing static files (e.g. JS/CSS files inside `/assets/`) instead of falling back to returning the HTML contents of `index.html`. This avoids parsing errors like `Uncaught SyntaxError: Unexpected token '<'`.
   3. Implement global self-healing listeners (`window.addEventListener("error")`, `window.addEventListener("unhandledrejection")`, and React `componentDidCatch`) that detect `ChunkLoadError` or related script failure messages, and automatically reload the page (guarded with a `sessionStorage` throttle to avoid infinite reload loops).
 
+- **OpenRouter API Adaptation**: When routing requests to OpenRouter, ensure standard header formatting is applied (including `Authorization: Bearer <key>`) alongside diagnostic headers (`HTTP-Referer` and `X-Title`). Ensure error logs specify the model broker (OpenRouter) instead of the underlying model provider to facilitate cleaner debugging context.
+
+
