@@ -8,12 +8,13 @@ export class WebhookController {
       logger.info("[WebhookController] Received payment webhook request.");
 
       // 1. Xác thực WEBHOOK_SECRET
-      const secret = 
-        req.headers["x-webhook-secret"] || 
-        req.query.secret || 
-        (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")
-          ? req.headers.authorization.split(" ")[1]
-          : req.headers.authorization);
+      const authHeader = req.headers.authorization;
+      const secret =
+        req.headers["x-webhook-secret"] ||
+        req.query.secret ||
+        (authHeader && /^(Bearer|Apikey)\s+/i.test(authHeader)
+          ? authHeader.split(" ").slice(1).join(" ")
+          : authHeader);
 
       const expectedSecret = process.env.WEBHOOK_SECRET;
       
