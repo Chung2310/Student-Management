@@ -145,7 +145,7 @@ export class AuthService {
     }
   }
 
-  static async updateBankSettings(uid: string, data: { bankAccountNo?: string; bankId?: string; bankAccountName?: string }): Promise<IUser | null> {
+  static async updateBankSettings(uid: string, data: { bankAccountNo?: string; bankId?: string; bankAccountName?: string; bankQrEnabled?: boolean }): Promise<IUser | null> {
     logger.info(`[Auth] Updating bank settings for uid: ${uid}`);
     return await User.findByIdAndUpdate(
       uid,
@@ -154,6 +154,7 @@ export class AuthService {
           bankAccountNo: data.bankAccountNo || "",
           bankId: data.bankId ? data.bankId.trim().toLowerCase() : "",
           bankAccountName: data.bankAccountName || "",
+          bankQrEnabled: data.bankQrEnabled !== undefined ? data.bankQrEnabled : true,
         },
       },
       { new: true }

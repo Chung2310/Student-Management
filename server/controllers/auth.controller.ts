@@ -88,6 +88,7 @@ export class AuthController {
       let bankAccountNo = user.bankAccountNo || "";
       let bankId = user.bankId || "";
       let bankAccountName = user.bankAccountName || "";
+      let bankQrEnabled = user.bankQrEnabled !== false;
 
       if (user.role === "user" && user.centerId) {
         const adminUser = await AuthService.getUserProfile(user.centerId);
@@ -95,6 +96,7 @@ export class AuthController {
           bankAccountNo = adminUser.bankAccountNo || "";
           bankId = adminUser.bankId || "";
           bankAccountName = adminUser.bankAccountName || adminUser.displayName || "";
+          bankQrEnabled = adminUser.bankQrEnabled !== false;
         }
       }
 
@@ -110,6 +112,7 @@ export class AuthController {
             bankAccountNo,
             bankId,
             bankAccountName,
+            bankQrEnabled,
             smtpHost: user.smtpHost,
             smtpPort: user.smtpPort,
             smtpSecure: user.smtpSecure,
@@ -165,6 +168,7 @@ export class AuthController {
             bankAccountNo: updatedUser.bankAccountNo,
             bankId: updatedUser.bankId,
             bankAccountName: updatedUser.bankAccountName,
+            bankQrEnabled: updatedUser.bankQrEnabled,
             smtpHost: updatedUser.smtpHost,
             smtpPort: updatedUser.smtpPort,
             smtpSecure: updatedUser.smtpSecure,

@@ -154,7 +154,8 @@ export function NotificationsPage() {
   });
 
   const vietqrConfig = {
-    enabled: localVietqrConfig ? localVietqrConfig.enabled : (!!user?.bankAccountNo && !!user?.bankId),
+    // "enabled" luôn lấy từ backend (bankQrEnabled) để không bị kẹt theo giá trị cũ trong localStorage
+    enabled: user?.bankQrEnabled !== false,
     bankId: localVietqrConfig?.bankId || user?.bankId || '',
     accountNo: localVietqrConfig?.accountNo || user?.bankAccountNo || '',
     accountName: localVietqrConfig?.accountName || user?.bankAccountName || user?.displayName || '',

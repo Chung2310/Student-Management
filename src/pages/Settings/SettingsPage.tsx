@@ -77,38 +77,22 @@ export function SettingsPage() {
   const [vietqrTemplate, setVietqrTemplate] = useState('[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}');
   const [isSavingVietqr, setIsSavingVietqr] = useState(false);
 
-  // Đồng bộ cấu hình từ Backend về LocalStorage nếu có sự khác biệt
+  // Đồng bộ cấu hình từ Backend về LocalStorage. "enabled" luôn lấy từ backend
+  // (bankQrEnabled) để tránh bị "kẹt" theo giá trị cũ lưu cục bộ trên trình duyệt.
   useEffect(() => {
     if (user) {
       const saved = localStorage.getItem('vietqrConfig');
-      let localConfig = saved ? JSON.parse(saved) : null;
-      if (!localConfig) {
-        localConfig = {
-          enabled: true,
-          bankId: user.bankId || 'mbbank',
-          accountNo: user.bankAccountNo || '',
-          accountName: user.bankAccountName || user.displayName || '',
-          template: '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}'
-        };
-        localStorage.setItem('vietqrConfig', JSON.stringify(localConfig));
-      } else {
-        let hasChanges = false;
-        if (user.bankAccountNo !== undefined && localConfig.accountNo !== user.bankAccountNo) {
-          localConfig.accountNo = user.bankAccountNo;
-          hasChanges = true;
-        }
-        if (user.bankId !== undefined && localConfig.bankId !== user.bankId) {
-          localConfig.bankId = user.bankId;
-          hasChanges = true;
-        }
-        if (user.bankAccountName !== undefined && localConfig.accountName !== user.bankAccountName) {
-          localConfig.accountName = user.bankAccountName;
-          hasChanges = true;
-        }
-        if (hasChanges) {
-          localStorage.setItem('vietqrConfig', JSON.stringify(localConfig));
-        }
-      }
+      const localConfig = saved ? JSON.parse(saved) : {
+        bankId: user.bankId || 'mbbank',
+        accountNo: user.bankAccountNo || '',
+        accountName: user.bankAccountName || user.displayName || '',
+        template: '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}'
+      };
+      if (user.bankAccountNo !== undefined) localConfig.accountNo = user.bankAccountNo;
+      if (user.bankId !== undefined) localConfig.bankId = user.bankId;
+      if (user.bankAccountName !== undefined) localConfig.accountName = user.bankAccountName;
+      localConfig.enabled = user.bankQrEnabled !== false;
+      localStorage.setItem('vietqrConfig', JSON.stringify(localConfig));
 
       const timer = setTimeout(() => {
         setVietqrEnabled(localConfig.enabled);
@@ -123,25 +107,24 @@ export function SettingsPage() {
 
   const handleSaveVietqrConfig = async () => {
     setIsSavingVietqr(true);
-    const updated = {
-      enabled: vietqrEnabled,
-      bankId: vietqrBankId,
-      accountNo: vietqrAccountNo,
-      accountName: vietqrAccountName,
-      template: vietqrTemplate
-    };
-    localStorage.setItem('vietqrConfig', JSON.stringify(updated));
-    window.dispatchEvent(new Event('storage'));
-
     try {
       await apiFetch('/auth/bank-settings', {
         method: 'PATCH',
         body: JSON.stringify({
           bankAccountNo: vietqrAccountNo,
           bankId: vietqrBankId,
-          bankAccountName: vietqrAccountName
+          bankAccountName: vietqrAccountName,
+          bankQrEnabled: vietqrEnabled
         })
       });
+      localStorage.setItem('vietqrConfig', JSON.stringify({
+        enabled: vietqrEnabled,
+        bankId: vietqrBankId,
+        accountNo: vietqrAccountNo,
+        accountName: vietqrAccountName,
+        template: vietqrTemplate
+      }));
+      window.dispatchEvent(new Event('storage'));
       await fetchMe();
       toast.success("Đã lưu cấu hình ngân hàng VietQR thành công!");
     } catch (e: unknown) {
@@ -632,6 +615,21 @@ export function SettingsPage() {
             if (cfg.accountNo !== undefined) setVietqrAccountNo(cfg.accountNo);
             if (cfg.accountName !== undefined) setVietqrAccountName(cfg.accountName);
             if (cfg.template !== undefined) setVietqrTemplate(cfg.template);
+            // Đồng bộ luôn xuống backend để tránh lệch với bankQrEnabled đã lưu ở server
+            try {
+              await apiFetch('/auth/bank-settings', {
+                method: 'PATCH',
+                body: JSON.stringify({
+                  bankAccountNo: cfg.accountNo || '',
+                  bankId: cfg.bankId || '',
+                  bankAccountName: cfg.accountName || '',
+                  bankQrEnabled: cfg.enabled !== false
+                })
+              });
+              await fetchMe();
+            } catch (syncErr) {
+              console.error("Lỗi đồng bộ cấu hình VietQR lên server sau khi khôi phục:", syncErr);
+            }
           }
           if (configsObj.tuitionStagesConfig) {
             localStorage.setItem('tuitionStagesConfig', JSON.stringify(configsObj.tuitionStagesConfig));

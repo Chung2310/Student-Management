@@ -14,6 +14,7 @@ export interface AuthUser {
   bankAccountNo?: string;
   bankId?: string;
   bankAccountName?: string;
+  bankQrEnabled?: boolean;
   smtpHost?: string;
   smtpPort?: number;
   smtpSecure?: boolean;
@@ -73,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           bankAccountNo: res.data.user.bankAccountNo,
           bankId: res.data.user.bankId,
           bankAccountName: res.data.user.bankAccountName,
+          bankQrEnabled: res.data.user.bankQrEnabled,
           smtpHost: res.data.user.smtpHost,
           smtpPort: res.data.user.smtpPort,
           smtpSecure: res.data.user.smtpSecure,
