@@ -55,6 +55,10 @@ const userSchema = new Schema<IUser>(
       default: "",
       trim: true,
     },
+    bankQrEnabled: {
+      type: Boolean,
+      default: true,
+    },
     smtpHost: {
       type: String,
       default: "",

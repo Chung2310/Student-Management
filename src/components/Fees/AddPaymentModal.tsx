@@ -62,7 +62,8 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
     const bankId = localConfig?.bankId || user?.bankId || '';
     const accountNo = localConfig?.accountNo || user?.bankAccountNo || '';
     const accountName = localConfig?.accountName || user?.bankAccountName || user?.displayName || '';
-    const enabled = localConfig ? localConfig.enabled : (!!user?.bankAccountNo && !!user?.bankId);
+    // "enabled" luôn lấy từ backend (bankQrEnabled) để không bị kẹt theo giá trị cũ trong localStorage
+    const enabled = user?.bankQrEnabled !== false;
     const template = localConfig?.template || '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}';
     return { enabled, bankId, accountNo, accountName, template };
   }, [user]);

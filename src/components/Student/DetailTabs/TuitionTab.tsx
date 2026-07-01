@@ -86,7 +86,8 @@ export function TuitionTab({
   const bankId = localQrConfig?.bankId || user?.bankId || '';
   const accountNo = localQrConfig?.accountNo || user?.bankAccountNo || '';
   const accountName = localQrConfig?.accountName || user?.bankAccountName || user?.displayName || '';
-  const enabled = localQrConfig ? localQrConfig.enabled : (!!user?.bankAccountNo && !!user?.bankId);
+  // "enabled" luôn lấy từ backend (bankQrEnabled) để không bị kẹt theo giá trị cũ trong localStorage
+  const enabled = user?.bankQrEnabled !== false;
 
   const hasValidConfig = enabled && !!accountNo && !!bankId;
   const qrCodeUrl = hasValidConfig 
