@@ -20,6 +20,7 @@ export class WebhookService {
     // Get all users in the center (including the admin themselves)
     const centerUsers = await User.find({ centerId: adminUser.centerId }).select("_id");
     const allowedOwnerIds = centerUsers.map(u => u._id.toString());
+    logger.info(`[Webhook] adminUser centerId: ${adminUser.centerId}, allowedOwnerIds: ${JSON.stringify(allowedOwnerIds)}`);
 
     // 1. Tìm ObjectID 24 ký tự hex
     const objectIdRegex = /[0-9a-fA-F]{24}/;
@@ -30,6 +31,12 @@ export class WebhookService {
       if (student) {
         logger.info(`[Webhook] Matched student by ID: ${student.fullName} (${student._id})`);
         return student;
+      }
+      const studentAnyOwner = await Student.findById(studentId).select("fullName ownerId");
+      if (studentAnyOwner) {
+        logger.warn(`[Webhook] Found studentId ${studentId} (${studentAnyOwner.fullName}) but its ownerId "${studentAnyOwner.ownerId}" is outside allowedOwnerIds for this center.`);
+      } else {
+        logger.warn(`[Webhook] Extracted studentId ${studentId} from description but no student exists with this ID at all.`);
       }
     }
 
