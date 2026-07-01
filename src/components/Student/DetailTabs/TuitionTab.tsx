@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CreditCard, History, Trash2, Pencil, Zap, AlertCircle, QrCode, Copy, Check, Info, Download } from 'lucide-react';
 import { Student } from '../../../types';
-import { cn, formatVND, parseVND } from '../../../lib/utils';
+import { cn, formatVND, parseVND, getVietQRBankCode } from '../../../lib/utils';
 import { useAuth } from '../../../hooks/useAuth';
 
 interface TuitionTabProps {
@@ -91,7 +91,7 @@ export function TuitionTab({
 
   const hasValidConfig = enabled && !!accountNo && !!bankId;
   const qrCodeUrl = hasValidConfig 
-    ? `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${paymentAmount}&addInfo=${student.id}&accountName=${encodeURIComponent(accountName)}`
+    ? `https://img.vietqr.io/image/${getVietQRBankCode(bankId)}-${accountNo}-compact2.png?amount=${paymentAmount}&addInfo=${student.id}&accountName=${encodeURIComponent(accountName)}`
     : '';
 
   return (

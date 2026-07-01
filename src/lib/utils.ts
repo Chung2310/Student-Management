@@ -61,3 +61,23 @@ export function toSlug(str: string): string {
     .replace(/-+/g, '-')
     .trim();
 }
+
+/**
+ * Maps lowercase bank IDs to official VietQR codes.
+ */
+export function getVietQRBankCode(bankId: string | undefined): string {
+  if (!bankId) return 'MB';
+  const map: Record<string, string> = {
+    mbbank: 'MB',
+    vietcombank: 'VCB',
+    techcombank: 'TCB',
+    vietinbank: 'ICB',
+    bidv: 'BIDV',
+    agribank: 'VBA',
+    acb: 'ACB',
+    sacombank: 'STB',
+    tpbank: 'TPB',
+    vpbank: 'VPB'
+  };
+  return map[bankId.toLowerCase()] || bankId.toUpperCase();
+}

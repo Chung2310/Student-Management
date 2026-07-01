@@ -7,7 +7,7 @@ import {
   FileJson, RotateCcw, ToggleLeft, ToggleRight, Activity,
   Mail, Loader2, Smartphone
 } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { cn, getVietQRBankCode } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch, getAccessToken } from '../../lib/api';
@@ -89,7 +89,7 @@ export function SettingsPage() {
         template: '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}'
       };
       if (user.bankAccountNo !== undefined) localConfig.accountNo = user.bankAccountNo;
-      if (user.bankId !== undefined) localConfig.bankId = user.bankId;
+      if (user.bankId) localConfig.bankId = user.bankId;
       if (user.bankAccountName !== undefined) localConfig.accountName = user.bankAccountName;
       localConfig.enabled = user.bankQrEnabled !== false;
       localStorage.setItem('vietqrConfig', JSON.stringify(localConfig));
@@ -910,7 +910,7 @@ export function SettingsPage() {
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center justify-center min-h-[160px]">
                     {vietqrEnabled && vietqrBankId && vietqrAccountNo ? (
                       <img 
-                        src={`https://img.vietqr.io/image/${vietqrBankId}-${vietqrAccountNo}-compact2.png?amount=0&addInfo=TEST&accountName=${encodeURIComponent(vietqrAccountName)}`} 
+                        src={`https://img.vietqr.io/image/${getVietQRBankCode(vietqrBankId)}-${vietqrAccountNo}-compact2.png?amount=0&addInfo=TEST&accountName=${encodeURIComponent(vietqrAccountName)}`} 
                         alt="VietQR Code"
                         className="w-32 h-32 object-contain rounded-lg shadow-sm bg-white"
                       />
