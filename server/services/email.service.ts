@@ -70,6 +70,10 @@ export class EmailService {
       await transporter.verify();
       return { success: true };
     } catch (error: unknown) {
+      if (error instanceof Error && error.message === "SMTP_CONFIG_missing") {
+        logger.warn("SMTP verify connection: Configuration is missing.");
+        return { success: false, error: error.message };
+      }
       logger.error("SMTP verify connection error: %o", error);
       const msg = error instanceof Error ? error.message : "Không thể kết nối máy chủ SMTP";
       return { success: false, error: msg };
@@ -104,6 +108,10 @@ export class EmailService {
       logger.info(`Email sent successfully: ${info.messageId}`);
       return { success: true, messageId: info.messageId };
     } catch (error: unknown) {
+      if (error instanceof Error && error.message === "SMTP_CONFIG_missing") {
+        logger.warn("SMTP send mail: Configuration is missing.");
+        return { success: false, error: error.message };
+      }
       logger.error("SMTP send mail error: %o", error);
       const msg = error instanceof Error ? error.message : "Lỗi gửi mail qua SMTP";
       return { success: false, error: msg };

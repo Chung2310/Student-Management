@@ -33,15 +33,18 @@ router.post("/send-email", authMiddleware as unknown as RequestHandler, async (r
     const { to, subject, html, check } = req.body;
 
     const user = await AuthService.getUserProfile(req.user.uid);
-    const hasCustomSmtp = !!(user && user.smtpHost && user.smtpUser && user.smtpPass);
+    const smtpOwner = user && user.role === "user" && user.centerId
+      ? await AuthService.getUserProfile(user.centerId)
+      : user;
+    const hasCustomSmtp = !!(smtpOwner && smtpOwner.smtpHost && smtpOwner.smtpUser && smtpOwner.smtpPass);
     const smtpSettings = hasCustomSmtp ? {
-      smtpHost: user.smtpHost,
-      smtpPort: user.smtpPort,
-      smtpSecure: user.smtpSecure,
-      smtpUser: user.smtpUser,
-      smtpPass: user.smtpPass,
-      smtpFrom: user.smtpFrom,
-      smtpSandboxEmail: user.smtpSandboxEmail,
+      smtpHost: smtpOwner.smtpHost,
+      smtpPort: smtpOwner.smtpPort,
+      smtpSecure: smtpOwner.smtpSecure,
+      smtpUser: smtpOwner.smtpUser,
+      smtpPass: smtpOwner.smtpPass,
+      smtpFrom: smtpOwner.smtpFrom,
+      smtpSandboxEmail: smtpOwner.smtpSandboxEmail,
     } : undefined;
 
     if (check) {
