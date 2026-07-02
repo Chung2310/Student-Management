@@ -75,6 +75,42 @@ export class PaymentService {
       recipient: "Hệ thống",
     });
 
+    // Tự động phân bổ số tiền thanh toán vào các đợt đóng học phí (installmentStatus) nếu có
+    if (student.installmentStatus && student.installmentStatus.length > 0) {
+      let allocated = payAmount;
+
+      // Chiến lược 1: Khớp chính xác số tiền đợt chưa thu (ưu tiên quét QR)
+      const exactMatch = student.installmentStatus.find(
+        (inst) => inst.status !== 'Đã thu' && Math.abs(inst.amountDue - allocated) <= 1000
+      );
+
+      if (exactMatch) {
+        exactMatch.status = 'Đã thu';
+        exactMatch.amountDue = 0;
+        exactMatch.paidAt = new Date().toISOString();
+        logger.info(`[Payment] Khớp chính xác đợt ${exactMatch.installmentNo} với số tiền ${payAmount}`);
+      } else {
+        // Chiến lược 2: Phân bổ tuần tự (FIFO)
+        const unpaidInstallments = student.installmentStatus
+          .filter((inst) => inst.status !== 'Đã thu')
+          .sort((a, b) => a.installmentNo - b.installmentNo);
+
+        for (const inst of unpaidInstallments) {
+          if (allocated <= 0) break;
+          if (allocated >= inst.amountDue) {
+            allocated -= inst.amountDue;
+            inst.amountDue = 0;
+            inst.status = 'Đã thu';
+            inst.paidAt = new Date().toISOString();
+          } else {
+            inst.amountDue -= allocated;
+            allocated = 0;
+          }
+        }
+      }
+      student.markModified('installmentStatus');
+    }
+
     await student.save();
     logger.info(`[Payment] Cập nhật thông tin học phí thành công cho học viên: id=${student._id}, đã đóng=${student.paidAmount}`);
 
