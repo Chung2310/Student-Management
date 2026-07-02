@@ -17,6 +17,7 @@ import { apiFetch } from '../../lib/api';
 import { EditStudentModal } from '../../components/Student/EditStudentModal';
 import { ImportStudentModal } from '../../components/Student/ImportStudentModal';
 import { Pagination } from '../../components/ui/Pagination';
+import { useAuth } from '../../hooks/useAuth';
 import * as XLSX from 'xlsx';
 
 interface StudentsPageProps {
@@ -40,6 +41,7 @@ function categoryIcon(name: string): React.ComponentType<{ className?: string }>
 }
 
 export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProps) {
+  const { user } = useAuth();
   const { students, loading } = useStudents();
   const { batches } = useBatches();
   const { courses } = useCourses();
@@ -176,14 +178,18 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
     currentPage * pageSize
   );
 
+  const businessType = user?.businessType || 'driving';
+
   // Nhóm trạng thái riêng quy trình lái xe — ẩn tab khi không có học viên nào mang trạng thái đó
   const DRIVING_STATUS_TABS: StatusFilter[] = ['KSK', 'Đã KSK', 'Nộp HS'];
 
   const allStatusTabs: { label: StatusFilter; count?: number }[] = [
     { label: 'Tất cả', count: students.length },
-    { label: 'KSK', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Chờ KSK') : s.status === 'Chờ KSK').length },
-    { label: 'Đã KSK', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đã KSK') : s.status === 'Đã KSK').length },
-    { label: 'Nộp HS', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đã nộp HS') : s.status === 'Đã nộp HS').length },
+    ...(businessType === 'driving' ? [
+      { label: 'KSK' as StatusFilter, count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Chờ KSK') : s.status === 'Chờ KSK').length },
+      { label: 'Đã KSK' as StatusFilter, count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đã KSK') : s.status === 'Đã KSK').length },
+      { label: 'Nộp HS' as StatusFilter, count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đã nộp HS') : s.status === 'Đã nộp HS').length },
+    ] : []),
     { label: 'Đang học', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đang học') : s.status === 'Đang học').length },
     { label: 'Đang thi', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đang thi') : s.status === 'Đang thi').length },
     { label: 'Đã đậu', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đã đậu') : s.status === 'Đã đậu').length },
@@ -227,14 +233,18 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
       return;
     }
 
-    const headers = [
-      'Họ và tên', 'Số điện thoại', 'Ngành / Hạng', 'Học phí', 'Đã đóng', 'Còn nợ',
+    let headers: string[];
+    let getRowData: (student: Student) => (string | number)[];
+    let cols: { wch: number }[];
+
+    const commonHeadersAfter = [
+      'Học phí', 'Đã đóng', 'Còn nợ',
       'Ngày đăng ký', 'Trạng thái học phí', 'Trạng thái học tập',
       'Ngày sinh', 'CCCD / CMND', 'Email', 'Người giới thiệu', 'Địa chỉ', 'Ngày nhập học',
       'Ảnh CCCD mặt trước', 'Ảnh CCCD mặt sau', 'Ảnh chân dung'
     ];
 
-    const data = filteredStudents.map(student => {
+    const getCommonRowDataAfter = (student: Student) => {
       const totalFeeNum = parseInt(String(student.fee).replace(/\D/g, ''), 10) || 0;
       const paidSoFar = student.paidAmount || 0;
       const remaining = totalFeeNum - paidSoFar;
@@ -246,12 +256,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         feeStatusStr = 'Còn thiếu';
       }
 
-      const cats = Array.from(studentCategories.get(student.id) || []);
-
       return [
-        student.fullName,
-        student.phone,
-        cats.length > 0 ? cats.join(', ') : (student.rank || ''),
         totalFeeNum.toLocaleString('vi-VN'),
         paidSoFar.toLocaleString('vi-VN'),
         remaining.toLocaleString('vi-VN'),
@@ -268,32 +273,64 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         student.idCardBackFile?.url || '',
         student.portraitFile?.url || ''
       ];
-    });
+    };
+
+    if (businessType === 'driving') {
+      headers = ['Họ và tên', 'Số điện thoại', 'Ngành / Hạng', ...commonHeadersAfter];
+      getRowData = (student: Student) => {
+        const cats = Array.from(studentCategories.get(student.id) || []);
+        return [
+          student.fullName,
+          student.phone,
+          cats.length > 0 ? cats.join(', ') : (student.rank || ''),
+          ...getCommonRowDataAfter(student)
+        ];
+      };
+      cols = [
+        { wch: 20 }, { wch: 15 }, { wch: 15 },
+        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 18 },
+        { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 35 }, { wch: 16 },
+        { wch: 30 }, { wch: 30 }, { wch: 30 }
+      ];
+    } else if (businessType === 'language') {
+      headers = ['Họ và tên', 'Số điện thoại', 'Khóa học', ...commonHeadersAfter];
+      getRowData = (student: Student) => {
+        const cats = Array.from(studentCategories.get(student.id) || []);
+        return [
+          student.fullName,
+          student.phone,
+          cats.length > 0 ? cats.join(', ') : (student.rank || ''),
+          ...getCommonRowDataAfter(student)
+        ];
+      };
+      cols = [
+        { wch: 20 }, { wch: 15 }, { wch: 20 },
+        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 18 },
+        { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 35 }, { wch: 16 },
+        { wch: 30 }, { wch: 30 }, { wch: 30 }
+      ];
+    } else {
+      headers = ['Họ và tên', 'Số điện thoại', ...commonHeadersAfter];
+      getRowData = (student: Student) => {
+        return [
+          student.fullName,
+          student.phone,
+          ...getCommonRowDataAfter(student)
+        ];
+      };
+      cols = [
+        { wch: 20 }, { wch: 15 },
+        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 18 },
+        { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 35 }, { wch: 16 },
+        { wch: 30 }, { wch: 30 }, { wch: 30 }
+      ];
+    }
+
+    const data = filteredStudents.map(getRowData);
 
     try {
       const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-      
-      // Set column widths for better readability
-      ws['!cols'] = [
-        { wch: 20 }, // Họ và tên
-        { wch: 15 }, // Số điện thoại
-        { wch: 10 }, // Hạng bằng
-        { wch: 15 }, // Học phí
-        { wch: 15 }, // Đã đóng
-        { wch: 15 }, // Còn nợ
-        { wch: 15 }, // Ngày đăng ký
-        { wch: 18 }, // Trạng thái học phí
-        { wch: 18 }, // Trạng thái học tập
-        { wch: 12 }, // Ngày sinh
-        { wch: 18 }, // CCCD / CMND
-        { wch: 22 }, // Email
-        { wch: 18 }, // Người giới thiệu
-        { wch: 35 }, // Địa chỉ
-        { wch: 16 }, // Ngày nhập học
-        { wch: 30 }, // Ảnh CCCD mặt trước
-        { wch: 30 }, // Ảnh CCCD mặt sau
-        { wch: 30 }  // Ảnh chân dung
-      ];
+      ws['!cols'] = cols;
 
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Danh sách học viên");
@@ -508,9 +545,11 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
             <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
-        {hasRankData && (
+        {hasRankData && businessType !== 'general' && (
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Hạng bằng (lái xe)</label>
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              {businessType === 'language' ? 'Khóa học' : 'Hạng bằng (lái xe)'}
+            </label>
             <div className="relative">
               <select
                 value={rankFilter}
@@ -572,9 +611,15 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
                   <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-600" />
                 </th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Họ và tên</th>
-                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Ngành / Hạng</th>
+                {businessType === 'language' ? (
+                  <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Khóa học</th>
+                ) : businessType === 'driving' ? (
+                  <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Ngành / Hạng</th>
+                ) : null}
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Ngày ĐK</th>
-                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Tiến độ</th>
+                {businessType === 'driving' && (
+                  <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Tiến độ</th>
+                )}
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Học phí</th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Trạng thái</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right no-print">Thao tác</th>
@@ -610,46 +655,50 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-center">
-                    {(() => {
-                      const cats = Array.from(studentCategories.get(student.id) || []);
-                      if (cats.length > 0) {
-                        return (
-                          <div className="flex flex-wrap justify-center gap-1">
-                            {cats.map(c => (
-                              <span key={c} className="px-2 py-1 bg-cyan-50 text-cyan-700 rounded text-xs font-bold border border-cyan-100 whitespace-nowrap">
-                                {c}
-                              </span>
-                            ))}
-                          </div>
-                        );
-                      }
-                      if (student.rank) {
-                        return (
-                          <span className="px-3 py-1 bg-cyan-50 text-cyan-700 rounded text-xs font-bold border border-cyan-100">
-                            {student.rank}
-                          </span>
-                        );
-                      }
-                      return <span className="text-xs text-slate-300 font-medium italic">Chưa xếp lớp</span>;
-                    })()}
-                  </td>
+                  {businessType !== 'general' && (
+                    <td className="px-4 py-4 text-center">
+                      {(() => {
+                        const cats = Array.from(studentCategories.get(student.id) || []);
+                        if (cats.length > 0) {
+                          return (
+                            <div className="flex flex-wrap justify-center gap-1">
+                              {cats.map(c => (
+                                <span key={c} className="px-2 py-1 bg-cyan-50 text-cyan-700 rounded text-xs font-bold border border-cyan-100 whitespace-nowrap">
+                                  {c}
+                                </span>
+                              ))}
+                            </div>
+                          );
+                        }
+                        if (student.rank) {
+                          return (
+                            <span className="px-3 py-1 bg-cyan-50 text-cyan-700 rounded text-xs font-bold border border-cyan-100">
+                              {student.rank}
+                            </span>
+                          );
+                        }
+                        return <span className="text-xs text-slate-300 font-medium italic">Chưa xếp lớp</span>;
+                      })()}
+                    </td>
+                  )}
                   <td className="px-4 py-4 text-center text-sm font-medium text-slate-500">
                     {formatDisplayDate(student.registrationDate)}
                   </td>
-                  <td className="px-4 py-4 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      {[1, 2, 3, 4, 5].map((dot) => (
-                        <div
-                          key={dot}
-                          className={cn(
-                            "w-2 h-2 rounded-full",
-                            dot <= 3 ? "bg-emerald-500" : "bg-slate-200"
-                          )}
-                        />
-                      ))}
-                    </div>
-                  </td>
+                  {businessType === 'driving' && (
+                    <td className="px-4 py-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        {[1, 2, 3, 4, 5].map((dot) => (
+                          <div
+                            key={dot}
+                            className={cn(
+                              "w-2 h-2 rounded-full",
+                              dot <= 3 ? "bg-emerald-500" : "bg-slate-200"
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </td>
+                  )}
                   <td className="px-4 py-4">
                     <div className="flex flex-col gap-1 w-28">
                       <div className="flex items-center text-xs font-bold">

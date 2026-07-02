@@ -18,6 +18,7 @@ export interface IUser extends Document {
   smtpPass?: string;
   smtpFrom?: string;
   smtpSandboxEmail?: string;
+  businessType?: "driving" | "language" | "general";
   isActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date;

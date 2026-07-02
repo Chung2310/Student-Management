@@ -68,6 +68,8 @@ export function SettingsPage() {
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
+
+
   const [vietqrEnabled, setVietqrEnabled] = useState(true);
   const [vietqrBankId, setVietqrBankId] = useState('mbbank');
   const [vietqrAccountNo, setVietqrAccountNo] = useState('');
@@ -838,6 +840,8 @@ export function SettingsPage() {
                 })}
               </div>
             </div>
+
+            {/* Business Type Settings (Hidden: configured via User Management) */}
 
             {/* Tuition Stages */}
             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 p-6 space-y-6">

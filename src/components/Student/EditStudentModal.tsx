@@ -6,6 +6,7 @@ import { useToast } from '../../hooks/useToast';
 import { Student, UploadedFile } from '../../types';
 import { cn } from '../../lib/utils';
 import { findDuplicateStudentField } from '../../lib/studentUniqueness';
+import { useAuth } from '../../hooks/useAuth';
 
 interface EditStudentModalProps {
   student: Student | null;
@@ -18,6 +19,7 @@ interface EditStudentModalProps {
 type FileField = 'idCardFrontFile' | 'idCardBackFile' | 'portraitFile';
 
 export function EditStudentModal({ student, isOpen, onClose, onSuccess, students }: EditStudentModalProps) {
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingField, setUploadingField] = useState<FileField | null>(null);
   const { toast } = useToast();
@@ -175,7 +177,12 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
               <Input label="Người giới thiệu" name="referral" value={formData.referral} onChange={handleInputChange} placeholder="Nhập tên người giới thiệu..." className="sm:col-span-2" />
               <Input label="Ngày sinh" name="birthday" value={formData.birthday} onChange={handleInputChange} required={requiredFields.birthday} placeholder="DD/MM/YYYY" />
               <Input label="CCCD / CMND" name="idCard" value={formData.idCard} onChange={handleInputChange} required={requiredFields.idCard} placeholder="Nhập số CCCD (12 số)..." />
-              <Input label="Hạng bằng (lái xe — tùy chọn)" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} placeholder="Ví dụ: A1, B2, C... hoặc để trống" />
+              {user?.businessType === 'language' ? (
+                <Input label="Khóa học đăng ký" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} placeholder="Ví dụ: IELTS, TOEIC, Giao tiếp..." />
+              ) : (user?.businessType || 'driving') === 'driving' ? (
+                <Input label="Hạng bằng (lái xe — tùy chọn)" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} placeholder="Ví dụ: A1, B2, C... hoặc để trống" />
+              ) : null}
+
               <Input label="Ngày đăng ký" name="registrationDate" value={formData.registrationDate} onChange={handleInputChange} placeholder="DD/MM/YYYY" readOnly />
               <Input label="Ngày nhập học" name="enrollmentDate" value={formData.enrollmentDate} onChange={handleInputChange} placeholder="DD/MM/YYYY" />
               <Input label="Học phí (VND)" name="fee" value={formData.fee} onChange={handleInputChange} placeholder="Nhập học phí..." />
@@ -183,7 +190,10 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
               <div className="sm:col-span-2 space-y-1">
                 <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Trạng thái (Chọn nhiều)</label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  {['Chờ KSK', 'Đã KSK', 'Đã nộp HS', 'Đang học', 'Đang thi', 'Đã đậu', 'Thi lại', 'Nghỉ học', 'Nợ học phí'].map((st) => {
+                  {(user?.businessType === 'language' || user?.businessType === 'general'
+                    ? ['Đang học', 'Đã đậu', 'Thi lại', 'Nghỉ học', 'Nợ học phí']
+                    : ['Chờ KSK', 'Đã KSK', 'Đã nộp HS', 'Đang học', 'Đang thi', 'Đã đậu', 'Thi lại', 'Nghỉ học', 'Nợ học phí']
+                  ).map((st) => {
                     const isChecked = formData.status.includes(st);
                     return (
                       <label key={st} className={cn(
@@ -214,11 +224,13 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <UploadCard label="CCCD mặt trước" file={formData.idCardFrontFile} isUploading={uploadingField === 'idCardFrontFile'} onFileChange={(file) => handleUploadFile('idCardFrontFile', file)} onRemove={() => setFormData(prev => ({ ...prev, idCardFrontFile: undefined }))} />
-              <UploadCard label="CCCD mặt sau" file={formData.idCardBackFile} isUploading={uploadingField === 'idCardBackFile'} onFileChange={(file) => handleUploadFile('idCardBackFile', file)} onRemove={() => setFormData(prev => ({ ...prev, idCardBackFile: undefined }))} />
-              <UploadCard label="Ảnh chân dung" file={formData.portraitFile} isUploading={uploadingField === 'portraitFile'} onFileChange={(file) => handleUploadFile('portraitFile', file)} onRemove={() => setFormData(prev => ({ ...prev, portraitFile: undefined }))} />
-            </div>
+            {(user?.businessType || 'driving') === 'driving' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <UploadCard label="CCCD mặt trước" file={formData.idCardFrontFile} isUploading={uploadingField === 'idCardFrontFile'} onFileChange={(file) => handleUploadFile('idCardFrontFile', file)} onRemove={() => setFormData(prev => ({ ...prev, idCardFrontFile: undefined }))} />
+                <UploadCard label="CCCD mặt sau" file={formData.idCardBackFile} isUploading={uploadingField === 'idCardBackFile'} onFileChange={(file) => handleUploadFile('idCardBackFile', file)} onRemove={() => setFormData(prev => ({ ...prev, idCardBackFile: undefined }))} />
+                <UploadCard label="Ảnh chân dung" file={formData.portraitFile} isUploading={uploadingField === 'portraitFile'} onFileChange={(file) => handleUploadFile('portraitFile', file)} onRemove={() => setFormData(prev => ({ ...prev, portraitFile: undefined }))} />
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-4 pt-4 mt-2 border-t border-slate-50 flex-shrink-0">
               <button type="button" onClick={onClose} disabled={isSubmitting} className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors disabled:opacity-50">Hủy</button>

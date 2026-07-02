@@ -25,6 +25,7 @@ interface ManagedUserCreateData extends RegisterData {
   centerId?: string;
   bankAccountNo?: string;
   bankId?: string;
+  businessType?: "driving" | "language" | "general";
 }
 
 export class AuthService {
@@ -47,6 +48,7 @@ export class AuthService {
       smtpFrom: user.smtpFrom,
       smtpSandboxEmail: user.smtpSandboxEmail,
       isActive: user.isActive !== false,
+      businessType: user.businessType || "driving",
     };
   }
 
@@ -161,6 +163,19 @@ export class AuthService {
     );
   }
 
+  static async updateBusinessSettings(uid: string, data: { businessType: "driving" | "language" | "general" }): Promise<IUser | null> {
+    logger.info(`[Auth] Updating business settings for uid: ${uid} to ${data.businessType}`);
+    return await User.findByIdAndUpdate(
+      uid,
+      {
+        $set: {
+          businessType: data.businessType,
+        },
+      },
+      { new: true }
+    );
+  }
+
   static async updateSmtpSettings(uid: string, data: Partial<IUser>): Promise<IUser | null> {
     logger.info(`[Auth] Updating SMTP settings for uid: ${uid}`);
     return await User.findByIdAndUpdate(
@@ -221,6 +236,7 @@ export class AuthService {
       role: data.role,
       centerId: requester.role === "admin" ? (requester.centerId || requester.uid) : (data.centerId || ""),
       createdBy: requester.uid,
+      businessType: data.businessType || "driving",
     });
 
     if (data.role === "admin") {
@@ -245,6 +261,7 @@ export class AuthService {
       centerId?: string;
       bankAccountNo?: string;
       bankId?: string;
+      businessType?: "driving" | "language" | "general";
     }
   ) {
     if (requester.role === "user") {
@@ -289,6 +306,7 @@ export class AuthService {
     }
     if (data.bankAccountNo !== undefined) updates.bankAccountNo = data.bankAccountNo;
     if (data.bankId !== undefined) updates.bankId = data.bankId;
+    if (data.businessType !== undefined) updates.businessType = data.businessType;
 
     // Superadmin is allowed to change role & center
     if (requester.role === "superadmin") {

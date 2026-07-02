@@ -110,6 +110,8 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStu
     if (requiredFields.idCard && !formData.idCard) missingFields.push('CCCD/CMND');
     if (requiredFields.email && !formData.email) missingFields.push('Email');
 
+    const businessType = user?.businessType || 'driving';
+
     if (missingFields.length > 0) {
       const message = `Vui lòng điền đầy đủ các trường bắt buộc: ${missingFields.join(', ')}`;
       setErrorMsg(message);
@@ -117,11 +119,13 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStu
       return;
     }
 
-    if (!formData.idCardFrontFile || !formData.idCardBackFile) {
-      const message = "Vui lòng tải lên cả ảnh mặt trước và mặt sau của CCCD.";
-      setErrorMsg(message);
-      toast.error(message);
-      return;
+    if (businessType === 'driving') {
+      if (!formData.idCardFrontFile || !formData.idCardBackFile) {
+        const message = "Vui lòng tải lên cả ảnh mặt trước và mặt sau của CCCD.";
+        setErrorMsg(message);
+        toast.error(message);
+        return;
+      }
     }
 
     const duplicateField = findDuplicateStudentField(students, {
@@ -142,10 +146,9 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStu
         method: 'POST',
         body: JSON.stringify({
           ...formData,
-          idCardFront: formData.idCardFrontFile.url,
-          idCardBack: formData.idCardBackFile.url,
-          // Quy trình KSK chỉ áp dụng cho ngành lái xe (có hạng bằng)
-          status: formData.rank ? 'Chờ KSK' : 'Đang học',
+          idCardFront: formData.idCardFrontFile?.url || '',
+          idCardBack: formData.idCardBackFile?.url || '',
+          status: businessType === 'driving' ? ['Chờ KSK'] : ['Đang học'],
           registrationDate: new Date().toLocaleDateString('vi-VN'),
         }),
       });
@@ -234,7 +237,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStu
                   <select
                     value={batchId}
                     onChange={(e) => setBatchId(e.target.value)}
-                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
+                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all cursor-pointer"
                   >
                     <option value="">-- Chưa xếp lớp --</option>
                     {batches.filter(b => b.status !== 'Đã kết thúc').map(b => (
@@ -244,18 +247,26 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStu
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
                 </div>
               </div>
-              <Input label="Hạng bằng (lái xe — tùy chọn)" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} placeholder="Ví dụ: A1, B2, C... hoặc để trống" />
+              
+              {user?.businessType === 'language' ? (
+                <Input label="Khóa học đăng ký" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} placeholder="Ví dụ: IELTS, TOEIC, Giao tiếp..." />
+              ) : (user?.businessType || 'driving') === 'driving' ? (
+                <Input label="Hạng bằng (lái xe — tùy chọn)" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} placeholder="Ví dụ: A1, B2, C... hoặc để trống" />
+              ) : null}
+
               <Input label="Ngày đăng ký" name="registrationDate" value={formData.registrationDate} onChange={handleInputChange} readOnly />
               <Input label="Ngày nhập học" name="enrollmentDate" value={formData.enrollmentDate} onChange={handleInputChange} placeholder="DD/MM/YYYY" />
               <Input label="Học phí (VND)" name="fee" value={formData.fee} onChange={handleInputChange} placeholder="Nhập học phí..." />
               <Input label="Địa chỉ" name="address" value={formData.address} onChange={handleInputChange} placeholder="Nhập địa chỉ..." className="sm:col-span-2" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <UploadCard label="CCCD mặt trước" file={formData.idCardFrontFile} isUploading={uploadingField === 'idCardFrontFile'} onFileChange={(file) => handleUploadFile('idCardFrontFile', file)} onRemove={() => setFormData(prev => ({ ...prev, idCardFrontFile: undefined }))} />
-              <UploadCard label="CCCD mặt sau" file={formData.idCardBackFile} isUploading={uploadingField === 'idCardBackFile'} onFileChange={(file) => handleUploadFile('idCardBackFile', file)} onRemove={() => setFormData(prev => ({ ...prev, idCardBackFile: undefined }))} />
-              <UploadCard label="Ảnh chân dung" file={formData.portraitFile} isUploading={uploadingField === 'portraitFile'} onFileChange={(file) => handleUploadFile('portraitFile', file)} onRemove={() => setFormData(prev => ({ ...prev, portraitFile: undefined }))} />
-            </div>
+            {(user?.businessType || 'driving') === 'driving' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <UploadCard label="CCCD mặt trước" file={formData.idCardFrontFile} isUploading={uploadingField === 'idCardFrontFile'} onFileChange={(file) => handleUploadFile('idCardFrontFile', file)} onRemove={() => setFormData(prev => ({ ...prev, idCardFrontFile: undefined }))} />
+                <UploadCard label="CCCD mặt sau" file={formData.idCardBackFile} isUploading={uploadingField === 'idCardBackFile'} onFileChange={(file) => handleUploadFile('idCardBackFile', file)} onRemove={() => setFormData(prev => ({ ...prev, idCardBackFile: undefined }))} />
+                <UploadCard label="Ảnh chân dung" file={formData.portraitFile} isUploading={uploadingField === 'portraitFile'} onFileChange={(file) => handleUploadFile('portraitFile', file)} onRemove={() => setFormData(prev => ({ ...prev, portraitFile: undefined }))} />
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-4 pt-4 mt-2 border-t border-slate-50 flex-shrink-0">
               <button type="button" onClick={onClose} disabled={isSubmitting} className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors disabled:opacity-50">Hủy</button>
