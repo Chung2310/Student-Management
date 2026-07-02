@@ -50,6 +50,7 @@ const FeesPage = lazyWithRetry(() => import('./pages/Fees/FeesPage').then(m => (
 const NotificationsPage = lazyWithRetry(() => import('./pages/Notifications/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
 const UserManagementPage = lazyWithRetry(() => import('./pages/UserManagement/UserManagementPage').then(m => ({ default: m.UserManagementPage })));
 const SettingsPage = lazyWithRetry(() => import('./pages/Settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const ErpDemoLayout = lazyWithRetry(() => import('./pages/ErpDemo/ErpDemoLayout').then(m => ({ default: m.ErpDemoLayout })));
 
 // Lazy load modals and heavy widgets
 const AddStudentModal = lazyWithRetry(() => import('./components/Student/AddStudentModal').then(m => ({ default: m.AddStudentModal })));
@@ -63,7 +64,7 @@ const PageLoader = () => (
   </div>
 );
 
-export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'UserManagement' | 'SettingsAdmin';
+export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'UserManagement' | 'SettingsAdmin' | 'ErpDemo';
 export type TabType = 'Hồ sơ' | 'KSK' | 'Tiến độ học' | 'Lịch thi & KQ' | 'Học phí' | 'Lịch sử' | 'Trợ lý AI';
 
 export default function App() {
@@ -75,6 +76,7 @@ export default function App() {
   const getViewFromPath = (): ViewType => {
     if (typeof window === 'undefined') return 'Dashboard';
     const path = window.location.pathname;
+    if (path.startsWith('/demo-erp')) return 'ErpDemo';
     if (path.startsWith('/students')) return 'Students';
     if (path.startsWith('/exams')) return 'Exams';
     if (path.startsWith('/fees')) return 'Fees';
@@ -104,6 +106,7 @@ export default function App() {
     else if (view === 'Bot') path = '/bot';
     else if (view === 'UserManagement') path = '/user-management';
     else if (view === 'SettingsAdmin') path = '/settings';
+    else if (view === 'ErpDemo') path = '/demo-erp';
     else if (view === 'Dashboard') path = '/dashboard';
 
     if (window.location.pathname !== path) {
@@ -181,6 +184,20 @@ export default function App() {
         </div>
       }>
         <LoginPage />
+      </Suspense>
+    );
+  }
+
+  // Tách biệt render hoàn toàn khi đang xem ERP Demo để giữ nguyên cấu trúc gốc
+  if (currentView === 'ErpDemo') {
+    return (
+      <Suspense fallback={
+        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
+          <Loader2 className="w-12 h-12 text-violet-500 animate-spin mb-4" />
+          <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.3em] animate-pulse">Đang tải bản ERP Demo...</p>
+        </div>
+      }>
+        <ErpDemoLayout />
       </Suspense>
     );
   }
