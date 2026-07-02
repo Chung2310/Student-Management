@@ -2,6 +2,16 @@ import { Document } from "mongoose";
 
 export type StudentStatus = 'Chờ KSK' | 'Đã KSK' | 'Đã nộp HS' | 'Đang học' | 'Đang thi' | 'Đã đậu' | 'Thi lại' | 'Nghỉ học' | 'Nợ học phí';
 
+export interface IInstallmentStatus {
+  installmentNo: number;     // Số thứ tự đợt (1, 2, 3...)
+  percent: number;           // % học phí gốc của đợt này
+  amountDue: number;         // Số tiền phải đóng (tính tại lúc gửi TB)
+  status: 'Đã gửi' | 'Đã thu' | 'Chưa gửi';
+  sentAt?: string;           // ISO date string khi gửi TB
+  paidAt?: string;           // ISO date string khi xác nhận thu
+  notificationId?: string;   // Ref đến Notification._id
+}
+
 export interface IHealthCheckFile {
   name: string;
   url: string;
@@ -62,6 +72,7 @@ export interface IStudent extends Document {
   progress?: IStudentProgress;
   exams?: IStudentExam[];
   paymentHistory?: IStudentPayment[];
+  installmentStatus?: IInstallmentStatus[];
   examId?: string;
   examName?: string;
   examDate?: string;

@@ -55,6 +55,21 @@ const studentPaymentSchema = new Schema({
   recipient: { type: String, required: true },
 });
 
+const installmentStatusSchema = new Schema({
+  installmentNo: { type: Number, required: true },     // Số thứ tự đợt
+  percent: { type: Number, required: true },           // % học phí gốc
+  amountDue: { type: Number, required: true },         // Số tiền phải đóng
+  status: {
+    type: String,
+    enum: ["Đã gửi", "Đã thu", "Chưa gửi"],
+    default: "Chưa gửi",
+    required: true,
+  },
+  sentAt: { type: String, default: "" },
+  paidAt: { type: String, default: "" },
+  notificationId: { type: String, default: "" },
+});
+
 const studentSchema = new Schema<IStudent>(
   {
     fullName: { type: String, required: true, trim: true },
@@ -83,6 +98,7 @@ const studentSchema = new Schema<IStudent>(
     progress: { type: progressSchema, default: () => ({}) },
     exams: [studentExamSchema],
     paymentHistory: [studentPaymentSchema],
+    installmentStatus: [installmentStatusSchema],
     examId: { type: String, default: "" },
     examName: { type: String, default: "" },
     examDate: { type: String, default: "" },

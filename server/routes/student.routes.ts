@@ -16,5 +16,8 @@ router.get("/", StudentController.getList);
 router.get("/:id", validate(idParamSchema, "params"), StudentController.getDetail);
 router.patch("/:id", validate(idParamSchema, "params"), validate(updateStudentSchema), StudentController.update);
 router.delete("/:id", validate(idParamSchema, "params"), StudentController.delete);
+// Đánh dấu đã thu tiền đợt :no cho học viên :id
+router.patch("/:id/installment/:no/mark-paid", validate(idParamSchema, "params"), StudentController.markInstallmentPaid);
 
 export default router;
+
