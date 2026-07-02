@@ -43,6 +43,10 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
 
 // Lazy load pages
 const LoginPage = lazyWithRetry(() => import('./pages/Auth/LoginPage').then(m => ({ default: m.LoginPage })));
+const LandingPage = lazyWithRetry(() => import('./pages/Landing/LandingPage').then(m => ({ default: m.LandingPage })));
+const LookupPage = lazyWithRetry(() => import('./pages/Lookup/LookupPage').then(m => ({ default: m.LookupPage })));
+const PrivacyPolicyPage = lazyWithRetry(() => import('./pages/Legal/PrivacyPolicyPage').then(m => ({ default: m.PrivacyPolicyPage })));
+const TermsOfServicePage = lazyWithRetry(() => import('./pages/Legal/TermsOfServicePage').then(m => ({ default: m.TermsOfServicePage })));
 const DashboardPage = lazyWithRetry(() => import('./pages/Dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const StudentsPage = lazyWithRetry(() => import('./pages/Students/StudentsPage').then(m => ({ default: m.StudentsPage })));
 const ExamsPage = lazyWithRetry(() => import('./pages/Exams/ExamsPage').then(m => ({ default: m.ExamsPage })));
@@ -71,6 +75,8 @@ export default function App() {
   const { user, loading } = useAuth();
   useRealtimePayment();
   const { students } = useStudents();
+  
+  const [currentPath, setCurrentPath] = React.useState(() => typeof window !== 'undefined' ? window.location.pathname : '/');
 
   // Helper to parse current path to ViewType
   const getViewFromPath = (): ViewType => {
@@ -96,6 +102,14 @@ export default function App() {
   const currentDate = new Date();
   const formattedDate = `Thứ Sáu, ${currentDate.getDate()} tháng ${currentDate.getMonth() + 1}, ${currentDate.getFullYear()}`;
 
+  const navigateTo = (newPath: string) => {
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', newPath);
+      setCurrentPath(newPath);
+      setCurrentView(getViewFromPath());
+    }
+  };
+
   const updateUrlForView = (view: ViewType, studentSlug?: string) => {
     if (typeof window === 'undefined') return;
     let path = '/dashboard';
@@ -111,6 +125,7 @@ export default function App() {
 
     if (window.location.pathname !== path) {
       window.history.pushState(null, '', path);
+      setCurrentPath(path);
     }
   };
 
@@ -134,10 +149,14 @@ export default function App() {
     updateUrlForView(currentView);
   };
 
-  // Redirect logged-in users from / to /dashboard
+  // Redirect logged-in users from / or /login to /dashboard
   React.useEffect(() => {
-    if (user && window.location.pathname === '/') {
+    if (user && (window.location.pathname === '/' || window.location.pathname === '/login')) {
       window.history.replaceState(null, '', '/dashboard');
+      setTimeout(() => {
+        setCurrentPath('/dashboard');
+        setCurrentView('Dashboard');
+      }, 0);
     }
   }, [user]);
 
@@ -145,6 +164,7 @@ export default function App() {
   React.useEffect(() => {
     const handlePopState = () => {
       setCurrentView(getViewFromPath());
+      setCurrentPath(window.location.pathname);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -175,15 +195,55 @@ export default function App() {
     );
   }
 
-  if (!user) {
+  const isPrivacyPath = currentPath.startsWith('/privacy');
+  const isTermsPath = currentPath.startsWith('/terms');
+  const isLookupPath = currentPath.startsWith('/lookup');
+
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      window.history.back();
+    } else {
+      navigateTo(user ? '/dashboard' : '/');
+    }
+  };
+
+  if (isPrivacyPath || isTermsPath || isLookupPath) {
     return (
       <Suspense fallback={
         <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
           <Loader2 className="w-12 h-12 text-cyan-500 animate-spin mb-4" />
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.3em] animate-pulse">Đang nạp trang đăng nhập...</p>
+          <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.3em] animate-pulse">Đang tải...</p>
         </div>
       }>
-        <LoginPage />
+        {isPrivacyPath ? (
+          <PrivacyPolicyPage onBack={handleBack} />
+        ) : isTermsPath ? (
+          <TermsOfServicePage onBack={handleBack} />
+        ) : (
+          <LookupPage onBack={handleBack} />
+        )}
+      </Suspense>
+    );
+  }
+
+  if (!user) {
+    const isLoginPath = currentPath.startsWith('/login');
+
+    return (
+      <Suspense fallback={
+        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
+          <Loader2 className="w-12 h-12 text-cyan-500 animate-spin mb-4" />
+          <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.3em] animate-pulse">Đang tải...</p>
+        </div>
+      }>
+        {isLoginPath ? (
+          <LoginPage onNavigateToPath={navigateTo} />
+        ) : (
+          <LandingPage 
+            onNavigateToLogin={() => navigateTo('/login')} 
+            onNavigateToPath={navigateTo}
+          />
+        )}
       </Suspense>
     );
   }
@@ -266,7 +326,7 @@ export default function App() {
 
         <footer className="p-6 text-center text-slate-400">
           <p className="text-[10px] font-bold uppercase tracking-widest">
-            &copy; 2026 IGEN Quản lý học viên Lái xe • Phần mềm quản lý đào tạo & sát hạch
+            &copy; 2026 IGEN • Hệ thống Quản lý Đào tạo & Học viên thông minh
           </p>
         </footer>
       </div>

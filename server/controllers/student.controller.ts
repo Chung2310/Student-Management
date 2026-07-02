@@ -132,4 +132,23 @@ export class StudentController {
       res.status(400).json({ success: false, error: msg });
     }
   }
+
+  static async publicLookup(req: Request, res: Response) {
+    try {
+      const { idCard } = req.query;
+      if (!idCard || typeof idCard !== "string") {
+        return res.status(400).json({ success: false, error: "Vui lòng nhập số CCCD." });
+      }
+
+      const student = await StudentService.getStudentByIdCard(idCard.trim());
+      if (!student) {
+        return res.status(404).json({ success: false, error: "Không tìm thấy thông tin học viên với số CCCD này." });
+      }
+
+      res.json({ success: true, data: student });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Lỗi không xác định.";
+      res.status(400).json({ success: false, error: msg });
+    }
+  }
 }

@@ -7,6 +7,7 @@ import { createStudentSchema, updateStudentSchema, idParamSchema, publicRegister
 const router = Router();
 
 router.post("/public-register", validate(publicRegisterStudentSchema), StudentController.publicRegister);
+router.get("/public-lookup", StudentController.publicLookup);
 
 router.use(authMiddleware);
 

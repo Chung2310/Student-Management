@@ -39,23 +39,25 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
 
   useEffect(() => {
     if (student) {
-      setFormData({
-        fullName: student.fullName || '',
-        email: student.email || '',
-        phone: student.phone || '',
-        referral: student.referral || '',
-        birthday: student.birthday || '',
-        idCard: student.idCard || '',
-        rank: student.rank || '',
-        registrationDate: student.registrationDate || '',
-        enrollmentDate: student.enrollmentDate || '',
-        fee: student.fee || '',
-        address: student.address || '',
-        status: Array.isArray(student.status) ? student.status : (student.status ? [student.status] : []),
-        idCardFrontFile: student.idCardFrontFile,
-        idCardBackFile: student.idCardBackFile,
-        portraitFile: student.portraitFile,
-      });
+      setTimeout(() => {
+        setFormData({
+          fullName: student.fullName || '',
+          email: student.email || '',
+          phone: student.phone || '',
+          referral: student.referral || '',
+          birthday: student.birthday || '',
+          idCard: student.idCard || '',
+          rank: student.rank || '',
+          registrationDate: student.registrationDate || '',
+          enrollmentDate: student.enrollmentDate || '',
+          fee: student.fee || '',
+          address: student.address || '',
+          status: Array.isArray(student.status) ? student.status : (student.status ? [student.status] : []),
+          idCardFrontFile: student.idCardFrontFile,
+          idCardBackFile: student.idCardBackFile,
+          portraitFile: student.portraitFile,
+        });
+      }, 0);
     }
   }, [student]);
 

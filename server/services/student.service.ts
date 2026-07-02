@@ -340,4 +340,9 @@ export class StudentService {
     logger.info(`[Student] Installment ${installmentNo} marked as paid for student ${studentId}`);
     return { success: true };
   }
+
+  static async getStudentByIdCard(idCard: string): Promise<IStudent | null> {
+    logger.info(`[Student] Public lookup by idCard=${idCard}`);
+    return Student.findOne({ idCard: idCard.trim() });
+  }
 }
