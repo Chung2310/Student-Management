@@ -21,11 +21,6 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingField, setUploadingField] = useState<FileField | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [idCardFrontFile, setIdCardFrontFile] = useState<string>('');
-  const [idCardBackFile, setIdCardBackFile] = useState<string>('');
-  const [isUploadingFront, setIsUploadingFront] = useState(false);
-  const [isUploadingBack, setIsUploadingBack] = useState(false);
-
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -42,47 +37,6 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
     idCardBackFile: undefined as UploadedFile | undefined,
     portraitFile: undefined as UploadedFile | undefined,
   });
-
-  const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>, isFront: boolean) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const file = files[0];
-    if (isFront) {
-      setIsUploadingFront(true);
-    } else {
-      setIsUploadingBack(true);
-    }
-
-    try {
-      const form = new FormData();
-      form.append("file", file);
-
-      const res = await apiFetch("/upload", {
-        method: "POST",
-        body: form,
-      });
-
-      if (res.success && res.data?.url) {
-        if (isFront) {
-          setIdCardFrontFile(res.data.url);
-          toast.success("Đã tải lên mặt trước CCCD thành công!");
-        } else {
-          setIdCardBackFile(res.data.url);
-          toast.success("Đã tải lên mặt sau CCCD thành công!");
-        }
-      }
-    } catch (err) {
-      console.error("Lỗi khi tải ảnh lên:", err);
-      toast.error("Lỗi tải ảnh lên: " + (err instanceof Error ? err.message : "Không xác định"));
-    } finally {
-      if (isFront) {
-        setIsUploadingFront(false);
-      } else {
-        setIsUploadingBack(false);
-      }
-    }
-  };
 
   const getRequiredFieldsConfig = () => {
     const saved = localStorage.getItem('requiredFieldsConfig');
@@ -102,6 +56,8 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
       email: false
     };
   };
+
+  if (!isOpen) return null;
 
   const requiredFields = getRequiredFieldsConfig();
 
@@ -154,8 +110,8 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
       return;
     }
 
-    if (!idCardFrontFile || !idCardBackFile) {
-      setErrorMsg("Vui lòng tải lên cả mặt trước và mặt sau của CCCD.");
+    if (!formData.idCardFrontFile || !formData.idCardBackFile) {
+      setErrorMsg("Vui lòng tải lên cả ảnh mặt trước và mặt sau của CCCD.");
       return;
     }
 
@@ -165,8 +121,8 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
         method: 'POST',
         body: JSON.stringify({
           ...formData,
-          idCardFront: idCardFrontFile,
-          idCardBack: idCardBackFile,
+          idCardFront: formData.idCardFrontFile.url,
+          idCardBack: formData.idCardBackFile.url,
           status: 'Chờ KSK',
           registrationDate: new Date().toLocaleDateString('vi-VN'),
         }),
@@ -180,8 +136,6 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
         onSuccess(studentWithId);
 
         // Reset form
-        setIdCardFrontFile('');
-        setIdCardBackFile('');
         setFormData({
           fullName: '',
           phone: '',
@@ -189,11 +143,14 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
           birthday: '',
           idCard: '',
           rank: '',
-          area: '',
           registrationDate: new Date().toLocaleDateString('vi-VN'),
+          enrollmentDate: '',
           fee: '',
           address: '',
           email: '',
+          idCardFrontFile: undefined,
+          idCardBackFile: undefined,
+          portraitFile: undefined,
         });
       }
     } catch (error: unknown) {
@@ -238,255 +195,23 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
               <Input label="Địa chỉ" name="address" value={formData.address} onChange={handleInputChange} className="sm:col-span-2" />
             </div>
 
-            {/* Email - New Field */}
-            <div className="sm:col-span-2 space-y-1">
-              <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                Email học viên {requiredFields.email && <span className="text-rose-500">*</span>}
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder="example@gmail.com"
-                className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <UploadCard label="CCCD mặt trước" file={formData.idCardFrontFile} isUploading={uploadingField === 'idCardFrontFile'} onFileChange={(file) => handleUploadFile('idCardFrontFile', file)} onRemove={() => setFormData(prev => ({ ...prev, idCardFrontFile: undefined }))} />
+              <UploadCard label="CCCD mặt sau" file={formData.idCardBackFile} isUploading={uploadingField === 'idCardBackFile'} onFileChange={(file) => handleUploadFile('idCardBackFile', file)} onRemove={() => setFormData(prev => ({ ...prev, idCardBackFile: undefined }))} />
+              <UploadCard label="Ảnh chân dung" file={formData.portraitFile} isUploading={uploadingField === 'portraitFile'} onFileChange={(file) => handleUploadFile('portraitFile', file)} onRemove={() => setFormData(prev => ({ ...prev, portraitFile: undefined }))} />
             </div>
 
-            {/* Row 2 - Full Width */}
-            <div className="sm:col-span-2 space-y-1">
-              <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Người giới thiệu</label>
-              <input
-                type="text"
-                name="referral"
-                value={formData.referral}
-                onChange={handleInputChange}
-                placeholder="Tên người giới thiệu"
-                className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-              />
+            <div className="flex items-center justify-end gap-4 pt-4 mt-2 border-t border-slate-50 flex-shrink-0">
+              <button type="button" onClick={onClose} disabled={isSubmitting} className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors disabled:opacity-50">Hủy</button>
+              <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-6 py-2.5 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-xs font-bold shadow-lg shadow-cyan-100 transition-all disabled:opacity-70">
+                {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                {isSubmitting ? 'Đang lưu...' : 'Lưu & Mở hồ sơ'}
+              </button>
             </div>
-
-            {/* Row 3 */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                Ngày sinh {requiredFields.birthday && <span className="text-rose-500">*</span>}
-              </label>
-              <input
-                type="text"
-                name="birthday"
-                value={formData.birthday}
-                onChange={(e) => {
-                  let val = e.target.value.replace(/\D/g, '');
-                  if (val.length > 8) val = val.substring(0, 8);
-                  if (val.length > 4) {
-                    val = val.substring(0, 2) + '/' + val.substring(2, 4) + '/' + val.substring(4);
-                  } else if (val.length > 2) {
-                    val = val.substring(0, 2) + '/' + val.substring(2);
-                  }
-                  setFormData(prev => ({ ...prev, birthday: val }));
-                }}
-                placeholder="DD/MM/YYYY"
-                maxLength={10}
-                className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                CCCD / CMND {requiredFields.idCard && <span className="text-rose-500">*</span>}
-              </label>
-              <input
-                type="text"
-                name="idCard"
-                value={formData.idCard}
-                onChange={handleInputChange}
-                placeholder="Số định danh"
-                className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-              />
-            </div>
-
-            {/* Upload ảnh CCCD */}
-            <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1 pb-2">
-              {/* Mặt trước */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider block">
-                  Mặt trước CCCD <span className="text-rose-500">*</span>
-                </label>
-                {idCardFrontFile ? (
-                  <div className="relative rounded-2xl overflow-hidden border border-slate-150 aspect-[8/5] bg-slate-50 flex items-center justify-center group shadow-sm">
-                    <img src={idCardFrontFile} alt="Mặt trước CCCD" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button
-                        type="button"
-                        onClick={() => setIdCardFrontFile('')}
-                        className="p-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl active:scale-95 transition-all cursor-pointer shadow-md"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <label className="border-2 border-dashed border-slate-200 hover:border-brand-primary hover:bg-slate-50/50 rounded-2xl aspect-[8/5] flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all p-3 text-center group">
-                    {isUploadingFront ? (
-                      <>
-                        <Loader2 className="w-5 h-5 text-brand-primary animate-spin" />
-                        <span className="text-[10px] font-bold text-slate-400">Đang tải ảnh lên...</span>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-brand-primary group-hover:bg-brand-primary/5 transition-all">
-                          <Upload className="w-4 h-4" />
-                        </div>
-                        <span className="text-[10px] font-black text-slate-700">Tải lên mặt trước</span>
-                        <span className="text-[8px] font-bold text-slate-400">Hỗ trợ JPG, PNG</span>
-                      </>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => handleUploadFile(e, true)}
-                      disabled={isUploadingFront}
-                    />
-                  </label>
-                )}
-              </div>
-
-              {/* Mặt sau */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider block">
-                  Mặt sau CCCD <span className="text-rose-500">*</span>
-                </label>
-                {idCardBackFile ? (
-                  <div className="relative rounded-2xl overflow-hidden border border-slate-150 aspect-[8/5] bg-slate-50 flex items-center justify-center group shadow-sm">
-                    <img src={idCardBackFile} alt="Mặt sau CCCD" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button
-                        type="button"
-                        onClick={() => setIdCardBackFile('')}
-                        className="p-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl active:scale-95 transition-all cursor-pointer shadow-md"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <label className="border-2 border-dashed border-slate-200 hover:border-brand-primary hover:bg-slate-50/50 rounded-2xl aspect-[8/5] flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all p-3 text-center group">
-                    {isUploadingBack ? (
-                      <>
-                        <Loader2 className="w-5 h-5 text-brand-primary animate-spin" />
-                        <span className="text-[10px] font-bold text-slate-400">Đang tải ảnh lên...</span>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-brand-primary group-hover:bg-brand-primary/5 transition-all">
-                          <Upload className="w-4 h-4" />
-                        </div>
-                        <span className="text-[10px] font-black text-slate-700">Tải lên mặt sau</span>
-                        <span className="text-[8px] font-bold text-slate-400">Hỗ trợ JPG, PNG</span>
-                      </>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => handleUploadFile(e, false)}
-                      disabled={isUploadingBack}
-                    />
-                  </label>
-                )}
-              </div>
-            </div>
-
-            {/* Row 4 */}
-            <div className="space-y-1 relative">
-              <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                Hạng bằng {requiredFields.rank && <span className="text-rose-500">*</span>}
-              </label>
-              <div className="relative">
-                <select
-                  name="rank"
-                  value={formData.rank}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-                >
-                  <option value="">-- Chọn hạng --</option>
-                  <option value="A1">A1</option>
-                  <option value="A2">A2</option>
-                  <option value="B1">B1</option>
-                  <option value="B2">B2</option>
-                  <option value="C">C</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                Khu vực {requiredFields.area && <span className="text-rose-500">*</span>}
-              </label>
-              <div className="relative">
-                <select
-                  name="area"
-                  value={formData.area}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-                >
-                  <option value="">-- Chọn khu vực --</option>
-                  <option value="Nội thành">Nội thành</option>
-                  <option value="Ngoại thành">Ngoại thành</option>
-                  <option value="Tỉnh lân cận">Tỉnh lân cận</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Row 5 */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Ngày đăng ký</label>
-              <input
-                type="text"
-                name="registrationDate"
-                value={formData.registrationDate}
-                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 focus:outline-none cursor-default"
-                readOnly
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Học phí (VND)</label>
-              <input
-                type="text"
-                name="fee"
-                value={formData.fee}
-                onChange={handleInputChange}
-                placeholder="Ví dụ: 4.000.000"
-                className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-              />
-            </div>
-
-            {/* Row 6 - Full Width */}
-            <div className="sm:col-span-2 space-y-1">
-              <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Địa chỉ</label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                placeholder="Địa chỉ thường trú"
-                className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-              />
-            </div>
-          </div >
-
-          <div className="flex items-center justify-end gap-4 pt-4 mt-2 border-t border-slate-50 flex-shrink-0">
-            <button type="button" onClick={onClose} disabled={isSubmitting} className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors disabled:opacity-50">Hủy</button>
-            <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-6 py-2.5 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-xs font-bold shadow-lg shadow-cyan-100 transition-all disabled:opacity-70">
-              {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-              {isSubmitting ? 'Đang lưu...' : 'Lưu & Mở hồ sơ'}
-            </button>
-          </div>
-        </form >
-      </motion.div >
-    </div >
-    </AnimatePresence >
+          </form>
+        </motion.div>
+      </div>
+    </AnimatePresence>
   );
 }
 
