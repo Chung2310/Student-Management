@@ -485,7 +485,7 @@ export function NotificationsPage() {
 
   const replaceVariables = (str: string, student: Student, installmentAmount?: number) => {
     const examDate = student.exams?.find(e => e.status === 'Sắp thi')?.date || 
-                    (student.status === 'Đang thi' ? student.examDate : '') || 
+                    ((Array.isArray(student.status) ? student.status.includes('Đang thi') : student.status === 'Đang thi') ? student.examDate : '') || 
                     'Chưa có lịch';
     const totalFee = parseInt(parseVND(student.fee) || '0');
     const debtAmount = totalFee - (student.paidAmount || 0);
@@ -505,7 +505,7 @@ export function NotificationsPage() {
     return str
       .replace(/\{ten\}/g, student.fullName)
       .replace(/\{hang\}/g, student.rank)
-      .replace(/\{kv\}/g, student.area)
+      .replace(/\{kv\}/g, '')
       .replace(/\{email\}/g, student.email || '')
       .replace(/\{ngaythi\}/g, examDate)
       .replace(/\{sotien\}/g, formattedSotien)
@@ -644,12 +644,12 @@ export function NotificationsPage() {
             }
 
             const data = await apiFetch('/send-email', {
-              method: 'POST',
-              body: JSON.stringify({
-                to: student.email,
-                subject: personalizedTitle,
-                html: emailHtml
-              })
+               method: 'POST',
+               body: JSON.stringify({
+                 to: student.email,
+                 subject: personalizedTitle,
+                 html: emailHtml
+               })
             });
             if (!data.success) {
               isSuccess = false;
@@ -816,17 +816,17 @@ export function NotificationsPage() {
     {
       name: 'Nhắc phí',
       title: 'THÔNG BÁO HOÀN THÀNH HỌC PHÍ - {ten}',
-      content: 'Kính gửi học viên {ten}, Trung tâm xin thông báo học phí khóa học hạng {hang} của bạn hiện vẫn còn nợ {sotien}. {nhac_dong_phi} Để đảm bảo tiến độ học tập và dự thi đúng hạn, bạn vui lòng hoàn tất học phí trong tuần này tại {kv}. Trân trọng.'
+      content: 'Kính gửi học viên {ten}, Trung tâm xin thông báo học phí khóa học hạng {hang} của bạn hiện vẫn còn nợ {sotien}. {nhac_dong_phi} Để đảm bảo tiến độ học tập và dự thi đúng hạn, bạn vui lòng hoàn tất học phí trong tuần này. Trân trọng.'
     },
     {
       name: 'Lịch thi',
       title: 'THÔNG BÁO LỊCH THI SÁT HẠCH - {ten}',
-      content: 'Kính gửi học viên {ten}, Trung tâm xin thông báo lịch thi sát hạch hạng {hang} của bạn đã có vào ngày {ngaythi} tại {kv}. Bạn vui lòng có mặt đúng giờ và mang theo CCCD bản gốc để làm thủ tục dự thi. Chúc bạn thi tốt.'
+      content: 'Kính gửi học viên {ten}, Trung tâm xin thông báo lịch thi sát hạch hạng {hang} của bạn đã có vào ngày {ngaythi}. Bạn vui lòng có mặt đúng giờ và mang theo CCCD bản gốc để làm thủ tục dự thi. Chúc bạn thi tốt.'
     },
     {
       name: 'Thi lại',
       title: 'LỊCH THI LẠI & ÔN TẬP - {ten}',
-      content: 'Kính gửi học viên {ten}, Trung tâm đã sắp xếp lịch ôn tập và thi lại cho bạn khóa hạng {hang} tại khu vực {kv}. Vui lòng liên hệ văn phòng để xác nhận lịch thi dự kiến kế tiếp. Cố gắng lên bạn nhé.'
+      content: 'Kính gửi học viên {ten}, Trung tâm đã sắp xếp lịch ôn tập và thi lại cho bạn khóa hạng {hang} tại trung tâm. Vui lòng liên hệ văn phòng để xác nhận lịch thi dự kiến kế tiếp. Cố gắng lên bạn nhé.'
     }
   ];
 

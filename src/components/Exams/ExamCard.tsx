@@ -38,11 +38,11 @@ const handleDownloadTemplate = (exam: ExamSession, students: DrivingStudent[]) =
 
 const handleExportResults = (exam: ExamSession, students: DrivingStudent[]) => {
   try {
-    const headers = ['Họ và tên', 'Số điện thoại', 'Hạng bằng', 'Khu vực', 'Trạng thái học', 'Kết quả thi'];
+    const headers = ['Họ và tên', 'Số điện thoại', 'Hạng bằng', 'Trạng thái học', 'Kết quả thi'];
     const data = students.map(s => {
       const examEntry = s.exams?.find(e => e.id === exam.id);
       const overall = examEntry?.result?.overall || 'Chưa có';
-      return [s.fullName, s.phone, s.rank, s.area, s.status, overall];
+      return [s.fullName, s.phone, s.rank, Array.isArray(s.status) ? s.status.join(', ') : s.status, overall];
     });
 
     const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
@@ -52,7 +52,6 @@ const handleExportResults = (exam: ExamSession, students: DrivingStudent[]) => {
       { wch: 25 }, // Họ và tên
       { wch: 18 }, // Số điện thoại
       { wch: 12 }, // Hạng bằng
-      { wch: 20 }, // Khu vực
       { wch: 18 }, // Trạng thái học
       { wch: 15 }  // Kết quả thi
     ];
@@ -345,7 +344,6 @@ export const ExamCard: React.FC<ExamCardProps> = ({
                       <tr className="bg-slate-50/60 border-b border-slate-100">
                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Học viên</th>
                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider text-center">Hạng</th>
-                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Khu vực</th>
                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Trạng thái học</th>
                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider text-center">Kết quả</th>
                         <th className="px-4 py-3 text-right"></th>
@@ -370,16 +368,13 @@ export const ExamCard: React.FC<ExamCardProps> = ({
                               </span>
                             </td>
                             <td className="px-4 py-3">
-                              <span className="text-xs font-bold text-slate-500">{student.area}</span>
-                            </td>
-                            <td className="px-4 py-3">
                               <span className={cn(
                                 "px-2 py-0.5 rounded text-[9px] font-extrabold uppercase",
-                                student.status === 'Đã đậu' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
-                                student.status === 'Đang thi' ? "bg-cyan-50 text-cyan-600 border border-cyan-100" :
+                                (Array.isArray(student.status) ? student.status.includes('Đã đậu') : student.status === 'Đã đậu') ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
+                                (Array.isArray(student.status) ? student.status.includes('Đang thi') : student.status === 'Đang thi') ? "bg-cyan-50 text-cyan-600 border border-cyan-100" :
                                 "bg-slate-50 text-slate-500 border border-slate-100"
                               )}>
-                                {student.status}
+                                {Array.isArray(student.status) ? student.status.join(', ') : student.status}
                               </span>
                             </td>
                             <td className="px-4 py-3 text-center">

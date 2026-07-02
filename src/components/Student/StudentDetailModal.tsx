@@ -41,7 +41,7 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
   const [isUploadingFile, setIsUploadingFile] = React.useState(false);
   
   const [kskData, setKskData] = React.useState({
-    status: student?.status === 'Chờ KSK' ? 'Pending' : 'Completed',
+    status: (Array.isArray(student?.status) ? student.status.includes('Chờ KSK') : student?.status === 'Chờ KSK') ? 'Pending' : 'Completed',
     date: student?.healthCheckDate || '',
     notes: student?.healthCheckNotes || '',
     files: student?.healthCheckFiles || []
@@ -112,7 +112,7 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
       const timer = setTimeout(() => {
         if (!isUpdatingKSK) {
           setKskData({
-            status: student.status === 'Chờ KSK' ? 'Pending' : 'Completed',
+            status: (Array.isArray(student.status) ? student.status.includes('Chờ KSK') : student.status === 'Chờ KSK') ? 'Pending' : 'Completed',
             date: student.healthCheckDate || '',
             notes: student.healthCheckNotes || '',
             files: student.healthCheckFiles || []
@@ -412,20 +412,25 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
                       <span className="px-2 py-0.5 bg-cyan-50 text-cyan-700 rounded text-[10px] sm:text-xs font-bold border border-cyan-100">
                         {student.rank}
                       </span>
-                      <span className="text-slate-400 text-[10px] sm:text-xs font-medium">{student.area}</span>
-                      <span className="text-slate-300 hidden sm:block">•</span>
                       <span className="text-slate-500 text-[10px] sm:text-xs font-medium">{student.phone}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 sm:gap-4 self-end sm:self-center">
-                  <span className={cn(
-                    "px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold border shadow-sm",
-                    getStatusColor(student.status)
-                  )}>
-                    {student.status}
-                  </span>
+                  <div className="flex flex-wrap gap-1.5 justify-end">
+                    {(Array.isArray(student.status) ? student.status : [student.status]).map((st) => (
+                      <span
+                        key={st}
+                        className={cn(
+                          "px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold border shadow-sm whitespace-nowrap",
+                          getStatusColor(st)
+                        )}
+                      >
+                        {st}
+                      </span>
+                    ))}
+                  </div>
                   <div className="flex items-center gap-2">
                     <button 
                       title="In thông tin"

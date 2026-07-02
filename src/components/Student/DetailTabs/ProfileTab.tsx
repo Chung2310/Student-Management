@@ -9,75 +9,65 @@ interface ProfileTabProps {
 export function ProfileTab({ student }: ProfileTabProps) {
   return (
     <div className="space-y-6">
-      {/* Form Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-100 shadow-sm shadow-slate-200/50">
-        <FormField label="HỌ VÀ TÊN*" value={student.fullName} required />
+        <FormField label="HỌ VÀ TÊN*" value={student.fullName} />
         <FormField label="NGÀY SINH" value={formatDisplayDate(student.birthday)} />
-        <FormField label="GIỚI TÍNH" value="Nam" type="select" />
         <FormField label="SỐ ĐIỆN THOẠI" value={student.phone} />
         <FormField label="EMAIL" value={student.email || 'Chưa cập nhật'} />
         <FormField label="NGƯỜI GIỚI THIỆU" value={student.referral || 'Trực tiếp'} />
         <FormField label="CCCD / CMND" value={student.idCard || 'Chưa cập nhật'} />
-        <FormField label="HANG BẰNG*" value={student.rank} required type="select" />
-        <FormField label="KHU VỰC*" value={student.area} required type="select" />
+        <FormField label="HẠNG BẰNG*" value={student.rank} />
+        <FormField label="NGÀY ĐĂNG KÝ" value={formatDisplayDate(student.registrationDate)} />
+        <FormField label="NGÀY NHẬP HỌC" value={formatDisplayDate(student.enrollmentDate || '') || 'Chưa cập nhật'} />
         <div className="md:col-span-2">
-          <FormField label="NGÀY ĐĂNG KÝ" value={formatDisplayDate(student.registrationDate)} />
+          <FormField label="ĐỊA CHỈ" value={student.address || 'Chưa cập nhật'} />
         </div>
         <div className="md:col-span-2">
-          <FormField label=" ĐỊA CHỈ" value={student.address || 'Chưa cập nhật'} />
+          <FormField label="TRẠNG THÁI" value={Array.isArray(student.status) ? student.status.join(', ') : student.status} />
         </div>
-        <div className="md:col-span-2">
-          <FormField label=" TRẠNG THÁI" value={student.status} type="select" />
-        </div>
-        <div className="md:col-span-2">
-          <FormField label=" GHI CHÚ" value="" isTextArea />
+      </div>
+
+      <div className="bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-100 shadow-sm shadow-slate-200/50">
+        <h3 className="text-sm font-bold text-slate-800 mb-4">Giấy tờ & Ảnh hồ sơ</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <DocumentCard label="CCCD mặt trước" file={student.idCardFrontFile} />
+          <DocumentCard label="CCCD mặt sau" file={student.idCardBackFile} />
+          <DocumentCard label="Ảnh chân dung" file={student.portraitFile} />
         </div>
       </div>
     </div>
   );
 }
 
-function FormField({ label, value, required = false, type = 'text', isTextArea = false }: { 
-  label: string, 
-  value: string, 
-  required?: boolean, 
-  type?: 'text' | 'select',
-  isTextArea?: boolean
-}) {
+function FormField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="space-y-1.5 sm:space-y-2 group">
-      <label className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1 group-focus-within:text-cyan-600 transition-colors">
-        {label} {required && <span className="text-rose-500">*</span>}
-      </label>
-      {isTextArea ? (
-        <textarea 
-          placeholder="Nhập ghi chú..."
-          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all resize-none min-h-[100px]"
-          readOnly
-        />
-      ) : (
-        <div className="relative">
-          <input
-            type="text"
-            value={value}
-            readOnly
-            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all cursor-default"
-          />
-          {type === 'select' && (
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-              <ChevronDownIcon />
-            </div>
-          )}
-        </div>
-      )}
+    <div className="space-y-2">
+      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{label}</label>
+      <input type="text" value={value} readOnly className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 cursor-default" />
     </div>
   );
 }
 
-function ChevronDownIcon() {
+function DocumentCard({ label, file }: { label: string; file?: Student['idCardFrontFile'] }) {
   return (
-    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M1 1L5 5L9 1" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
+    <div className="border border-slate-200 rounded-2xl p-4">
+      <p className="text-xs font-bold text-slate-700 mb-3">{label}</p>
+      {file ? (
+        <a href={file.url} target="_blank" rel="noreferrer" className="block">
+          <div className="h-36 rounded-xl overflow-hidden bg-slate-50 border border-slate-100 flex items-center justify-center">
+            {file.type.includes('image') ? (
+              <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-sm font-semibold text-slate-500">Mở tệp</span>
+            )}
+          </div>
+          <p className="text-[11px] text-slate-500 mt-2 truncate">{file.name}</p>
+        </a>
+      ) : (
+        <div className="h-36 rounded-xl bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center text-xs font-semibold text-slate-400">
+          Chưa cập nhật
+        </div>
+      )}
+    </div>
   );
 }

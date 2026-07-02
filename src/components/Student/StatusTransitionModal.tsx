@@ -36,7 +36,11 @@ export function StatusTransitionModal({ student, isOpen, onClose }: StatusTransi
 
   if (!student || !isOpen) return null;
 
-  const currentIndex = statusWorkflow.indexOf(student.status);
+  const studentStatuses = Array.isArray(student.status) ? student.status : [student.status];
+  const workflowIndices = studentStatuses
+    .map(s => statusWorkflow.indexOf(s as StudentStatus))
+    .filter(idx => idx !== -1);
+  const currentIndex = workflowIndices.length > 0 ? Math.max(...workflowIndices) : -1;
   const nextStatus = currentIndex !== -1 && currentIndex < statusWorkflow.length - 1
     ? statusWorkflow[currentIndex + 1]
     : null;
@@ -109,7 +113,9 @@ export function StatusTransitionModal({ student, isOpen, onClose }: StatusTransi
               {nextStatus ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 py-3 px-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <span className="text-xs font-bold text-slate-400">{student.status}</span>
+                    <span className="text-xs font-bold text-slate-400">
+                      {Array.isArray(student.status) ? student.status.join(', ') : student.status}
+                    </span>
                     <ArrowRight className="w-3.5 h-3.5 text-slate-300" />
                     <span className="text-xs font-bold text-cyan-600">{nextStatus}</span>
                   </div>
