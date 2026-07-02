@@ -7,7 +7,11 @@ import { UploadedFile } from '../../types';
 
 type PublicFileField = 'idCardFrontFile' | 'idCardBackFile' | 'portraitFile';
 
-export function LoginPage() {
+interface LoginPageProps {
+  onNavigateToPath: (path: string) => void;
+}
+
+export function LoginPage({ onNavigateToPath }: LoginPageProps) {
   const { loginWithEmail, isLoggingIn } = useAuth();
   const queryParams = new URLSearchParams(window.location.search);
   const teacherId = queryParams.get('teacherId');
@@ -161,7 +165,7 @@ export function LoginPage() {
         <div className="flex items-center gap-3 mb-12">
           <img src="https://res.cloudinary.com/dgaofuhmv/image/upload/v1775301001/unnamed_tcmlmp.png" alt="Logo" className="w-12 h-12 rounded-2xl object-cover shadow-lg shadow-cyan-500/20 bg-cyan-600/10" />
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none">IGEN Quản lý học viên Lái xe</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none">IGEN Quản lý Học viên</h1>
             <p className="text-cyan-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Hệ thống quản lý thông minh</p>
           </div>
         </div>
@@ -172,7 +176,7 @@ export function LoginPage() {
               NÂNG TẦM <span className="text-cyan-500">QUẢN LÝ</span> ĐÀO TẠO.
             </h2>
             <p className="text-slate-400 text-lg lg:text-xl font-medium leading-relaxed mb-12">
-              Giải pháp toàn diện tối ưu hóa quy trình tiếp nhận hồ sơ, theo dõi học phí và quản lý lịch thi tự động cho các trung tâm đào tạo lái xe.
+              Giải pháp toàn diện tối ưu hóa quy trình tiếp nhận hồ sơ, theo dõi học phí và quản lý học vụ tự động cho các tổ chức giáo dục.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
               <FeatureItem icon={ShieldCheck} text="Bảo mật dữ liệu tuyệt đối" />
@@ -260,6 +264,25 @@ export function LoginPage() {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+
+        {/* Legal links footer */}
+        <div className="mt-auto pt-6 border-t border-slate-100 flex items-center justify-center gap-4 text-[11px] font-semibold text-slate-450">
+          <button 
+            type="button"
+            onClick={() => onNavigateToPath('/terms')} 
+            className="hover:text-cyan-650 transition-colors cursor-pointer bg-transparent border-none p-0 font-bold"
+          >
+            Điều khoản dịch vụ
+          </button>
+          <span className="text-slate-200">|</span>
+          <button 
+            type="button"
+            onClick={() => onNavigateToPath('/privacy')} 
+            className="hover:text-cyan-650 transition-colors cursor-pointer bg-transparent border-none p-0 font-bold"
+          >
+            Chính sách bảo mật
+          </button>
         </div>
       </div>
     </div>
