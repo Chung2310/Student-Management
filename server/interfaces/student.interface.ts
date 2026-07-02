@@ -19,6 +19,13 @@ export interface IHealthCheckFile {
   uploadedAt: Date | string;
 }
 
+export interface IUploadedFile {
+  name: string;
+  url: string;
+  type: string;
+  uploadedAt: Date | string;
+}
+
 export interface IStudentProgress {
   theory: { completed: boolean; score?: number; lastDate?: string };
   practice: { hoursDone: number; totalHours: number };
@@ -59,16 +66,19 @@ export interface IStudent extends Document {
   birthday: string;
   idCard: string;
   rank: 'A1' | 'A2' | 'B1' | 'B2' | 'C';
-  area: 'Nội thành' | 'Ngoại thành' | 'Tỉnh lân cận';
   registrationDate: string;
+  enrollmentDate?: string;
   fee: string;
   paidAmount?: number;
   address: string;
-  status: StudentStatus;
+  status: StudentStatus[];
   ownerId: string;
   healthCheckDate?: string;
   healthCheckNotes?: string;
   healthCheckFiles?: IHealthCheckFile[];
+  idCardFrontFile?: IUploadedFile;
+  idCardBackFile?: IUploadedFile;
+  portraitFile?: IUploadedFile;
   progress?: IStudentProgress;
   exams?: IStudentExam[];
   paymentHistory?: IStudentPayment[];

@@ -137,7 +137,7 @@ export class ExamService {
           examId: exam._id.toString(),
           examName: exam.name,
           examDate: exam.tentativeDate,
-          status: "Đang thi",
+          status: ["Đang thi"],
         },
         $push: {
           exams: {
@@ -198,7 +198,7 @@ export class ExamService {
           examId: "",
           examName: "",
           examDate: "",
-          status: "Đang học",
+          status: ["Đang học"],
         },
         $pull: {
           exams: { id: examId }
@@ -267,17 +267,17 @@ export class ExamService {
     }
 
     // Set student status and exam subdocument details based on the overallResult
-    let studentStatus: string;
+    let studentStatus: string[];
     let examStatus: "Sắp thi" | "Đã thi";
 
     if (overallResult === "Đậu") {
-      studentStatus = "Đã đậu";
+      studentStatus = ["Đã đậu"];
       examStatus = "Đã thi";
     } else if (overallResult === "Trượt") {
-      studentStatus = "Thi lại";
+      studentStatus = ["Thi lại"];
       examStatus = "Đã thi";
     } else {
-      studentStatus = "Đang thi";
+      studentStatus = ["Đang thi"];
       examStatus = "Sắp thi";
     }
 
@@ -361,17 +361,17 @@ export class ExamService {
           continue;
         }
 
-        let studentStatus = student.status;
+        let studentStatus: string[];
         let examStatus: "Sắp thi" | "Đã thi" = "Sắp thi";
 
         if (overallResult === "Đậu") {
-          studentStatus = "Đã đậu";
+          studentStatus = ["Đã đậu"];
           examStatus = "Đã thi";
         } else if (overallResult === "Trượt") {
-          studentStatus = "Thi lại";
+          studentStatus = ["Thi lại"];
           examStatus = "Đã thi";
         } else {
-          studentStatus = "Đang thi";
+          studentStatus = ["Đang thi"];
           examStatus = "Sắp thi";
         }
 

@@ -2,6 +2,13 @@
  * Student Types
  */
 
+export interface UploadedFile {
+  name: string;
+  url: string;
+  type: string;
+  uploadedAt: string;
+}
+
 export type StudentStatus = 'Chờ KSK' | 'Đã KSK' | 'Đã nộp HS' | 'Đang học' | 'Đang thi' | 'Đã đậu' | 'Thi lại' | 'Nghỉ học' | 'Nợ học phí';
 
 export interface DrivingStudent {
@@ -16,16 +23,19 @@ export interface DrivingStudent {
   idCardFront?: string;
   idCardBack?: string;
   rank: 'A1' | 'A2' | 'B1' | 'B2' | 'C';
-  area: 'Nội thành' | 'Ngoại thành' | 'Tỉnh lân cận';
   registrationDate: string;
+  enrollmentDate?: string;
   fee: string; // This is the TOTAL fee string (e.g. "12,000,000")
   paidAmount?: number; // Total amount paid so far
   address: string;
-  status: StudentStatus;
+  status: StudentStatus[];
   ownerId: string;
   healthCheckDate?: string;
   healthCheckNotes?: string;
-  healthCheckFiles?: { name: string; url: string; type: string; uploadedAt: string }[];
+  healthCheckFiles?: UploadedFile[];
+  idCardFrontFile?: UploadedFile;
+  idCardBackFile?: UploadedFile;
+  portraitFile?: UploadedFile;
   
   // Progress tracking
   progress?: {

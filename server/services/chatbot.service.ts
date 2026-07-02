@@ -63,7 +63,12 @@ export class ChatbotService {
     // 3. Process Student data
     const statusCounts: Record<string, number> = {};
     students.forEach(s => {
-      statusCounts[s.status] = (statusCounts[s.status] || 0) + 1;
+      const studentStatuses = Array.isArray(s.status) ? s.status : [s.status];
+      studentStatuses.forEach((st: string) => {
+        if (st) {
+          statusCounts[st] = (statusCounts[st] || 0) + 1;
+        }
+      });
     });
     const statusSummary = Object.entries(statusCounts)
       .map(([status, count]) => `${status}: ${count} học viên`)
@@ -73,7 +78,8 @@ export class ChatbotService {
     const studentList = students.slice(0, limit).map(s => {
       const datProgress = s.progress?.dat ? `${s.progress.dat.kmDone}/${s.progress.dat.totalKm} km` : '0 km';
       const theoryProgress = s.progress?.theory?.completed ? 'Lý thuyết Đạt' : 'Lý thuyết Chưa đạt';
-      return `- ${s.fullName} (${s.phone}, hạng ${s.rank}, trạng thái: ${s.status}, đã đóng: ${s.paidAmount?.toLocaleString('vi-VN')}đ / học phí: ${s.fee}đ, DAT: ${datProgress}, ${theoryProgress})`;
+      const statusStr = Array.isArray(s.status) ? s.status.join(', ') : s.status;
+      return `- ${s.fullName} (${s.phone}, hạng ${s.rank}, trạng thái: ${statusStr}, đã đóng: ${s.paidAmount?.toLocaleString('vi-VN')}đ / học phí: ${s.fee}đ, DAT: ${datProgress}, ${theoryProgress})`;
     }).join('\n');
 
     const truncateNotice = students.length > limit ? `\n(Lưu ý: Chỉ hiển thị danh sách ${limit} học viên đầu tiên để tối ưu hóa hiệu năng)` : "";

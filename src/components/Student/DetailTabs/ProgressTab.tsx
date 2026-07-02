@@ -168,7 +168,7 @@ export function ProgressTab({
           <div className="relative z-10">
             <h4 className="text-white font-bold mb-2">Đề xuất lộ trình tiếp theo</h4>
             <p className="text-cyan-100 text-xs leading-relaxed opacity-80 mb-6">
-              {student.status === 'Đang học' 
+              {(Array.isArray(student.status) ? student.status.includes('Đang học') : student.status === 'Đang học') 
                 ? "Dựa trên tiến độ hiện tại, học viên cần tập trung chạy đủ km DAT để kịp tiến độ khóa thi tháng sau."
                 : "Vui lòng hoàn tất khám sức khỏe để nộp hồ sơ đăng ký thi."}
             </p>

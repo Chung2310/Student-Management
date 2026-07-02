@@ -9,7 +9,6 @@ interface StudentFilters {
   limit?: number | string;
   status?: string;
   rank?: string;
-  area?: string;
   search?: string;
 }
 
@@ -51,9 +50,14 @@ export class StudentService {
       query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
     }
 
-    if (filters.status) query.status = filters.status;
+    if (filters.status) {
+      if (typeof filters.status === "string" && filters.status.includes(",")) {
+        query.status = { $in: filters.status.split(",") };
+      } else {
+        query.status = filters.status;
+      }
+    }
     if (filters.rank) query.rank = filters.rank;
-    if (filters.area) query.area = filters.area;
     if (filters.search) {
       const searchRegex = new RegExp(filters.search, "i");
       query.$or = [{ fullName: searchRegex }, { phone: searchRegex }];
@@ -199,7 +203,6 @@ export class StudentService {
       const fullName = String(data.fullName || "").trim();
       const phone = String(data.phone || "").trim();
       const rank = String(data.rank || "").trim().toUpperCase();
-      const area = String(data.area || "").trim();
       
       // Basic validations
       if (!fullName) {
@@ -214,12 +217,6 @@ export class StudentService {
       }
       if (!["A1", "A2", "B1", "B2", "C"].includes(rank)) {
         errors.push({ row: rowNum, name: fullName, phone, reason: `Hạng bằng '${rank}' không hợp lệ (chỉ nhận A1, A2, B1, B2, C).` });
-        skippedCount++;
-        continue;
-      }
-      const validAreas = ["Nội thành", "Ngoại thành", "Tỉnh lân cận"];
-      if (!validAreas.includes(area)) {
-        errors.push({ row: rowNum, name: fullName, phone, reason: `Khu vực '${area}' không hợp lệ (chỉ nhận Nội thành, Ngoại thành, Tỉnh lân cận).` });
         skippedCount++;
         continue;
       }
@@ -247,6 +244,7 @@ export class StudentService {
       const address = String(data.address || "").trim();
       const fee = String(data.fee || "0").trim();
       const registrationDate = String(data.registrationDate || new Date().toLocaleDateString('vi-VN')).trim();
+      const enrollmentDate = String(data.enrollmentDate || "").trim();
       const status = String(data.status || "Chờ KSK").trim();
 
       const feeNum = parseInt(fee.replace(/\D/g, ""), 10) || 0;
@@ -273,8 +271,8 @@ export class StudentService {
         birthday,
         idCard,
         rank,
-        area,
         registrationDate,
+        enrollmentDate,
         fee,
         paidAmount: Math.min(paidAmount, feeNum),
         paymentHistory,
@@ -341,5 +339,10 @@ export class StudentService {
 
     logger.info(`[Student] Installment ${installmentNo} marked as paid for student ${studentId}`);
     return { success: true };
+  }
+
+  static async getStudentByIdCard(idCard: string): Promise<IStudent | null> {
+    logger.info(`[Student] Public lookup by idCard=${idCard}`);
+    return Student.findOne({ idCard: idCard.trim() });
   }
 }

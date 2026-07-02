@@ -15,9 +15,8 @@ Bạn là một cố vấn đào tạo lái xe chuyên nghiệp. Hãy phân tíc
 
 Học viên: ${student.fullName}
 Hạng bằng đăng ký: ${student.rank}
-Khu vực: ${student.area}
 Ngày đăng ký: ${student.registrationDate}
-Trạng thái hiện tại: ${student.status}
+Trạng thái hiện tại: ${Array.isArray(student.status) ? student.status.join(', ') : student.status}
 Học phí: ${student.fee} VND
 
 Yêu cầu:

@@ -36,10 +36,9 @@ const swaggerDefinition = {
         properties: {
           id: { type: "string" },
           fullName: { type: "string" },
-          email: { type: "string" },
           phone: { type: "string" },
+          email: { type: "string" },
           rank: { type: "string", enum: ["A1", "A2", "B1", "B2", "C"] },
-          area: { type: "string", enum: ["Nội thành", "Ngoại thành", "Tỉnh lân cận"] },
           registrationDate: { type: "string" },
           fee: { type: "string" },
           paidAmount: { type: "number" },
@@ -180,7 +179,6 @@ const swaggerDefinition = {
           { name: "limit", in: "query", schema: { type: "integer" } },
           { name: "status", in: "query", schema: { type: "string" } },
           { name: "rank", in: "query", schema: { type: "string" } },
-          { name: "area", in: "query", schema: { type: "string" } },
           { name: "search", in: "query", schema: { type: "string" }, description: "Tìm theo tên hoặc số điện thoại" },
         ],
         responses: {
@@ -197,13 +195,12 @@ const swaggerDefinition = {
             "application/json": {
               schema: {
                 type: "object",
-                required: ["fullName", "phone", "rank", "area", "registrationDate", "fee"],
+                required: ["fullName", "phone", "rank", "registrationDate", "fee"],
                 properties: {
                   fullName: { type: "string", example: "Nguyễn Văn Học Viên" },
                   phone: { type: "string", example: "0987654321" },
                   email: { type: "string", example: "hocvien@gmail.com" },
                   rank: { type: "string", enum: ["A1", "A2", "B1", "B2", "C"] },
-                  area: { type: "string", enum: ["Nội thành", "Ngoại thành", "Tỉnh lân cận"] },
                   registrationDate: { type: "string", example: "12/06/2026" },
                   fee: { type: "string", example: "12.000.000" },
                   address: { type: "string", example: "Hà Nội" },
@@ -460,12 +457,11 @@ const swaggerDefinition = {
             "application/json": {
               schema: {
                 type: "object",
-                required: ["fullName", "phone", "rank", "area", "registrationDate", "fee", "status"],
+                required: ["fullName", "phone", "rank", "registrationDate", "fee", "status"],
                 properties: {
                   fullName: { type: "string", example: "Nguyễn Văn Học Viên" },
                   phone: { type: "string", example: "0987654321" },
                   rank: { type: "string", enum: ["A1", "A2", "B1", "B2", "C"] },
-                  area: { type: "string", enum: ["Nội thành", "Ngoại thành", "Tỉnh lân cận"] },
                   registrationDate: { type: "string", example: "12/06/2026" },
                   fee: { type: "string", example: "12.000.000" },
                   status: { type: "string", example: "Chờ KSK" },

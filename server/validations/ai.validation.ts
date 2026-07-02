@@ -13,10 +13,6 @@ export const analyzeStudentSchema = Joi.object({
     "any.required": "Hạng bằng đăng ký là bắt buộc.",
     "any.only": "Hạng bằng đăng ký không hợp lệ.",
   }),
-  area: Joi.string().valid("Nội thành", "Ngoại thành", "Tỉnh lân cận").required().messages({
-    "any.required": "Khu vực là bắt buộc.",
-    "any.only": "Khu vực không hợp lệ.",
-  }),
   registrationDate: Joi.string().required().messages({
     "any.required": "Ngày đăng ký là bắt buộc.",
     "string.empty": "Ngày đăng ký không được để trống.",
