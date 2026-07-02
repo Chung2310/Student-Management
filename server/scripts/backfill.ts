@@ -32,8 +32,8 @@ async function runBackfill() {
           await CourseCategory.create({ ownerId, name: "Lái xe" });
           console.log(`- Created CourseCategory "Lái xe"`);
         }
-      } catch (err: any) {
-        console.error(`- Error creating CourseCategory "Lái xe":`, err.message);
+      } catch (err) {
+        console.error(`- Error creating CourseCategory "Lái xe":`, err instanceof Error ? err.message : String(err));
       }
 
       // Resource categories: "Phòng học", "Xe tập lái", "Thiết bị"
@@ -45,8 +45,8 @@ async function runBackfill() {
             await ResourceCategory.create({ ownerId, name: catName });
             console.log(`- Created ResourceCategory "${catName}"`);
           }
-        } catch (err: any) {
-          console.error(`- Error creating ResourceCategory "${catName}":`, err.message);
+        } catch (err) {
+          console.error(`- Error creating ResourceCategory "${catName}":`, err instanceof Error ? err.message : String(err));
         }
       }
     }

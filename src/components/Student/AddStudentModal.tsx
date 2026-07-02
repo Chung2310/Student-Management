@@ -280,21 +280,6 @@ function Input({ label, name, value, onChange, required = false, readOnly = fals
   );
 }
 
-function Select({ label, name, value, onChange, required = false, options }: { label: string; name: string; value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; required?: boolean; options: string[]; }) {
-  return (
-    <div className="space-y-1">
-      <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">{label} {required && <span className="text-rose-500">*</span>}</label>
-      <div className="relative">
-        <select name={name} value={value} onChange={onChange} className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all">
-          <option value="">-- Chọn --</option>
-          {options.map(option => <option key={option} value={option}>{option}</option>)}
-        </select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-      </div>
-    </div>
-  );
-}
-
 function UploadCard({ label, file, isUploading, onFileChange, onRemove }: { label: string; file?: UploadedFile; isUploading: boolean; onFileChange: (file?: File) => void; onRemove: () => void; }) {
   return (
     <div className="border border-slate-200 rounded-2xl p-4 space-y-3">
