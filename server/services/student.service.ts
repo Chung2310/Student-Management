@@ -1,8 +1,8 @@
-import { Student, slugify } from "../models/student.model";
-import { IStudent } from "../interfaces/student.interface";
-import { Payment } from "../models/payment.model";
-import { logger } from "../config/logger";
 import { Types } from "mongoose";
+import { logger } from "../config/logger";
+import { IStudent } from "../interfaces/student.interface";
+import { Student, slugify } from "../models/student.model";
+import { Payment } from "../models/payment.model";
 
 interface StudentFilters {
   page?: number | string;
@@ -25,18 +25,83 @@ function normalizeIdCard(idCard: string): string {
   return String(idCard || "").replace(/\D/g, "");
 }
 
-export class StudentService {
-  static async createStudent(ownerId: string, data: StudentCreateData): Promise<IStudent> {
-    logger.info(`[Student] Creating student for ownerId=${ownerId}, phone=${data.phone}`);
-    const existing = await Student.findOne({ phone: data.phone, ownerId });
-    if (existing) {
-      logger.warn(`[Student] Create student failed - Phone ${data.phone} already exists for ownerId=${ownerId}`);
-      throw new Error("Số điện thoại này đã tồn tại trong hệ thống. Vui lòng kiểm tra lại!");
+function normalizeEmail(email: string): string {
+  return String(email || "").trim().toLowerCase();
+}
+
+function normalizePhone(phone: string): string {
+  return String(phone || "").replace(/\D/g, "");
+}
+
+function buildOwnerScopeQuery(ownerId: string | string[]) {
+  if (ownerId === "ALL") {
+    return {};
+  }
+
+  return {
+    ownerId: Array.isArray(ownerId) ? { $in: ownerId } : ownerId,
+  };
+}
+
+async function ensureUniqueFieldsInScope(
+  ownerScope: string | string[],
+  data: StudentUpdateData,
+  excludeId?: string
+) {
+  const checks: Array<{ field: "email" | "phone" | "idCard"; value: string; message: string }> = [
+    {
+      field: "email",
+      value: normalizeEmail(String(data.email || "")),
+      message: "Email này đã tồn tại trong trung tâm hiện tại. Vui lòng kiểm tra lại!",
+    },
+    {
+      field: "phone",
+      value: normalizePhone(String(data.phone || "")),
+      message: "Số điện thoại này đã tồn tại trong trung tâm hiện tại. Vui lòng kiểm tra lại!",
+    },
+    {
+      field: "idCard",
+      value: normalizeIdCard(String(data.idCard || "")),
+      message: "CCCD/CMND này đã tồn tại trong trung tâm hiện tại. Vui lòng kiểm tra lại!",
+    },
+  ];
+
+  for (const check of checks) {
+    if (!check.value) {
+      continue;
     }
 
-    const student = new Student({
+    const query: Record<string, unknown> = {
+      ...buildOwnerScopeQuery(ownerScope),
+      [check.field]: check.value,
+    };
+
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+
+    const existing = await Student.findOne(query).select("_id");
+    if (existing) {
+      throw new Error(check.message);
+    }
+  }
+}
+
+export class StudentService {
+  static async createStudent(ownerId: string, ownerScope: string | string[], data: StudentCreateData): Promise<IStudent> {
+    logger.info(`[Student] Creating student for ownerId=${ownerId}, phone=${data.phone}`);
+
+    const normalizedPayload = {
       ...data,
+      email: typeof data.email === "string" ? normalizeEmail(data.email) : data.email,
+      phone: normalizePhone(data.phone),
       idCard: typeof data.idCard === "string" ? normalizeIdCard(data.idCard) : data.idCard,
+    };
+
+    await ensureUniqueFieldsInScope(ownerScope, normalizedPayload);
+
+    const student = new Student({
+      ...normalizedPayload,
       ownerId,
     });
     const savedStudent = await student.save();
@@ -50,10 +115,9 @@ export class StudentService {
     const limit = filters.limit ? parseInt(String(filters.limit)) : 1000;
     const skip = (page - 1) * limit;
 
-    const query: Record<string, unknown> = {};
-    if (ownerId !== "ALL") {
-      query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
-    }
+    const query: Record<string, unknown> = {
+      ...buildOwnerScopeQuery(ownerId),
+    };
 
     if (filters.status) {
       if (typeof filters.status === "string" && filters.status.includes(",")) {
@@ -86,33 +150,45 @@ export class StudentService {
 
   static async getStudentById(ownerId: string | string[], id: string): Promise<IStudent | null> {
     logger.info(`[Student] Fetching student detail: id=${id}, ownerId=${ownerId}`);
-    const query: Record<string, unknown> = { _id: id };
-    if (ownerId !== "ALL") {
-      query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
-    }
+    const query: Record<string, unknown> = {
+      _id: id,
+      ...buildOwnerScopeQuery(ownerId),
+    };
     return await Student.findOne(query);
   }
 
-  static async updateStudent(ownerId: string | string[], id: string, data: StudentUpdateData): Promise<IStudent | null> {
+  static async updateStudent(
+    ownerId: string | string[],
+    ownerScope: string | string[],
+    id: string,
+    data: StudentUpdateData
+  ): Promise<IStudent | null> {
     logger.info(`[Student] Updating student: id=${id}, ownerId=${ownerId}`);
-    
+
     if (data.fullName) {
       data.slug = slugify(String(data.fullName));
     }
     if (typeof data.idCard === "string") {
       data.idCard = normalizeIdCard(data.idCard);
     }
-    
-    const query: Record<string, unknown> = { _id: id };
-    if (ownerId !== "ALL") {
-      query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
+    if (typeof data.email === "string") {
+      data.email = normalizeEmail(data.email);
     }
+    if (typeof data.phone === "string") {
+      data.phone = normalizePhone(data.phone);
+    }
+
+    await ensureUniqueFieldsInScope(ownerScope, data, id);
+
+    const query: Record<string, unknown> = {
+      _id: id,
+      ...buildOwnerScopeQuery(ownerId),
+    };
 
     if (data.paymentHistory && Array.isArray(data.paymentHistory)) {
       const history = data.paymentHistory as Record<string, unknown>[];
       data.paidAmount = history.reduce((sum: number, item) => sum + (Number(item?.amount) || 0), 0);
 
-      // Sync with Payment collection
       try {
         const oldStudent = await Student.findOne(query);
         if (oldStudent && oldStudent.paymentHistory) {
@@ -120,7 +196,6 @@ export class StudentService {
           const newHistory = (data.paymentHistory || []) as Record<string, unknown>[];
           const studentOwnerId = oldStudent.ownerId;
 
-          // Find deleted payments
           for (const oldItem of oldHistory) {
             const stillExists = newHistory.some((newItem) => String(newItem.id) === String(oldItem.id));
             if (!stillExists) {
@@ -128,14 +203,13 @@ export class StudentService {
             }
           }
 
-          // Find updated payments
           for (const newItem of newHistory) {
             const oldItem = oldHistory.find((oi) => String(oi.id) === String(newItem.id));
             if (oldItem) {
               const amountChanged = Number(newItem.amount) !== Number(oldItem.amount);
               const dateChanged = String(newItem.date) !== String(oldItem.date);
-              const noteChanged = String(newItem.note || '') !== String(oldItem.note || '');
-              
+              const noteChanged = String(newItem.note || "") !== String(oldItem.note || "");
+
               if (amountChanged || dateChanged || noteChanged) {
                 await Payment.updateOne(
                   { _id: newItem.id as string, ownerId: studentOwnerId },
@@ -144,7 +218,7 @@ export class StudentService {
                       amount: Number(newItem.amount),
                       date: newItem.date,
                       note: newItem.note,
-                    }
+                    },
                   }
                 );
               }
@@ -171,10 +245,10 @@ export class StudentService {
 
   static async deleteStudent(ownerId: string | string[], id: string): Promise<IStudent | null> {
     logger.info(`[Student] Deleting student: id=${id}, ownerId=${ownerId}`);
-    const query: Record<string, unknown> = { _id: id };
-    if (ownerId !== "ALL") {
-      query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
-    }
+    const query: Record<string, unknown> = {
+      _id: id,
+      ...buildOwnerScopeQuery(ownerId),
+    };
     const deletedStudent = await Student.findOneAndDelete(query);
     if (deletedStudent) {
       logger.info(`[Student] Student deleted successfully: id=${id}`);
@@ -187,32 +261,30 @@ export class StudentService {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static async bulkCreateStudents(creatorId: string, ownerId: string | string[], studentsData: any[]) {
     logger.info(`[Student] Bulk importing ${studentsData.length} students: creatorId=${creatorId}, ownerId=${ownerId}`);
-    
+
     let importedCount = 0;
     let skippedCount = 0;
     const errors: { row: number; name: string; phone: string; reason: string }[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const validStudents: any[] = [];
-    
-    // Track unique phone numbers within this batch to prevent duplicates inside the file itself
+
     const seenPhonesInBatch = new Set<string>();
 
-    // Fetch all existing student phone numbers for the allowed ownerId(s) to check in memory
-    const query: Record<string, unknown> = {};
-    if (ownerId !== "ALL") {
-      query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
-    }
-    const existingStudents = await Student.find(query).select("phone");
-    const existingPhones = new Set(existingStudents.map(s => s.phone));
+    const query: Record<string, unknown> = {
+      ...buildOwnerScopeQuery(ownerId),
+    };
+    const existingStudents = await Student.find(query).select("phone email idCard");
+    const existingPhones = new Set(existingStudents.map((s) => normalizePhone(s.phone)));
+    const existingEmails = new Set(existingStudents.map((s) => normalizeEmail(s.email || "")).filter(Boolean));
+    const existingIdCards = new Set(existingStudents.map((s) => normalizeIdCard(s.idCard || "")).filter(Boolean));
 
     for (let i = 0; i < studentsData.length; i++) {
       const rowNum = i + 1;
       const data = studentsData[i];
       const fullName = String(data.fullName || "").trim();
-      const phone = String(data.phone || "").trim();
+      const phone = normalizePhone(String(data.phone || ""));
       const rank = String(data.rank || "").trim().toUpperCase();
-      
-      // Basic validations
+
       if (!fullName) {
         errors.push({ row: rowNum, name: fullName, phone, reason: "Họ và tên không được để trống." });
         skippedCount++;
@@ -229,7 +301,6 @@ export class StudentService {
         continue;
       }
 
-      // Check duplicates within batch
       if (seenPhonesInBatch.has(phone)) {
         errors.push({ row: rowNum, name: fullName, phone, reason: "Số điện thoại bị trùng lặp trong file import." });
         skippedCount++;
@@ -237,23 +308,33 @@ export class StudentService {
       }
       seenPhonesInBatch.add(phone);
 
-      // Check duplicate in database
       if (existingPhones.has(phone)) {
-        errors.push({ row: rowNum, name: fullName, phone, reason: "Số điện thoại đã tồn tại trên hệ thống." });
+        errors.push({ row: rowNum, name: fullName, phone, reason: "Số điện thoại đã tồn tại trong trung tâm hiện tại." });
         skippedCount++;
         continue;
       }
 
-      // Set defaults for optional parameters
       const birthday = String(data.birthday || "").trim();
-      const idCard = String(data.idCard || "").trim();
-      const email = String(data.email || "").trim().toLowerCase();
+      const idCard = normalizeIdCard(String(data.idCard || ""));
+      const email = normalizeEmail(String(data.email || ""));
       const referral = String(data.referral || "").trim();
       const address = String(data.address || "").trim();
       const fee = String(data.fee || "0").trim();
-      const registrationDate = String(data.registrationDate || new Date().toLocaleDateString('vi-VN')).trim();
+      const registrationDate = String(data.registrationDate || new Date().toLocaleDateString("vi-VN")).trim();
       const enrollmentDate = String(data.enrollmentDate || "").trim();
       const status = String(data.status || "Chờ KSK").trim();
+
+      if (email && existingEmails.has(email)) {
+        errors.push({ row: rowNum, name: fullName, phone, reason: "Email đã tồn tại trong trung tâm hiện tại." });
+        skippedCount++;
+        continue;
+      }
+
+      if (idCard && existingIdCards.has(idCard)) {
+        errors.push({ row: rowNum, name: fullName, phone, reason: "CCCD/CMND đã tồn tại trong trung tâm hiện tại." });
+        skippedCount++;
+        continue;
+      }
 
       const feeNum = parseInt(fee.replace(/\D/g, ""), 10) || 0;
       const paidAmount = parseInt(String(data.paidAmount || "0").replace(/\D/g, ""), 10) || 0;
@@ -266,7 +347,7 @@ export class StudentService {
           date: registrationDate,
           method: "Chuyển khoản",
           note: "Nhập từ file Excel",
-          recipient: "Hệ thống"
+          recipient: "Hệ thống",
         });
       }
 
@@ -277,7 +358,7 @@ export class StudentService {
         email: email || undefined,
         referral,
         birthday,
-        idCard: normalizeIdCard(idCard),
+        idCard,
         rank,
         registrationDate,
         enrollmentDate,
@@ -288,6 +369,10 @@ export class StudentService {
         status,
         ownerId: creatorId,
       });
+
+      existingPhones.add(phone);
+      if (email) existingEmails.add(email);
+      if (idCard) existingIdCards.add(idCard);
     }
 
     if (validStudents.length > 0) {
@@ -301,14 +386,10 @@ export class StudentService {
     return {
       importedCount,
       skippedCount,
-      errors
+      errors,
     };
   }
 
-  /**
-   * Đánh dấu đã thu tiền cho 1 đợt cụ thể của học viên.
-   * Cập nhật status → 'Đã thu', paidAt → ISO now.
-   */
   static async markInstallmentPaid(
     ownerId: string | string[],
     studentId: string,
@@ -316,10 +397,10 @@ export class StudentService {
   ): Promise<{ success: boolean; error?: string }> {
     logger.info(`[Student] Mark installment paid: studentId=${studentId}, installmentNo=${installmentNo}, ownerId=${ownerId}`);
 
-    const query: Record<string, unknown> = { _id: studentId };
-    if (ownerId !== "ALL") {
-      query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
-    }
+    const query: Record<string, unknown> = {
+      _id: studentId,
+      ...buildOwnerScopeQuery(ownerId),
+    };
 
     const student = await Student.findOne(query);
     if (!student) {
@@ -331,7 +412,16 @@ export class StudentService {
       return { success: false, error: "Học viên này chưa có lịch sử đợt thu học phí." };
     }
 
-    type InstallmentEntry = { installmentNo: number; percent: number; amountDue: number; status: string; sentAt: string; paidAt: string; notificationId: string };
+    type InstallmentEntry = {
+      installmentNo: number;
+      percent: number;
+      amountDue: number;
+      status: string;
+      sentAt: string;
+      paidAt: string;
+      notificationId: string;
+    };
+
     const entries = student.installmentStatus as InstallmentEntry[];
     const idx = entries.findIndex((s) => s.installmentNo === installmentNo);
 
@@ -339,10 +429,10 @@ export class StudentService {
       return { success: false, error: `Không tìm thấy đợt ${installmentNo} cho học viên này.` };
     }
 
-    entries[idx].status = 'Đã thu';
+    entries[idx].status = "Đã thu";
     entries[idx].paidAt = new Date().toISOString();
 
-    student.markModified('installmentStatus');
+    student.markModified("installmentStatus");
     await student.save();
 
     logger.info(`[Student] Installment ${installmentNo} marked as paid for student ${studentId}`);

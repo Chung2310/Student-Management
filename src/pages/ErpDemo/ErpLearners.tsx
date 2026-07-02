@@ -269,6 +269,7 @@ export function ErpLearners({ onSelectStudent }: ErpLearnersProps) {
           <AddStudentModal
             isOpen={showAddModal}
             onClose={() => setShowAddModal(false)}
+            students={students}
             onSuccess={(student) => {
               setShowAddModal(false);
               onSelectStudent(student);

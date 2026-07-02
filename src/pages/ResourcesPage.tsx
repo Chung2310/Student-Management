@@ -1,11 +1,11 @@
 import React from 'react';
-import { ErpResources } from './ErpDemo/ErpResources';
-import { ErpThemeProvider } from './ErpDemo/ErpThemeContext';
+import { ResourcesManager } from '../components/ResourcesManager';
+import { ManagementThemeProvider } from '../components/ManagementThemeContext';
 
 export function ResourcesPage() {
   return (
-    <ErpThemeProvider>
-      <ErpResources />
-    </ErpThemeProvider>
+    <ManagementThemeProvider>
+      <ResourcesManager />
+    </ManagementThemeProvider>
   );
 }

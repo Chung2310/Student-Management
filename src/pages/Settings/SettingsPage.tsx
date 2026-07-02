@@ -971,6 +971,7 @@ export function SettingsPage() {
                       disabled={!isAdmin}
                       className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 disabled:opacity-60 disabled:cursor-not-allowed"
                       rows={3}
+                      placeholder="Mẫu nội dung (Ví dụ: [Mã HV] - [Họ tên] - Nộp học phí khóa {hang})..."
                       value={vietqrTemplate}
                       onChange={(e) => setVietqrTemplate(e.target.value)}
                     />
