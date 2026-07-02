@@ -298,4 +298,48 @@ export class StudentService {
       errors
     };
   }
+
+  /**
+   * Đánh dấu đã thu tiền cho 1 đợt cụ thể của học viên.
+   * Cập nhật status → 'Đã thu', paidAt → ISO now.
+   */
+  static async markInstallmentPaid(
+    ownerId: string | string[],
+    studentId: string,
+    installmentNo: number
+  ): Promise<{ success: boolean; error?: string }> {
+    logger.info(`[Student] Mark installment paid: studentId=${studentId}, installmentNo=${installmentNo}, ownerId=${ownerId}`);
+
+    const query: Record<string, unknown> = { _id: studentId };
+    if (ownerId !== "ALL") {
+      query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
+    }
+
+    const student = await Student.findOne(query);
+    if (!student) {
+      logger.warn(`[Student] markInstallmentPaid: student not found, id=${studentId}`);
+      return { success: false, error: "Không tìm thấy học viên." };
+    }
+
+    if (!student.installmentStatus || student.installmentStatus.length === 0) {
+      return { success: false, error: "Học viên này chưa có lịch sử đợt thu học phí." };
+    }
+
+    type InstallmentEntry = { installmentNo: number; percent: number; amountDue: number; status: string; sentAt: string; paidAt: string; notificationId: string };
+    const entries = student.installmentStatus as InstallmentEntry[];
+    const idx = entries.findIndex((s) => s.installmentNo === installmentNo);
+
+    if (idx < 0) {
+      return { success: false, error: `Không tìm thấy đợt ${installmentNo} cho học viên này.` };
+    }
+
+    entries[idx].status = 'Đã thu';
+    entries[idx].paidAt = new Date().toISOString();
+
+    student.markModified('installmentStatus');
+    await student.save();
+
+    logger.info(`[Student] Installment ${installmentNo} marked as paid for student ${studentId}`);
+    return { success: true };
+  }
 }
