@@ -1,6 +1,6 @@
 import React from 'react';
-import { ErpInstructors } from '../pages/ErpDemo/ErpInstructors';
+import { InstructorsPage } from '../pages/Instructors/InstructorsPage';
 
 export function InstructorsManager() {
-  return <ErpInstructors />;
+  return <InstructorsPage />;
 }

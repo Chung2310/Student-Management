@@ -1,6 +1,7 @@
 import { Response, NextFunction } from "express";
 import { Exam } from "../models/exam.model";
 import { ResourceService } from "../services/resource.service";
+import { BatchService } from "../services/batch.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { getAllowedOwnerIds } from "../utils/auth.util";
 
@@ -53,7 +54,7 @@ export class ScheduleController {
           type: "exam",
           date,
           time: exam.officialDate ? "Chính thức" : "Dự kiến",
-          details: `${exam.location} • ${exam.studentCount} học viên • Hạng ${exam.rank}`,
+          details: `${exam.location} • ${exam.studentCount} học viên${exam.rank ? ` • Hạng ${exam.rank}` : ''}`,
         });
       }
 
@@ -61,6 +62,12 @@ export class ScheduleController {
       const bookings = await ResourceService.getBookingsInRange(ownerId, from, to);
       for (const b of bookings) {
         events.push({ ...b, type: "resource" });
+      }
+
+      // Lịch học định kỳ của các lớp mở
+      const classes = await BatchService.getClassEventsInRange(ownerId, from, to);
+      for (const c of classes) {
+        events.push({ ...c, type: "class" });
       }
 
       events.sort((a, b) => (a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date)));

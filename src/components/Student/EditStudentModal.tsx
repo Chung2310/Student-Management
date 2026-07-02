@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Save, ChevronDown, Loader2, Upload, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { X, Save, Loader2, Upload, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import { Student, UploadedFile } from '../../types';
@@ -74,7 +74,8 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
         console.error('Error parsing requiredFieldsConfig', e);
       }
     }
-    return { fullName: true, phone: true, rank: true, birthday: false, idCard: false, email: false };
+    // Hạng bằng chỉ dành cho ngành lái xe — mặc định không bắt buộc
+    return { fullName: true, phone: true, rank: false, birthday: false, idCard: false, email: false };
   };
   const requiredFields = getRequiredFieldsConfig();
 
@@ -174,7 +175,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
               <Input label="Người giới thiệu" name="referral" value={formData.referral} onChange={handleInputChange} placeholder="Nhập tên người giới thiệu..." className="sm:col-span-2" />
               <Input label="Ngày sinh" name="birthday" value={formData.birthday} onChange={handleInputChange} required={requiredFields.birthday} placeholder="DD/MM/YYYY" />
               <Input label="CCCD / CMND" name="idCard" value={formData.idCard} onChange={handleInputChange} required={requiredFields.idCard} placeholder="Nhập số CCCD (12 số)..." />
-              <Select label="Hạng bằng" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} options={['A1', 'A2', 'B1', 'B2', 'C']} />
+              <Input label="Hạng bằng (lái xe — tùy chọn)" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} placeholder="Ví dụ: A1, B2, C... hoặc để trống" />
               <Input label="Ngày đăng ký" name="registrationDate" value={formData.registrationDate} onChange={handleInputChange} placeholder="DD/MM/YYYY" readOnly />
               <Input label="Ngày nhập học" name="enrollmentDate" value={formData.enrollmentDate} onChange={handleInputChange} placeholder="DD/MM/YYYY" />
               <Input label="Học phí (VND)" name="fee" value={formData.fee} onChange={handleInputChange} placeholder="Nhập học phí..." />
@@ -238,21 +239,6 @@ function Input({ label, name, value, onChange, required = false, readOnly = fals
     <div className={`space-y-1 ${className}`}>
       <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">{label} {required && <span className="text-rose-500">*</span>}</label>
       <input type="text" name={name} value={value} onChange={onChange} readOnly={readOnly} placeholder={placeholder} className={`w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all ${readOnly ? 'bg-slate-50 text-slate-600 cursor-default' : ''}`} />
-    </div>
-  );
-}
-
-function Select({ label, name, value, onChange, required = false, options }: { label: string; name: string; value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; required?: boolean; options: string[]; }) {
-  return (
-    <div className="space-y-1">
-      <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">{label} {required && <span className="text-rose-500">*</span>}</label>
-      <div className="relative">
-        <select name={name} value={value} onChange={onChange} className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all">
-          <option value="">-- Chọn --</option>
-          {options.map(option => <option key={option} value={option}>{option}</option>)}
-        </select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-      </div>
     </div>
   );
 }

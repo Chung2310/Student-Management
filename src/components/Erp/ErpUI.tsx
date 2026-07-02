@@ -2,12 +2,11 @@
 import React from 'react';
 import { Plus, Search, LucideIcon, Trash2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { useErpTheme } from '../../pages/ErpDemo/ErpThemeContext';
-
 /**
- * Bộ UI primitives dùng chung cho phân hệ ERP.
- * Tất cả tự đọc darkMode từ ErpThemeContext — không cần truyền prop.
+ * Bộ UI primitives dùng chung cho các trang Khóa học / Lớp / Giảng viên / Tài nguyên.
+ * Giao diện hợp nhất dùng nền sáng cố định (theme dark của bản demo ERP đã bỏ).
  */
+const useErpTheme = () => ({ darkMode: false });
 
 export function ErpCard({ children, className }: { children: React.ReactNode; className?: string }) {
   const { darkMode } = useErpTheme();

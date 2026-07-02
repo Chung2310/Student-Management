@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard, Users, Calendar, Wallet, MessageSquare, Settings,
-  Shield, LogOut, LogIn, RefreshCcw, X, BookOpen, GraduationCap, Warehouse
+  Shield, LogOut, LogIn, RefreshCcw, X, BookOpen, GraduationCap, Warehouse, School
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
@@ -29,6 +29,7 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
     { icon: Wallet, label: 'Học phí', view: 'Fees' },
     { icon: MessageSquare, label: 'BOT Thông báo', view: 'Bot' },
     { icon: BookOpen, label: 'Khóa học', view: 'Courses' },
+    { icon: School, label: 'Lớp & Khai giảng', view: 'Batches' },
     { icon: GraduationCap, label: 'Giảng viên', view: 'Instructors' },
     { icon: Warehouse, label: 'Thiết bị', view: 'Resources' },
     { icon: Shield, label: 'Quản lý người dùng', view: 'UserManagement' },
@@ -65,8 +66,8 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
                 className="w-10 h-10 rounded-xl object-cover shadow-lg bg-white/5"
               />
               <div>
-                <h1 className="font-bold text-white text-sm leading-tight">IGEN QLHV Lái Xe</h1>
-                <p className="text-[10px] text-slate-400 font-medium">Quản lý học viên</p>
+                <h1 className="font-bold text-white text-sm leading-tight">iGen Education</h1>
+                <p className="text-[10px] text-slate-400 font-medium">Quản lý đào tạo & học viên</p>
               </div>
             </div>
             <button

@@ -65,7 +65,8 @@ export interface IStudent extends Document {
   referral?: string;
   birthday: string;
   idCard: string;
-  rank: 'A1' | 'A2' | 'B1' | 'B2' | 'C';
+  /** Hạng bằng lái — thông tin riêng ngành lái xe, học viên ngành khác để trống */
+  rank?: string;
   registrationDate: string;
   enrollmentDate?: string;
   fee: string;

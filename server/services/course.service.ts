@@ -1,5 +1,6 @@
 import { Course } from "../models/course.model";
 import { ICourse } from "../interfaces/course.interface";
+import { BatchService } from "./batch.service";
 import { logger } from "../config/logger";
 
 interface CourseFilters {
@@ -53,11 +54,21 @@ export class CourseService {
       .skip(skip)
       .limit(limit);
 
-    return { courses, total, page, limit, totalPages: Math.ceil(total / limit) };
+    // activeBatches tính từ số lớp còn hoạt động, không dùng con số tĩnh lưu trong document
+    const activeCounts = await BatchService.countActiveByCourse(courses.map(c => String(c._id)));
+    const withBatches = courses.map(c => ({
+      ...c.toObject(),
+      activeBatches: activeCounts.get(String(c._id)) || 0,
+    }));
+
+    return { courses: withBatches, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  static async getCourseById(ownerId: string | string[], id: string): Promise<ICourse | null> {
-    return await Course.findOne({ _id: id, ...buildOwnerQuery(ownerId) });
+  static async getCourseById(ownerId: string | string[], id: string) {
+    const course = await Course.findOne({ _id: id, ...buildOwnerQuery(ownerId) });
+    if (!course) return null;
+    const activeCounts = await BatchService.countActiveByCourse([String(course._id)]);
+    return { ...course.toObject(), activeBatches: activeCounts.get(String(course._id)) || 0 };
   }
 
   static async updateCourse(ownerId: string | string[], id: string, data: CourseData): Promise<ICourse | null> {
@@ -71,6 +82,10 @@ export class CourseService {
 
   static async deleteCourse(ownerId: string | string[], id: string): Promise<ICourse | null> {
     logger.info(`[Course] Deleting course: id=${id}`);
+    const activeCounts = await BatchService.countActiveByCourse([id]);
+    if ((activeCounts.get(id) || 0) > 0) {
+      throw new Error("Không thể xóa: khóa học đang có lớp hoạt động. Hãy kết thúc hoặc xóa các lớp trước.");
+    }
     return await Course.findOneAndDelete({ _id: id, ...buildOwnerQuery(ownerId) });
   }
 }

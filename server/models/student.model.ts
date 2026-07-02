@@ -79,7 +79,8 @@ const studentSchema = new Schema<IStudent>(
     referral: { type: String, default: "" },
     birthday: { type: String, default: "" },
     idCard: { type: String, default: "" },
-    rank: { type: String, enum: ["A1", "A2", "B1", "B2", "C"], required: true, index: true },
+    // Hạng bằng lái — riêng ngành lái xe, ngành khác để trống
+    rank: { type: String, default: "", trim: true, index: true },
     registrationDate: { type: String, required: true },
     enrollmentDate: { type: String, default: "" },
     fee: { type: String, required: true },

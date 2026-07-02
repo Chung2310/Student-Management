@@ -1,6 +1,8 @@
 import { Document } from "mongoose";
 
-export type ResourceType = 'ROOM' | 'VEHICLE' | 'EQUIPMENT';
+// Phân loại tài nguyên là chuỗi động (quản lý qua ResourceCategory);
+// các giá trị cũ 'ROOM' | 'VEHICLE' | 'EQUIPMENT' vẫn hợp lệ.
+export type ResourceType = string;
 export type ResourceStatus = 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE';
 
 export interface IResourceBooking {

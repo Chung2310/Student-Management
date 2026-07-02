@@ -8,15 +8,14 @@ import { useToast } from '../../hooks/useToast';
 import { useCourses } from '../../hooks/useCourses';
 import { useCourseCategories } from '../../hooks/useCourseCategories';
 import { Course, CourseCategory } from '../../types';
-import { useErpTheme } from './ErpThemeContext';
 import {
   ErpPageHeader, ErpPrimaryButton, ErpSearchBar, ErpFilterTab,
   ErpModal, ErpField, ErpInput, ErpSelect, ErpSubmitButton,
   ErpEmptyState, ErpLoadingState, ErpCard, ErpConfirmModal, ErpTableHead
 } from '../../components/Erp/ErpUI';
 
-export function ErpCourses() {
-  const { darkMode } = useErpTheme();
+export function CoursesPage() {
+  const darkMode = false;
   const { toast } = useToast();
   const { courses, loading } = useCourses();
   const { categories, loading: categoriesLoading } = useCourseCategories();

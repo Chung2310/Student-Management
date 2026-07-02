@@ -43,6 +43,12 @@ export function ExamsPage() {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [rankFilter, setRankFilter] = useState('Tất cả hạng');
+  // Hạng bằng — riêng ngành lái xe; chỉ hiện filter khi có dữ liệu
+  const hasRankData = React.useMemo(() => exams.some(e => e.rank), [exams]);
+  const rankOptions = React.useMemo(() => {
+    const ranks = [...new Set(exams.map(e => e.rank).filter(Boolean))] as string[];
+    return ['Tất cả hạng', ...ranks.sort()];
+  }, [exams]);
   const [areaFilter, setAreaFilter] = useState('Tất cả khu vực');
   const [statusFilter, setStatusFilter] = useState('Tất cả');
   const [fromDate, setFromDate] = useState('');
@@ -69,7 +75,7 @@ export function ExamsPage() {
   };
 
   const filteredExams = exams.filter(exam => {
-    if (rankFilter !== 'Tất cả hạng' && exam.rank !== rankFilter) return false;
+    if (hasRankData && rankFilter !== 'Tất cả hạng' && exam.rank !== rankFilter) return false;
     if (areaFilter !== 'Tất cả khu vực' && exam.area !== areaFilter) return false;
     if (statusFilter !== 'Tất cả' && exam.status !== statusFilter) return false;
     if (searchQuery && !exam.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
@@ -158,7 +164,7 @@ export function ExamsPage() {
     
     const rows = filteredExams.map(exam => [
       exam.name,
-      exam.rank,
+      exam.rank || '',
       exam.status,
       exam.tentativeDate,
       exam.officialDate || '',
@@ -209,7 +215,7 @@ export function ExamsPage() {
     const rowsHtml = filteredExams.map(exam => `
       <tr>
         <td style="padding: 10px; border: 1px solid #ddd;">${exam.name}</td>
-        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${exam.rank}</td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${exam.rank || '-'}</td>
         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${exam.status}</td>
         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${exam.tentativeDate}</td>
         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${exam.officialDate || '-'}</td>
@@ -256,7 +262,7 @@ export function ExamsPage() {
             </tbody>
           </table>
           <div class="footer">
-            Xuất bởi Hệ thống Quản lý Học viên Lái xe
+            Xuất bởi Hệ thống Quản lý Đào tạo & Học viên iGen
           </div>
           <script>
             window.onload = function() {
@@ -358,7 +364,9 @@ export function ExamsPage() {
                 className="w-full bg-transparent outline-none text-xs font-bold relative" 
               />
             </FilterItem>
-            <FilterSelect label="Hạng bằng" value={rankFilter} onChange={setRankFilter} options={['Tất cả hạng', 'A1', 'A2', 'B1', 'B2', 'C']} />
+            {hasRankData && (
+              <FilterSelect label="Hạng bằng" value={rankFilter} onChange={setRankFilter} options={rankOptions} />
+            )}
             <FilterSelect label="Khu vực" value={areaFilter} onChange={setAreaFilter} options={['Tất cả khu vực', 'Nội thành', 'Ngoại thành']} />
             <FilterSelect label="Trạng thái" value={statusFilter} onChange={setStatusFilter} options={['Tất cả', 'Sắp diễn ra', 'Đã xác nhận', 'Đã hoàn thành']} />
             <div className="flex items-end pb-2 col-span-2 sm:col-span-1">

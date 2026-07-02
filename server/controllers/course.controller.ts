@@ -52,7 +52,7 @@ export class CourseController {
     }
   }
 
-  static async delete(req: AuthRequest, res: Response, next: NextFunction) {
+  static async delete(req: AuthRequest, res: Response) {
     try {
       const ownerId = await getAllowedOwnerIds(req.user!);
       const course = await CourseService.deleteCourse(ownerId, req.params.id);
@@ -61,7 +61,8 @@ export class CourseController {
       }
       res.json({ success: true, data: course });
     } catch (error: unknown) {
-      next(error);
+      const msg = error instanceof Error ? error.message : "Lỗi không xác định.";
+      res.status(400).json({ success: false, error: msg });
     }
   }
 }

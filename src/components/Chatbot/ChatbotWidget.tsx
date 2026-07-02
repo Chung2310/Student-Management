@@ -12,12 +12,12 @@ interface Message {
 // Initial welcome message
 const welcomeMessage: Message = {
   role: 'assistant',
-  content: `Chào bạn! Tôi là trợ lý ảo hỗ trợ thông tin học tập, quy trình đào tạo và thủ tục sát hạch lái xe. 
+  content: `Chào bạn! Tôi là trợ lý ảo hỗ trợ thông tin học tập và quy trình đào tạo của trung tâm.
 
 Tôi có thể giúp bạn giải đáp các vấn đề như:
-- **Hồ sơ đăng ký** học lái xe các hạng A1, A2, B1, B2, C...
-- **Quy trình học** lý thuyết, mô phỏng cabin, số km đường trường (DAT).
-- **Lịch thi sát hạch** và các lệ phí liên quan.
+- **Hồ sơ đăng ký** các khóa học (lái xe, ngoại ngữ, kỹ năng...).
+- **Quy trình học & tiến độ** của từng chương trình đào tạo.
+- **Lịch thi / lịch học** và các khoản học phí liên quan.
 
 Bạn cần tôi hỗ trợ thông tin gì hôm nay?`
 };
@@ -105,9 +105,9 @@ export function ChatbotWidget() {
   };
 
   const quickSuggestions = [
-    "Hồ sơ đăng ký học lái xe gồm những gì?",
-    "Quy trình thi bằng lái xe B2?",
-    "Lệ phí thi tốt nghiệp và sát hạch thế nào?",
+    "Hồ sơ đăng ký khóa học gồm những gì?",
+    "Trung tâm đang có những khóa học nào?",
+    "Học phí và lịch khai giảng thế nào?",
   ];
 
   // Helper to parse basic markdown format (bold, bullet points, line breaks)

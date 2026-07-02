@@ -3,7 +3,7 @@ import { apiFetch } from '../lib/api';
 import { useAuth } from './useAuth';
 import { ScheduleEvent } from '../types';
 
-/** Lịch tổng hợp (kỳ thi + booking tài nguyên) trong một khoảng ngày */
+/** Lịch tổng hợp (lớp học định kỳ + kỳ thi + booking tài nguyên) trong một khoảng ngày */
 export function useSchedule(from?: string, to?: string) {
   const { user } = useAuth();
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
@@ -38,9 +38,11 @@ export function useSchedule(from?: string, to?: string) {
 
     window.addEventListener("exam-mutation", handleMutation);
     window.addEventListener("resource-mutation", handleMutation);
+    window.addEventListener("batch-mutation", handleMutation);
     return () => {
       window.removeEventListener("exam-mutation", handleMutation);
       window.removeEventListener("resource-mutation", handleMutation);
+      window.removeEventListener("batch-mutation", handleMutation);
     };
   }, [fetchEvents]);
 

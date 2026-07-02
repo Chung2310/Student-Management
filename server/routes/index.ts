@@ -13,6 +13,7 @@ import webhookRoutes from "./webhook.routes";
 import courseRoutes from "./course.routes";
 import instructorRoutes from "./instructor.routes";
 import resourceRoutes from "./resource.routes";
+import batchRoutes from "./batch.routes";
 import scheduleRoutes from "./schedule.routes";
 import { logger } from "../config/logger";
 
@@ -30,6 +31,7 @@ router.use("/webhook", webhookRoutes);
 router.use("/courses", courseRoutes);
 router.use("/instructors", instructorRoutes);
 router.use("/resources", resourceRoutes);
+router.use("/batches", batchRoutes);
 router.use("/schedule", scheduleRoutes);
 
 import { authMiddleware, AuthRequest } from "../middlewares/auth.middleware";

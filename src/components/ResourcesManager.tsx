@@ -1,6 +1,6 @@
 import React from 'react';
-import { ErpResources } from '../pages/ErpDemo/ErpResources';
+import { ResourcesPage } from '../pages/Resources/ResourcesPage';
 
 export function ResourcesManager() {
-  return <ErpResources />;
+  return <ResourcesPage />;
 }

@@ -1,43 +1,90 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-  CheckCircle, Clock, AlertTriangle, UserCheck, Warehouse, Trash2, Wrench, X, List, LayoutGrid
+  CheckCircle, Clock, AlertTriangle, UserCheck, Warehouse, Trash2, Wrench, X, List, LayoutGrid, Plus, Tag
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { apiFetch } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import { useResources } from '../../hooks/useResources';
-import { ResourceItem, ResourceType } from '../../types';
-import { useErpTheme } from './ErpThemeContext';
+import { useResourceCategories } from '../../hooks/useResourceCategories';
+import { ResourceItem } from '../../types';
 import {
   ErpPageHeader, ErpPrimaryButton, ErpSearchBar, ErpFilterTab,
   ErpModal, ErpField, ErpInput, ErpSelect, ErpSubmitButton,
-  ErpEmptyState, ErpLoadingState, ErpCard, ErpTableHead
+  ErpEmptyState, ErpLoadingState, ErpCard, ErpConfirmModal, ErpTableHead
 } from '../../components/Erp/ErpUI';
 
 function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function ErpResources() {
-  const { darkMode } = useErpTheme();
+const getTypeColor = (type: string) => {
+  const t = type.toLowerCase();
+  if (t === 'room' || t === 'phòng học') return "bg-blue-500/10 text-blue-400 border border-blue-500/15";
+  if (t === 'vehicle' || t === 'xe tập lái' || t === 'phương tiện / xe') return "bg-amber-500/10 text-amber-400 border border-amber-500/15";
+  if (t === 'equipment' || t === 'thiết bị' || t === 'thiết bị dạy') return "bg-brand-primary/10 text-brand-primary border border-brand-primary/15";
+
+  let hash = 0;
+  for (let i = 0; i < type.length; i++) {
+    hash = type.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = [
+    "bg-indigo-500/10 text-indigo-400 border border-indigo-500/15",
+    "bg-violet-500/10 text-violet-400 border border-violet-500/15",
+    "bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/15",
+    "bg-pink-500/10 text-pink-400 border border-pink-500/15",
+    "bg-amber-500/10 text-amber-400 border border-amber-500/15",
+    "bg-cyan-500/10 text-cyan-400 border border-cyan-500/15",
+  ];
+  return colors[Math.abs(hash) % colors.length];
+};
+
+export function ResourcesPage() {
+  const darkMode = false;
   const { toast } = useToast();
   const { resources, loading } = useResources();
+  const { categories, loading: categoriesLoading } = useResourceCategories();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isCategorySubmitting, setIsCategorySubmitting] = useState(false);
   const [bookingResource, setBookingResource] = useState<ResourceItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
     return (localStorage.getItem('erp_view_mode_resources') as 'list' | 'grid') || 'grid';
   });
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id: string; name: string }>({
+    isOpen: false,
+    id: '',
+    name: '',
+  });
 
   const [newResource, setNewResource] = useState({
     name: '',
-    type: 'ROOM' as ResourceType,
+    type: '',
     identifier: '',
     capacity: '',
   });
+
+  // Đồng bộ hóa phân loại đầu tiên làm mặc định khi danh sách phân loại được tải
+  useEffect(() => {
+    if (categories.length > 0 && !newResource.type) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setNewResource(prev => ({ ...prev, type: categories[0].name }));
+    }
+  }, [categories, newResource.type]);
+
+  // Tab lọc = phân loại đang quản lý + các phân loại cũ còn xuất hiện trong dữ liệu
+  const typeOptions = useMemo(() => {
+    const options = categories.map(c => c.name);
+    for (const r of resources) {
+      if (!options.includes(r.type)) options.push(r.type);
+    }
+    return options;
+  }, [categories, resources]);
 
   const [newBooking, setNewBooking] = useState({
     purpose: '',
@@ -49,7 +96,7 @@ export function ErpResources() {
 
   const handleAddResource = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newResource.name || !newResource.identifier || !newResource.capacity) {
+    if (!newResource.name || !newResource.identifier || !newResource.capacity || !newResource.type) {
       toast.error('Vui lòng nhập đầy đủ thông tin tài nguyên.');
       return;
     }
@@ -66,7 +113,7 @@ export function ErpResources() {
       window.dispatchEvent(new Event('resource-mutation'));
       setShowAddModal(false);
       toast.success(`Đã thêm mới tài nguyên ${newResource.name} vào danh sách!`);
-      setNewResource({ name: '', type: 'ROOM', identifier: '', capacity: '' });
+      setNewResource({ name: '', type: categories[0]?.name || '', identifier: '', capacity: '' });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Có lỗi xảy ra khi khai báo tài nguyên.';
       toast.error(msg);
@@ -98,6 +145,43 @@ export function ErpResources() {
       toast.error(msg);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+
+    setIsCategorySubmitting(true);
+    try {
+      await apiFetch('/resources/categories', {
+        method: 'POST',
+        body: JSON.stringify({ name: newCategoryName }),
+      });
+      window.dispatchEvent(new Event('resource-category-mutation'));
+      setNewCategoryName('');
+      toast.success('Đã thêm phân loại mới thành công!');
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Lỗi khi tạo phân loại.';
+      toast.error(msg);
+    } finally {
+      setIsCategorySubmitting(false);
+    }
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!deleteConfirm.id) return;
+    try {
+      await apiFetch(`/resources/categories/${deleteConfirm.id}`, {
+        method: 'DELETE',
+      });
+      window.dispatchEvent(new Event('resource-category-mutation'));
+      toast.success('Đã xóa phân loại thành công.');
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Có lỗi xảy ra khi xóa.';
+      toast.error(msg);
+    } finally {
+      setDeleteConfirm({ isOpen: false, id: '', name: '' });
     }
   };
 
@@ -169,9 +253,22 @@ export function ErpResources() {
         title="Quản lý Thiết bị & Tài nguyên"
         subtitle="Khởi tạo, theo dõi hiện trạng và phân phối phòng học, xe tập lái và thiết bị trợ giảng"
         action={
-          <ErpPrimaryButton onClick={() => setShowAddModal(true)}>
-            Khai báo tài nguyên mới
-          </ErpPrimaryButton>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowCategoryModal(true)}
+              className={cn(
+                "px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border cursor-pointer shrink-0",
+                darkMode
+                  ? "bg-slate-800 hover:bg-slate-750 text-slate-200 border-slate-700"
+                  : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+              )}
+            >
+              Quản lý phân loại
+            </button>
+            <ErpPrimaryButton onClick={() => setShowAddModal(true)}>
+              Khai báo tài nguyên mới
+            </ErpPrimaryButton>
+          </div>
         }
       />
 
@@ -180,9 +277,12 @@ export function ErpResources() {
         <ErpSearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Tìm tài nguyên bằng tên hoặc số nhận diện..." />
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2 overflow-x-auto">
-            {['all', 'ROOM', 'VEHICLE', 'EQUIPMENT'].map((type) => (
+            <ErpFilterTab active={typeFilter === 'all'} onClick={() => setTypeFilter('all')}>
+              Tất cả
+            </ErpFilterTab>
+            {typeOptions.map((type) => (
               <ErpFilterTab key={type} active={typeFilter === type} onClick={() => setTypeFilter(type)}>
-                {type === 'all' ? 'Tất cả' : type === 'ROOM' ? 'Phòng học' : type === 'VEHICLE' ? 'Phương tiện / Xe' : 'Thiết bị dạy'}
+                {type}
               </ErpFilterTab>
             ))}
           </div>
@@ -251,11 +351,9 @@ export function ErpResources() {
                     <span className={cn("text-[10px] font-black uppercase tracking-widest", darkMode ? "text-slate-500" : "text-slate-400")}>{r.identifier}</span>
                     <span className={cn(
                       "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider",
-                      r.type === 'ROOM' && "bg-blue-500/10 text-blue-400 border border-blue-500/15",
-                      r.type === 'VEHICLE' && "bg-amber-500/10 text-amber-400 border border-amber-500/15",
-                      r.type === 'EQUIPMENT' && "bg-brand-primary/10 text-brand-primary border border-brand-primary/15",
+                      getTypeColor(r.type)
                     )}>
-                      {r.type === 'ROOM' ? 'Phòng' : r.type === 'VEHICLE' ? 'Xe tập' : 'Thiết bị'}
+                      {r.type}
                     </span>
                   </div>
 
@@ -369,11 +467,9 @@ export function ErpResources() {
                       <td className="py-4.5 px-6">
                         <span className={cn(
                           "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider",
-                          r.type === 'ROOM' && "bg-blue-500/10 text-blue-400 border border-blue-500/15",
-                          r.type === 'VEHICLE' && "bg-amber-500/10 text-amber-400 border border-amber-500/15",
-                          r.type === 'EQUIPMENT' && "bg-brand-primary/10 text-brand-primary border border-brand-primary/15",
+                          getTypeColor(r.type)
                         )}>
-                          {r.type === 'ROOM' ? 'Phòng' : r.type === 'VEHICLE' ? 'Xe tập' : 'Thiết bị'}
+                          {r.type}
                         </span>
                       </td>
                       <td className="py-4.5 px-6 font-bold">{r.capacity}</td>
@@ -462,12 +558,16 @@ export function ErpResources() {
             <div className="grid grid-cols-2 gap-4">
               <ErpField label="Phân loại">
                 <ErpSelect
+                  required
                   value={newResource.type}
-                  onChange={(e) => setNewResource({ ...newResource, type: e.target.value as ResourceType })}
+                  onChange={(e) => setNewResource({ ...newResource, type: e.target.value })}
                 >
-                  <option value="ROOM">Phòng học / Học phòng</option>
-                  <option value="VEHICLE">Phương tiện / Xe tập lái</option>
-                  <option value="EQUIPMENT">Thiết bị giảng dạy</option>
+                  <option value="" disabled>-- Chọn phân loại --</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
                 </ErpSelect>
               </ErpField>
               <ErpField label="Nhận diện / Số xe / Số phòng">
@@ -551,6 +651,78 @@ export function ErpResources() {
           </form>
         </ErpModal>
       )}
+
+      {/* Manage Categories Modal */}
+      {showCategoryModal && (
+        <ErpModal title="Quản lý phân loại tài nguyên" onClose={() => setShowCategoryModal(false)}>
+          <div className="space-y-6">
+            {/* Add New Category Form */}
+            <form onSubmit={handleAddCategory} className="flex gap-2">
+              <div className="flex-1">
+                <ErpInput
+                  type="text"
+                  required
+                  placeholder="Nhập tên phân loại mới (VD: Phòng mô phỏng)..."
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isCategorySubmitting}
+                className="px-4 py-2 bg-brand-primary text-white rounded-xl text-xs font-bold transition-all hover:bg-brand-primary/95 disabled:opacity-50 flex items-center gap-1.5 shrink-0 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" /> Thêm
+              </button>
+            </form>
+
+            {/* List of Categories */}
+            <div className="space-y-2">
+              <h5 className={cn("text-xs font-black uppercase tracking-wider", darkMode ? "text-slate-400" : "text-slate-500")}>Danh sách phân loại hiện tại</h5>
+              {categoriesLoading ? (
+                <p className="text-xs text-slate-400">Đang tải...</p>
+              ) : categories.length === 0 ? (
+                <p className="text-xs text-slate-400">Chưa có phân loại nào.</p>
+              ) : (
+                <div className={cn("border rounded-2xl p-2 max-h-60 overflow-y-auto divide-y", darkMode ? "border-slate-800 divide-slate-800/40" : "border-slate-100 divide-slate-100/60")}>
+                  {categories.map((cat) => (
+                    <div key={cat.id} className="flex items-center justify-between py-2.5 px-3">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-3.5 h-3.5 text-slate-400" />
+                        <span className={cn("text-xs font-bold", darkMode ? "text-slate-200" : "text-slate-700")}>{cat.name}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirm({ isOpen: true, id: cat.id, name: cat.name })}
+                        title="Xóa phân loại"
+                        className={cn(
+                          "p-1.5 rounded-lg transition-all border cursor-pointer",
+                          darkMode
+                            ? "bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 border-transparent"
+                            : "bg-slate-50 hover:bg-rose-50 text-slate-450 hover:text-rose-600 border-slate-200/60"
+                        )}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </ErpModal>
+      )}
+
+      {/* Confirm Delete Category Modal */}
+      <ErpConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        title="Xóa phân loại tài nguyên"
+        message={`Bạn có chắc chắn muốn xóa phân loại "${deleteConfirm.name}" không? Hành động này không thể hoàn tác.`}
+        onConfirm={handleDeleteCategory}
+        onCancel={() => setDeleteConfirm({ isOpen: false, id: '', name: '' })}
+        confirmText="Xác nhận xóa"
+        cancelText="Hủy bỏ"
+      />
     </div>
   );
 }

@@ -22,7 +22,8 @@ export interface DrivingStudent {
   idCard: string;
   idCardFront?: string;
   idCardBack?: string;
-  rank: 'A1' | 'A2' | 'B1' | 'B2' | 'C';
+  /** Hạng bằng lái — thông tin riêng ngành lái xe, học viên ngành khác để trống */
+  rank?: string;
   registrationDate: string;
   enrollmentDate?: string;
   fee: string; // This is the TOTAL fee string (e.g. "12,000,000")
@@ -132,7 +133,8 @@ export interface ExamSession {
   id: string;
   name: string;
   status: ExamStatus;
-  rank: 'A1' | 'A2' | 'B1' | 'B2' | 'C';
+  /** Hạng bằng lái — riêng ngành lái xe, kỳ thi ngành khác để trống */
+  rank?: string;
   area: string;
   tentativeDate: string;
   officialDate?: string;
@@ -180,7 +182,34 @@ export interface Instructor {
   updatedAt?: Date | string;
 }
 
-export type ResourceType = 'ROOM' | 'VEHICLE' | 'EQUIPMENT';
+export type BatchStatus = 'Sắp khai giảng' | 'Đang học' | 'Đã kết thúc';
+
+export interface Batch {
+  id: string;
+  code: string;
+  courseId: string;
+  instructorId?: string;
+  learnerIds: string[];
+  daysOfWeek: number[]; // 0 = Chủ nhật ... 6 = Thứ 7
+  startTime: string;    // HH:mm
+  endTime: string;      // HH:mm
+  location?: string;
+  startDate: string;    // YYYY-MM-DD
+  endDate: string;      // YYYY-MM-DD
+  status: BatchStatus;
+  ownerId: string;
+  // Thông tin server gắn kèm để hiển thị
+  courseCode: string;
+  courseTitle: string;
+  maxLearners: number;
+  instructorName: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
+// Phân loại tài nguyên là chuỗi động (quản lý qua /resources/categories);
+// các giá trị cũ 'ROOM' | 'VEHICLE' | 'EQUIPMENT' vẫn hợp lệ với dữ liệu đã có.
+export type ResourceType = string;
 export type ResourceStatus = 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE';
 
 export interface ResourceBooking {

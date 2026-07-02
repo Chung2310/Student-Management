@@ -1,6 +1,6 @@
 import React from 'react';
-import { ErpCourses } from '../pages/ErpDemo/ErpCourses';
+import { CoursesPage } from '../pages/Courses/CoursesPage';
 
 export function CoursesManager() {
-  return <ErpCourses />;
+  return <CoursesPage />;
 }

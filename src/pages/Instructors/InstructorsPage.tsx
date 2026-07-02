@@ -5,7 +5,6 @@ import { apiFetch } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import { useInstructors } from '../../hooks/useInstructors';
 import { Instructor, InstructorStatus } from '../../types';
-import { useErpTheme } from './ErpThemeContext';
 import {
   ErpPageHeader, ErpPrimaryButton, ErpSearchBar, ErpFilterTab,
   ErpModal, ErpField, ErpInput, ErpSubmitButton,
@@ -40,8 +39,8 @@ const STATUS_LABEL: Record<InstructorStatus, string> = {
   'On Leave': 'Nghỉ phép',
 };
 
-export function ErpInstructors() {
-  const { darkMode } = useErpTheme();
+export function InstructorsPage() {
+  const darkMode = false;
   const { toast } = useToast();
   const { instructors, loading } = useInstructors();
 

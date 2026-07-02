@@ -10,19 +10,20 @@ export class AIService {
       throw new Error("Cấu hình khóa API (OPENROUTER_API_KEY) chưa được thiết lập trên Server.");
     }
 
+    // Học viên ngành lái xe (có hạng bằng) nhận tư vấn theo quy trình sát hạch; ngành khác nhận tư vấn lộ trình chung
+    const isDriving = !!student.rank;
     const prompt = `
-Bạn là một cố vấn đào tạo lái xe chuyên nghiệp. Hãy phân tích hồ sơ học viên sau và đưa ra tư vấn lộ trình học tập, thi sát hạch:
+Bạn là một cố vấn đào tạo chuyên nghiệp của trung tâm đào tạo đa ngành${isDriving ? ' (chuyên môn sâu về đào tạo & sát hạch lái xe)' : ''}. Hãy phân tích hồ sơ học viên sau và đưa ra tư vấn lộ trình học tập${isDriving ? ', thi sát hạch' : ''}:
 
 Học viên: ${student.fullName}
-Hạng bằng đăng ký: ${student.rank}
-Ngày đăng ký: ${student.registrationDate}
+${isDriving ? `Hạng bằng đăng ký: ${student.rank}\n` : ''}Ngày đăng ký: ${student.registrationDate}
 Trạng thái hiện tại: ${Array.isArray(student.status) ? student.status.join(', ') : student.status}
 Học phí: ${student.fee} VND
 
 Yêu cầu:
 1. Đưa ra nhận xét về tình trạng hồ sơ.
-2. Gợi ý các bước tiếp theo học viên cần thực hiện (ví dụ: KSK, nộp ảnh, học luật, tập xe chip).
-3. Đưa ra lời khuyên để tỷ lệ đậu cao nhất cho hạng bằng ${student.rank}.
+2. Gợi ý các bước tiếp theo học viên cần thực hiện${isDriving ? ' (ví dụ: KSK, nộp ảnh, học luật, tập xe chip)' : ' (ví dụ: hoàn thiện hồ sơ, xếp lớp, lộ trình học)'}.
+3. ${isDriving ? `Đưa ra lời khuyên để tỷ lệ đậu cao nhất cho hạng bằng ${student.rank}.` : 'Đưa ra lời khuyên để học viên đạt kết quả tốt nhất trong khóa học.'}
 4. Trình bày ngắn gọn, chuyên nghiệp, khích lệ.
 
 Hãy phản hồi bằng tiếng Việt, định dạng Markdown, phong cách tinh tế và truyền cảm hứng.

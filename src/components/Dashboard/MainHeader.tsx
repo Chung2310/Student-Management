@@ -21,6 +21,7 @@ export function MainHeader({ currentView, onMenuClick }: MainHeaderProps) {
       Fees: 'Học phí',
       Bot: 'BOT Thông báo',
       Courses: 'Khóa học',
+      Batches: 'Lớp & Khai giảng',
       Instructors: 'Giảng viên',
       Resources: 'Thiết bị',
       UserManagement: 'Quản lý người dùng',

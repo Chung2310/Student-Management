@@ -79,14 +79,15 @@ export class ChatbotService {
       const datProgress = s.progress?.dat ? `${s.progress.dat.kmDone}/${s.progress.dat.totalKm} km` : '0 km';
       const theoryProgress = s.progress?.theory?.completed ? 'Lý thuyết Đạt' : 'Lý thuyết Chưa đạt';
       const statusStr = Array.isArray(s.status) ? s.status.join(', ') : s.status;
-      return `- ${s.fullName} (${s.phone}, hạng ${s.rank}, trạng thái: ${statusStr}, đã đóng: ${s.paidAmount?.toLocaleString('vi-VN')}đ / học phí: ${s.fee}đ, DAT: ${datProgress}, ${theoryProgress})`;
+      const drivingInfo = s.rank ? `, hạng ${s.rank}, DAT: ${datProgress}, ${theoryProgress}` : '';
+      return `- ${s.fullName} (${s.phone}, trạng thái: ${statusStr}, đã đóng: ${s.paidAmount?.toLocaleString('vi-VN')}đ / học phí: ${s.fee}đ${drivingInfo})`;
     }).join('\n');
 
     const truncateNotice = students.length > limit ? `\n(Lưu ý: Chỉ hiển thị danh sách ${limit} học viên đầu tiên để tối ưu hóa hiệu năng)` : "";
 
     // 4. Process Exam data
     const examList = exams.map(e => {
-      return `- ${e.name} (Hạng ${e.rank}, Ngày dự kiến: ${e.tentativeDate}, Địa điểm: ${e.location}, Trạng thái: ${e.status})`;
+      return `- ${e.name} (${e.rank ? `Hạng ${e.rank}, ` : ''}Ngày dự kiến: ${e.tentativeDate}, Địa điểm: ${e.location}, Trạng thái: ${e.status})`;
     }).join('\n');
 
     // 5. Process Payment data (recent 10)
@@ -98,8 +99,8 @@ export class ChatbotService {
     // 6. Construct Context-Aware System Prompt
     const systemPrompt = {
       role: "system",
-      content: `Bạn là trợ lý ảo hỗ trợ quản lý học viên dành riêng cho Giáo viên của Trung tâm Đào tạo và Sát hạch Lái xe.
-Bạn có quyền truy cập trực tiếp vào dữ liệu hiện tại của Giáo viên này. Hãy trả lời các thắc mắc về tình hình học viên, lịch thi, học phí, doanh thu chính xác dựa trên dữ liệu dưới đây.
+      content: `Bạn là trợ lý ảo hỗ trợ quản lý học viên dành riêng cho Giáo viên của trung tâm đào tạo đa ngành (lái xe, ngoại ngữ, kỹ năng...).
+Bạn có quyền truy cập trực tiếp vào dữ liệu hiện tại của Giáo viên này. Hãy trả lời các thắc mắc về tình hình học viên, lịch thi, lớp học, học phí, doanh thu chính xác dựa trên dữ liệu dưới đây.
 
 DỮ LIỆU THỜI GIAN THỰC CỦA GIÁO VIÊN:
 1. Tổng quan học viên: ${statusSummary || "Chưa có học viên nào."}
@@ -121,7 +122,7 @@ QUY TẮC PHẢN HỒI:
 - Trả lời bằng tiếng Việt rõ ràng, ngắn gọn, có cấu trúc (sử dụng dấu đầu dòng, danh sách nếu cần thiết).
 - Trả lời dựa trên dữ liệu thực tế được cung cấp ở trên. Nếu người dùng hỏi về học viên không có trong danh sách trên, hãy báo lịch sự rằng không tìm thấy học viên này trong hệ thống của Thầy/Cô.
 - Nếu người dùng hỏi về doanh thu (tổng doanh thu, doanh thu tháng này,...), hãy trả lời trực tiếp con số thực tế được thống kê ở trên một cách rõ ràng.
-- Nếu được hỏi về kiến thức chung (quy chế học lái xe, quy chế thi sát hạch các hạng bằng A1, B2,...), hãy trả lời theo kiến thức chuyên môn đào tạo lái xe của bạn.`
+- Nếu được hỏi về kiến thức chung của ngành đào tạo (quy chế học/thi sát hạch lái xe, chứng chỉ ngoại ngữ, chương trình kỹ năng...), hãy trả lời theo kiến thức chuyên môn của bạn về lĩnh vực tương ứng.`
     };
 
     const payload = {

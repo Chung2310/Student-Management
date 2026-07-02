@@ -504,7 +504,7 @@ export function NotificationsPage() {
     
     return str
       .replace(/\{ten\}/g, student.fullName)
-      .replace(/\{hang\}/g, student.rank)
+      .replace(/\{hang\}/g, student.rank || '')
       .replace(/\{kv\}/g, '')
       .replace(/\{email\}/g, student.email || '')
       .replace(/\{ngaythi\}/g, examDate)
