@@ -5,7 +5,7 @@
 
 import React, { Suspense, lazy } from 'react';
 import { Sidebar } from './components/Dashboard/Sidebar';
-import { Header } from './components/Dashboard/Header';
+import { MainHeader } from './components/Dashboard/MainHeader';
 import { Student } from './types';
 
 import { useAuth } from './hooks/useAuth';
@@ -52,6 +52,9 @@ const StudentsPage = lazyWithRetry(() => import('./pages/Students/StudentsPage')
 const ExamsPage = lazyWithRetry(() => import('./pages/Exams/ExamsPage').then(m => ({ default: m.ExamsPage })));
 const FeesPage = lazyWithRetry(() => import('./pages/Fees/FeesPage').then(m => ({ default: m.FeesPage })));
 const NotificationsPage = lazyWithRetry(() => import('./pages/Notifications/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
+const CoursesPage = lazyWithRetry(() => import('./pages/CoursesPage').then(m => ({ default: m.CoursesPage })));
+const InstructorsPage = lazyWithRetry(() => import('./pages/InstructorsPage').then(m => ({ default: m.InstructorsPage })));
+const ResourcesPage = lazyWithRetry(() => import('./pages/ResourcesPage').then(m => ({ default: m.ResourcesPage })));
 const UserManagementPage = lazyWithRetry(() => import('./pages/UserManagement/UserManagementPage').then(m => ({ default: m.UserManagementPage })));
 const SettingsPage = lazyWithRetry(() => import('./pages/Settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const ErpDemoLayout = lazyWithRetry(() => import('./pages/ErpDemo/ErpDemoLayout').then(m => ({ default: m.ErpDemoLayout })));
@@ -68,7 +71,7 @@ const PageLoader = () => (
   </div>
 );
 
-export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'UserManagement' | 'SettingsAdmin' | 'ErpDemo';
+export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'Courses' | 'Instructors' | 'Resources' | 'UserManagement' | 'SettingsAdmin' | 'ErpDemo';
 export type TabType = 'Hồ sơ' | 'KSK' | 'Tiến độ học' | 'Lịch thi & KQ' | 'Học phí' | 'Lịch sử' | 'Trợ lý AI';
 
 export default function App() {
@@ -88,6 +91,9 @@ export default function App() {
     if (path.startsWith('/exams')) return 'Exams';
     if (path.startsWith('/fees')) return 'Fees';
     if (path.startsWith('/bot')) return 'Bot';
+    if (path.startsWith('/courses')) return 'Courses';
+    if (path.startsWith('/instructors')) return 'Instructors';
+    if (path.startsWith('/resources')) return 'Resources';
     if (path.startsWith('/user-management')) return 'UserManagement';
     if (path.startsWith('/settings')) return 'SettingsAdmin';
     if (path.startsWith('/dashboard')) return 'Dashboard';
@@ -119,6 +125,9 @@ export default function App() {
     } else if (view === 'Exams') path = '/exams';
     else if (view === 'Fees') path = '/fees';
     else if (view === 'Bot') path = '/bot';
+    else if (view === 'Courses') path = '/courses';
+    else if (view === 'Instructors') path = '/instructors';
+    else if (view === 'Resources') path = '/resources';
     else if (view === 'UserManagement') path = '/user-management';
     else if (view === 'SettingsAdmin') path = '/settings';
     else if (view === 'ErpDemo') path = '/erp';
@@ -287,6 +296,12 @@ export default function App() {
         return <FeesPage onSelectStudent={handleOpenProfile} />;
       case 'Bot':
         return <NotificationsPage />;
+      case 'Courses':
+        return <CoursesPage />;
+      case 'Instructors':
+        return <InstructorsPage />;
+      case 'Resources':
+        return <ResourcesPage />;
       case 'UserManagement':
         return <UserManagementPage />;
       case 'SettingsAdmin':
@@ -314,7 +329,7 @@ export default function App() {
         "flex-1 flex flex-col min-w-0 transition-all duration-300",
         isSidebarOpen ? "lg:pl-64" : "lg:pl-0"
       )}>
-        <Header
+        <MainHeader
           currentView={currentView}
           onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
         />

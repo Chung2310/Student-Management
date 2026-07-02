@@ -4,6 +4,7 @@ import {
   Search, Loader2, AlertCircle, BarChart3,
   BookOpen, Award, CreditCard
 } from 'lucide-react';
+import { parseVND } from '../../lib/utils';
 
 interface ExamResult {
   theory?: number | string;
@@ -41,7 +42,7 @@ interface LookupResult {
     sim?: { completed: boolean; lastDate?: string };
   };
   exams?: Exam[];
-  fee?: number;
+  fee?: string | number;
   paidAmount?: number;
   installmentStatus?: Installment[];
 }
@@ -51,6 +52,10 @@ export function StudentLookup() {
   const [lookupResult, setLookupResult] = useState<LookupResult | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState('');
+
+  const totalFee = lookupResult ? parseInt(parseVND(String(lookupResult.fee || '0')), 10) || 0 : 0;
+  const paidAmount = lookupResult?.paidAmount || 0;
+  const remainingFee = Math.max(0, totalFee - paidAmount);
 
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,7 +106,6 @@ export function StudentLookup() {
         </button>
       </form>
 
-      {/* Error Notification */}
       {lookupError && (
         <div className="mt-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-3 text-rose-700 text-sm font-semibold">
           <AlertCircle className="w-5 h-5 shrink-0" />
@@ -109,14 +113,12 @@ export function StudentLookup() {
         </div>
       )}
 
-      {/* Lookup Result Box */}
       {lookupResult && (
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           className="mt-8 border-t border-slate-200 pt-8 space-y-8"
         >
-          {/* 1. Basic Info Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm animate-fade-in">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Học viên</p>
@@ -135,15 +137,12 @@ export function StudentLookup() {
             </div>
           </div>
 
-          {/* 2. Progress Tracker Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left Column: Practical Progress */}
             <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-5">
               <h5 className="font-bold text-slate-800 text-sm flex items-center gap-2 border-b border-slate-100 pb-2">
                 <BarChart3 className="w-4 h-4 text-cyan-600" /> Tiến độ thực hành & DAT
               </h5>
 
-              {/* DAT Progress */}
               {lookupResult.progress?.dat && (
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs font-bold text-slate-700">
@@ -159,7 +158,6 @@ export function StudentLookup() {
                 </div>
               )}
 
-              {/* Cabin Progress */}
               {lookupResult.progress?.cabin && (
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs font-bold text-slate-700">
@@ -175,7 +173,6 @@ export function StudentLookup() {
                 </div>
               )}
 
-              {/* Practice Progress */}
               {lookupResult.progress?.practice && (
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs font-bold text-slate-700">
@@ -192,13 +189,11 @@ export function StudentLookup() {
               )}
             </div>
 
-            {/* Right Column: Theory & Sim */}
             <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-5">
               <h5 className="font-bold text-slate-800 text-sm flex items-center gap-2 border-b border-slate-100 pb-2">
                 <BookOpen className="w-4 h-4 text-cyan-600" /> Lý thuyết & Mô phỏng
               </h5>
 
-              {/* Theory Status */}
               {lookupResult.progress?.theory && (
                 <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl">
                   <div>
@@ -215,7 +210,6 @@ export function StudentLookup() {
                 </div>
               )}
 
-              {/* Simulation Status */}
               {lookupResult.progress?.sim && (
                 <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl">
                   <div>
@@ -234,7 +228,6 @@ export function StudentLookup() {
             </div>
           </div>
 
-          {/* 3. Exam Results Table */}
           {lookupResult.exams && lookupResult.exams.length > 0 && (
             <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
               <h5 className="font-bold text-slate-800 text-sm flex items-center gap-2 border-b border-slate-100 pb-2">
@@ -273,8 +266,8 @@ export function StudentLookup() {
                             ex.result?.overall === 'Đậu'
                               ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
                               : ex.result?.overall === 'Trượt'
-                              ? 'bg-rose-50 text-rose-600 border border-rose-100'
-                              : 'bg-slate-100 text-slate-500'
+                                ? 'bg-rose-50 text-rose-600 border border-rose-100'
+                                : 'bg-slate-100 text-slate-500'
                           }`}>
                             {ex.result?.overall || 'Chưa có'}
                           </span>
@@ -287,7 +280,6 @@ export function StudentLookup() {
             </div>
           )}
 
-          {/* 4. Financial & Payment Schedule */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-5">
             <h5 className="font-bold text-slate-800 text-sm flex items-center gap-2 border-b border-slate-100 pb-2">
               <CreditCard className="w-4 h-4 text-cyan-600" /> Tình hình đóng học phí
@@ -297,24 +289,23 @@ export function StudentLookup() {
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Học phí trọn gói</span>
                 <span className="text-base font-black text-slate-800 font-mono">
-                  {Number(lookupResult.fee || 0).toLocaleString('vi-VN')} đ
+                  {totalFee.toLocaleString('vi-VN')} đ
                 </span>
               </div>
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Đã nộp</span>
                 <span className="text-base font-black text-emerald-600 font-mono">
-                  {(lookupResult.paidAmount || 0).toLocaleString('vi-VN')} đ
+                  {paidAmount.toLocaleString('vi-VN')} đ
                 </span>
               </div>
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Còn nợ</span>
                 <span className="text-base font-black text-rose-600 font-mono">
-                  {Math.max(0, Number(lookupResult.fee || 0) - (lookupResult.paidAmount || 0)).toLocaleString('vi-VN')} đ
+                  {remainingFee.toLocaleString('vi-VN')} đ
                 </span>
               </div>
             </div>
 
-            {/* Installments Breakdown */}
             {lookupResult.installmentStatus && lookupResult.installmentStatus.length > 0 && (
               <div className="space-y-3 pt-2">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Kế hoạch thu học phí</p>
@@ -327,8 +318,8 @@ export function StudentLookup() {
                           inst.status === 'Đã thu'
                             ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
                             : inst.status === 'Đã gửi'
-                            ? 'bg-cyan-50 text-cyan-600 border border-cyan-100'
-                            : 'bg-slate-150 text-slate-550'
+                              ? 'bg-cyan-50 text-cyan-600 border border-cyan-100'
+                              : 'bg-slate-150 text-slate-550'
                         }`}>
                           {inst.status}
                         </span>
