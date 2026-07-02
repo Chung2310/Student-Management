@@ -99,6 +99,10 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
 
   // Hạng bằng là dữ liệu riêng ngành lái xe — chỉ hiện filter/cột khi còn học viên có hạng
   const hasRankData = useMemo(() => students.some(s => s.rank), [students]);
+  const rankOptions = useMemo(() => {
+    const ranks = [...new Set(students.map(s => s.rank).filter(Boolean))] as string[];
+    return ['Tất cả hạng', ...ranks.sort()];
+  }, [students]);
 
   const filteredStudents = students.filter(student => {
     // 1. Category Filter (theo phân loại khóa học của lớp học viên đang tham gia)
@@ -511,13 +515,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
                 onChange={(e) => setRankFilter(e.target.value)}
                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-cyan-600"
               >
-                <option>Tất cả hạng</option>
-                <option>A1</option>
-                <option>A2</option>
-                <option>B1</option>
-                <option>B2</option>
-                <option>C</option>
-                <option>D</option>
+                {rankOptions.map(opt => <option key={opt}>{opt}</option>)}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             </div>

@@ -18,19 +18,11 @@ function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-// Nhãn hiển thị cho các mã phân loại cũ (dữ liệu tạo trước khi phân loại động)
-const LEGACY_TYPE_LABELS: Record<string, string> = {
-  ROOM: 'Phòng học',
-  VEHICLE: 'Phương tiện / Xe',
-  EQUIPMENT: 'Thiết bị dạy',
-};
-
-const typeLabel = (type: string) => LEGACY_TYPE_LABELS[type] || type;
-
 const getTypeColor = (type: string) => {
-  if (type === 'ROOM') return "bg-blue-500/10 text-blue-400 border border-blue-500/15";
-  if (type === 'VEHICLE') return "bg-amber-500/10 text-amber-400 border border-amber-500/15";
-  if (type === 'EQUIPMENT') return "bg-brand-primary/10 text-brand-primary border border-brand-primary/15";
+  const t = type.toLowerCase();
+  if (t === 'room' || t === 'phòng học') return "bg-blue-500/10 text-blue-400 border border-blue-500/15";
+  if (t === 'vehicle' || t === 'xe tập lái' || t === 'phương tiện / xe') return "bg-amber-500/10 text-amber-400 border border-amber-500/15";
+  if (t === 'equipment' || t === 'thiết bị' || t === 'thiết bị dạy') return "bg-brand-primary/10 text-brand-primary border border-brand-primary/15";
 
   let hash = 0;
   for (let i = 0; i < type.length; i++) {
@@ -290,7 +282,7 @@ export function ResourcesPage() {
             </ErpFilterTab>
             {typeOptions.map((type) => (
               <ErpFilterTab key={type} active={typeFilter === type} onClick={() => setTypeFilter(type)}>
-                {typeLabel(type)}
+                {type}
               </ErpFilterTab>
             ))}
           </div>
@@ -361,7 +353,7 @@ export function ResourcesPage() {
                       "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider",
                       getTypeColor(r.type)
                     )}>
-                      {typeLabel(r.type)}
+                      {r.type}
                     </span>
                   </div>
 
@@ -477,7 +469,7 @@ export function ResourcesPage() {
                           "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider",
                           getTypeColor(r.type)
                         )}>
-                          {typeLabel(r.type)}
+                          {r.type}
                         </span>
                       </td>
                       <td className="py-4.5 px-6 font-bold">{r.capacity}</td>

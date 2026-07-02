@@ -40,7 +40,7 @@ export function SettingsPage() {
     return {
       fullName: true,
       phone: true,
-      rank: true,
+      rank: false, // Hạng bằng lái xe — tùy chọn, ngành khác để trống
       birthday: false,
       idCard: false,
       email: false
@@ -50,7 +50,7 @@ export function SettingsPage() {
   const fieldMapping = [
     { label: 'Họ và tên', key: 'fullName' },
     { label: 'Số điện thoại', key: 'phone' },
-    { label: 'Hạng bằng', key: 'rank' },
+    { label: 'Hạng bằng (lái xe — tùy chọn)', key: 'rank' },
     { label: 'Ngày sinh', key: 'birthday' },
     { label: 'CCCD/CMND', key: 'idCard' },
     { label: 'Email', key: 'email' }

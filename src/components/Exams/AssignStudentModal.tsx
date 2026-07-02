@@ -166,7 +166,7 @@ export function AssignStudentModal({ exam, isOpen, onClose, onSuccess }: AssignS
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">{student.rank}</p>
+                      {student.rank && <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">{student.rank}</p>}
                     </div>
                   </div>
                   <div className={cn(

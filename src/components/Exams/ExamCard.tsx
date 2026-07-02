@@ -166,6 +166,7 @@ export const ExamCard: React.FC<ExamCardProps> = ({
 }) => {
   const status = getStatusInfo(exam.status);
   const [isExpanded, setIsExpanded] = useState(false);
+  const showStudentRank = !!exam.rank || assignedStudents.some(s => s.rank);
   
   return (
     <motion.div 
@@ -345,7 +346,7 @@ export const ExamCard: React.FC<ExamCardProps> = ({
                     <thead>
                       <tr className="bg-slate-50/60 border-b border-slate-100">
                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Học viên</th>
-                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider text-center">Hạng</th>
+                        {showStudentRank && <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider text-center">Hạng</th>}
                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Trạng thái học</th>
                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider text-center">Kết quả</th>
                         <th className="px-4 py-3 text-right"></th>
@@ -364,11 +365,13 @@ export const ExamCard: React.FC<ExamCardProps> = ({
                                 <span className="text-[9px] font-medium text-slate-400 mt-0.5">{student.phone}</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-center">
-                              <span className="px-1.5 py-0.5 bg-cyan-50 text-cyan-600 rounded text-[9px] font-black uppercase">
-                                {student.rank}
-                              </span>
-                            </td>
+                            {showStudentRank && (
+                              <td className="px-4 py-3 text-center">
+                                <span className="px-1.5 py-0.5 bg-cyan-50 text-cyan-600 rounded text-[9px] font-black uppercase">
+                                  {student.rank || 'N/A'}
+                                </span>
+                              </td>
+                            )}
                             <td className="px-4 py-3">
                               <span className={cn(
                                 "px-2 py-0.5 rounded text-[9px] font-extrabold uppercase",

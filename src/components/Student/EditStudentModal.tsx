@@ -159,7 +159,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
               <Input label="Người giới thiệu" name="referral" value={formData.referral} onChange={handleInputChange} className="sm:col-span-2" />
               <Input label="Ngày sinh" name="birthday" value={formData.birthday} onChange={handleInputChange} required={requiredFields.birthday} />
               <Input label="CCCD / CMND" name="idCard" value={formData.idCard} onChange={handleInputChange} required={requiredFields.idCard} />
-              <Select label="Hạng bằng (lái xe)" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} options={['A1', 'A2', 'B1', 'B2', 'C']} />
+              <Input label="Hạng bằng (lái xe — tùy chọn)" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} placeholder="Ví dụ: A1, B2, C... hoặc để trống" />
               <Input label="Ngày đăng ký" name="registrationDate" value={formData.registrationDate} onChange={handleInputChange} readOnly />
               <Input label="Ngày nhập học" name="enrollmentDate" value={formData.enrollmentDate} onChange={handleInputChange} />
               <Input label="Học phí (VND)" name="fee" value={formData.fee} onChange={handleInputChange} />
@@ -218,11 +218,11 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
   );
 }
 
-function Input({ label, name, value, onChange, required = false, readOnly = false, className = '' }: { label: string; name: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; required?: boolean; readOnly?: boolean; className?: string; }) {
+function Input({ label, name, value, onChange, required = false, readOnly = false, placeholder = '', className = '' }: { label: string; name: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; required?: boolean; readOnly?: boolean; placeholder?: string; className?: string; }) {
   return (
     <div className={`space-y-1 ${className}`}>
       <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">{label} {required && <span className="text-rose-500">*</span>}</label>
-      <input type="text" name={name} value={value} onChange={onChange} readOnly={readOnly} className={`w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all ${readOnly ? 'bg-slate-50 text-slate-600 cursor-default' : ''}`} />
+      <input type="text" name={name} value={value} onChange={onChange} readOnly={readOnly} placeholder={placeholder} className={`w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all ${readOnly ? 'bg-slate-50 text-slate-600 cursor-default' : ''}`} />
     </div>
   );
 }

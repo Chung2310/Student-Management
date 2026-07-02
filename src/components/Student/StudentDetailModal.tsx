@@ -12,6 +12,8 @@ import { analyzeStudentPerformance } from '../../services/geminiService';
 import { useToast } from '../../hooks/useToast';
 
 import { ProfileTab } from './DetailTabs/ProfileTab';
+import { useBatches } from '../../hooks/useBatches';
+import { useCourses } from '../../hooks/useCourses';
 import { KskTab } from './DetailTabs/KskTab';
 import { ProgressTab } from './DetailTabs/ProgressTab';
 import { ExamsTab } from './DetailTabs/ExamsTab';
@@ -39,6 +41,8 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
   const [isEditingExams, setIsEditingExams] = React.useState(false);
   const [isUpdatingExams, setIsUpdatingExams] = React.useState(false);
   const [isUploadingFile, setIsUploadingFile] = React.useState(false);
+  const { batches } = useBatches();
+  const { courses } = useCourses();
   
   const [kskData, setKskData] = React.useState({
     status: (Array.isArray(student?.status) ? student.status.includes('Chờ KSK') : student?.status === 'Chờ KSK') ? 'Pending' : 'Completed',
@@ -135,8 +139,19 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
     }
   }, [student, isUpdatingKSK, isEditingProgress, isUpdatingProgress, isEditingExams, isUpdatingExams]);
 
-  // KSK & Tiến độ học là nghiệp vụ riêng ngành lái xe — chỉ hiện với học viên có hạng bằng
-  const isDrivingStudent = !!student?.rank;
+  // KSK & Tiến độ học là nghiệp vụ riêng ngành lái xe — chỉ hiện với học viên có hạng bằng hoặc thuộc lớp/khóa học lái xe
+  const isDrivingStudent = React.useMemo(() => {
+    if (!student) return false;
+    if (student.rank) return true;
+    const studentId = student.id || student._id;
+    const myBatches = batches.filter(b => b.learnerIds.includes(studentId));
+    const courseMap = new Map<string, string>(courses.map(c => [c.id, c.category]));
+    return myBatches.some(b => {
+      const cat = courseMap.get(b.courseId);
+      return cat && (cat.toLowerCase().includes('lái xe') || cat.toLowerCase().includes('lai xe'));
+    });
+  }, [student, batches, courses]);
+
   const tabs: TabType[] = isDrivingStudent
     ? ['Hồ sơ', 'KSK', 'Tiến độ học', 'Lịch thi & KQ', 'Học phí', 'Lịch sử', 'Trợ lý AI']
     : ['Hồ sơ', 'Lịch thi & KQ', 'Học phí', 'Lịch sử', 'Trợ lý AI'];

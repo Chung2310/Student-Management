@@ -177,11 +177,7 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
           else seenPhones.add(studentData.phone);
           if (paidAmount > feeNum) errors.push(`Số tiền đã đóng (${paidAmount.toLocaleString('vi-VN')}đ) không được vượt quá học phí (${studentData.fee}đ)`);
 
-          // Hạng bằng là tùy chọn (ngành lái xe); nếu có thì phải hợp lệ
-          const validRanks = ['A1', 'A2', 'B1', 'B2', 'C'];
-          if (studentData.rank && !validRanks.includes(studentData.rank)) {
-            errors.push(`Hạng bằng '${studentData.rank}' không hợp lệ (A1, A2, B1, B2, C)`);
-          }
+          // Hạng bằng là tùy chọn tự do, không cần kiểm tra thuộc danh sách cố định lái xe nữa
 
           if (studentData.enrollmentDate && !DATE_PATTERN.test(studentData.enrollmentDate)) {
             errors.push('Ngày nhập học không đúng định dạng DD/MM/YYYY');

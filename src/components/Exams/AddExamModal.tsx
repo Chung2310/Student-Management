@@ -187,27 +187,19 @@ export function AddExamModal({ isOpen, onClose, onSuccess, initialData }: AddExa
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Rank Selection */}
+                {/* Rank - tùy chọn, riêng ngành lái xe */}
                 <div className="space-y-1 relative">
                   <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                    Hạng bằng (lái xe)
+                    Hạng bằng <span className="text-slate-400 font-medium normal-case">(lái xe, tùy chọn)</span>
                   </label>
-                  <div className="relative">
-                    <select
-                      name="rank"
-                      value={formData.rank}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all pr-10"
-                    >
-                      <option value="">-- Không (ngành khác) --</option>
-                      <option value="A1">A1</option>
-                      <option value="A2">A2</option>
-                      <option value="B1">B1</option>
-                      <option value="B2">B2</option>
-                      <option value="C">C</option>
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-                  </div>
+                  <input
+                    type="text"
+                    name="rank"
+                    value={formData.rank}
+                    onChange={handleInputChange}
+                    placeholder="Ví dụ: A1, B2, C... hoặc để trống"
+                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
+                  />
                 </div>
 
                 {/* Area Selection */}
