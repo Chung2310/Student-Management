@@ -20,7 +20,6 @@ export function FeesPage({ onSelectStudent }: FeesPageProps) {
   const { students, loading } = useStudents();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
-  const [areaFilter, setAreaFilter] = useState('Tất cả');
   const [debtFilter, setDebtFilter] = useState('Tất cả');
   
   // Modal state
@@ -49,7 +48,7 @@ export function FeesPage({ onSelectStudent }: FeesPageProps) {
     }
 
     // Define CSV headers
-    const headers = ['Họ và tên', 'Số điện thoại', 'Hạng', 'Khu vực', 'Tổng học phí', 'Đã đóng', 'Còn nợ', 'Tiến độ (%)'];
+    const headers = ['Họ và tên', 'Số điện thoại', 'Hạng', 'Tổng học phí', 'Đã đóng', 'Còn nợ', 'Tiến độ (%)'];
     
     // Map data to CSV rows
     const rows = filteredStudents.map(student => {
@@ -62,7 +61,6 @@ export function FeesPage({ onSelectStudent }: FeesPageProps) {
         student.fullName,
         student.phone,
         student.rank,
-        student.area,
         total,
         paid,
         debt,
@@ -106,7 +104,6 @@ export function FeesPage({ onSelectStudent }: FeesPageProps) {
     const paid = student.paidAmount || 0;
     const debt = total - paid;
 
-    if (areaFilter !== 'Tất cả' && student.area !== areaFilter) return false;
     if (debtFilter === 'Còn nợ' && debt <= 0) return false;
     if (debtFilter === 'Đã hoàn thành' && debt > 0) return false;
     if (searchQuery && !student.fullName.toLowerCase().includes(searchQuery.toLowerCase()) && !student.phone.includes(searchQuery)) return false;
@@ -123,7 +120,7 @@ export function FeesPage({ onSelectStudent }: FeesPageProps) {
       setCurrentPage(1);
     }, 0);
     return () => clearTimeout(timer);
-  }, [searchQuery, areaFilter, debtFilter]);
+  }, [searchQuery, debtFilter]);
 
   return (
     <div className="space-y-6">
@@ -178,37 +175,19 @@ export function FeesPage({ onSelectStudent }: FeesPageProps) {
 
       {/* Filters */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Khu vực</label>
-            <div className="relative">
-              <select 
-                value={areaFilter}
-                onChange={(e) => setAreaFilter(e.target.value)}
-                className="w-full h-11 bg-slate-50 px-4 pr-10 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 outline-none appearance-none focus:border-cyan-600 transition-all"
-              >
-                <option value="Tất cả">Tất cả</option>
-                <option value="Nội thành">Nội thành</option>
-                <option value="Ngoại thành">Ngoại thành</option>
-                <option value="Tỉnh lân cận">Tỉnh lân cận</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Trạng thái nợ</label>
-            <div className="relative">
-              <select 
-                value={debtFilter}
-                onChange={(e) => setDebtFilter(e.target.value)}
-                className="w-full h-11 bg-slate-50 px-4 pr-10 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 outline-none appearance-none focus:border-cyan-600 transition-all"
-              >
-                <option value="Tất cả">Tất cả</option>
-                <option value="Còn nợ">Còn nợ</option>
-                <option value="Đã hoàn thành">Đã hoàn thành</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-            </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Trạng thái nợ</label>
+          <div className="relative">
+            <select 
+              value={debtFilter}
+              onChange={(e) => setDebtFilter(e.target.value)}
+              className="w-full h-11 bg-slate-50 px-4 pr-10 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 outline-none appearance-none focus:border-cyan-600 transition-all"
+            >
+              <option value="Tất cả">Tất cả</option>
+              <option value="Còn nợ">Còn nợ</option>
+              <option value="Đã hoàn thành">Đã hoàn thành</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
         
@@ -235,7 +214,6 @@ export function FeesPage({ onSelectStudent }: FeesPageProps) {
               <tr className="bg-slate-50/50">
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Học viên</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Hạng</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Khu vực</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right whitespace-nowrap">Tổng HP</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right whitespace-nowrap">Đã đóng</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right whitespace-nowrap">Còn nợ</th>
@@ -278,16 +256,6 @@ export function FeesPage({ onSelectStudent }: FeesPageProps) {
                       <span className="px-2 py-1 bg-cyan-50 border border-cyan-100 text-cyan-600 rounded-lg text-[10px] font-black uppercase tracking-wider">
                         {student.rank}
                       </span>
-                    </td>
-                    <td className="px-6 py-5 border-b border-slate-50 text-center">
-                      <div className="flex flex-col text-slate-500 font-bold text-xs uppercase">
-                        {student.area === 'Nội thành' ? (
-                          <>
-                            <span>Nội</span>
-                            <span>thành</span>
-                          </>
-                        ) : student.area}
-                      </div>
                     </td>
                     <td className="px-6 py-5 border-b border-slate-50 text-right whitespace-nowrap">
                       <span className="text-sm font-black text-slate-800 tracking-tight whitespace-nowrap">

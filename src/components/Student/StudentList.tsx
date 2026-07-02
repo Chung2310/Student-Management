@@ -42,11 +42,26 @@ export function StudentList({ students, onSelectStudent }: StudentListProps) {
                   <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-brand-primary/10 group-hover:text-brand-primary transition-all">
                     <GraduationCap className="w-6 h-6" />
                   </div>
-                  <div className={cn(
-                    "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                    student.status === 'Đã đậu' ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-                  )}>
-                    {student.status}
+                  <div className="flex flex-wrap gap-1 max-w-[60%] justify-end">
+                    {(Array.isArray(student.status) ? student.status : [student.status]).map((st) => (
+                      <span
+                        key={st}
+                        className={cn(
+                          "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border shadow-sm whitespace-nowrap",
+                          st === 'Đã đậu' ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
+                          st === 'Đang thi' ? "bg-teal-50 text-teal-700 border-teal-100" :
+                          st === 'Đang học' ? "bg-sky-50 text-sky-700 border-sky-100" :
+                          st === 'Chờ KSK' ? "bg-amber-50 text-amber-700 border-amber-100" :
+                          st === 'Thi lại' ? "bg-rose-50 text-rose-700 border-rose-100" :
+                          st === 'Đã KSK' ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
+                          st === 'Đã nộp HS' ? "bg-cyan-50 text-cyan-700 border-cyan-100" :
+                          st === 'Nợ học phí' ? "bg-orange-50 text-orange-700 border-orange-100" :
+                          "bg-slate-50 text-slate-600 border-slate-100"
+                        )}
+                      >
+                        {st}
+                      </span>
+                    ))}
                   </div>
                 </div>
 
@@ -65,8 +80,8 @@ export function StudentList({ students, onSelectStudent }: StudentListProps) {
                     <p className="text-sm font-bold text-slate-700">{student.rank}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-300 tracking-wider mb-0.5">Khu vực</p>
-                    <p className="text-sm font-medium text-slate-500">{student.area}</p>
+                    <p className="text-[10px] uppercase font-bold text-slate-300 tracking-wider mb-0.5">Ngày sinh</p>
+                    <p className="text-sm font-medium text-slate-500">{student.birthday || 'N/A'}</p>
                   </div>
                 </div>
 

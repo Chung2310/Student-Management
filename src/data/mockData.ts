@@ -8,12 +8,11 @@ export const INITIAL_STUDENTS: Student[] = [
     birthday: '1995-05-15',
     idCard: '012345678901',
     rank: 'B2',
-    area: 'Nội thành',
     registrationDate: '10/03/2024',
     fee: '4.500.000',
     paidAmount: 3000000,
     address: 'Q1, TP.HCM',
-    status: 'Đang học',
+    status: ['Đang học'],
     ownerId: 'mock-user',
     progress: {
       theory: { completed: true, score: 35, lastDate: '10/04/2026' },
@@ -44,11 +43,10 @@ export const INITIAL_STUDENTS: Student[] = [
     birthday: '1998-08-20',
     idCard: '098765432109',
     rank: 'A1',
-    area: 'Ngoại thành',
     registrationDate: '15/03/2024',
     fee: '1.200.000',
     address: 'Bình Chánh, TP.HCM',
-    status: 'Chờ KSK',
+    status: ['Chờ KSK'],
     ownerId: 'mock-user'
   }
 ];

@@ -41,7 +41,6 @@ export function SettingsPage() {
       fullName: true,
       phone: true,
       rank: true,
-      area: true,
       birthday: false,
       idCard: false,
       email: false
@@ -52,7 +51,6 @@ export function SettingsPage() {
     { label: 'Họ và tên', key: 'fullName' },
     { label: 'Số điện thoại', key: 'phone' },
     { label: 'Hạng bằng', key: 'rank' },
-    { label: 'Khu vực', key: 'area' },
     { label: 'Ngày sinh', key: 'birthday' },
     { label: 'CCCD/CMND', key: 'idCard' },
     { label: 'Email', key: 'email' }
@@ -499,7 +497,6 @@ export function SettingsPage() {
             birthday: cleanData.birthday || "",
             idCard: cleanData.idCard || "",
             rank: cleanData.rank,
-            area: cleanData.area,
             registrationDate: cleanData.registrationDate,
             fee: cleanData.fee,
             address: cleanData.address || "",
@@ -699,7 +696,6 @@ export function SettingsPage() {
               birthday: cleanData.birthday || "",
               idCard: cleanData.idCard || "",
               rank: cleanData.rank,
-              area: cleanData.area,
               registrationDate: cleanData.registrationDate,
               fee: cleanData.fee,
               address: cleanData.address || "",

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import {
   Search, Download, Printer, Plus,
-  Eye, ChevronRight, Trash2, Pencil,
+  Eye, Trash2, Pencil,
   X, Calendar as CalendarIcon, ChevronDown,
   Users, Bike, Car, Upload
 } from 'lucide-react';
@@ -11,7 +11,6 @@ import { useStudents } from '../../hooks/useStudents';
 import { useToast } from '../../hooks/useToast';
 import { Student } from '../../types';
 import { apiFetch } from '../../lib/api';
-import { StatusTransitionModal } from '../../components/Student/StatusTransitionModal';
 import { EditStudentModal } from '../../components/Student/EditStudentModal';
 import { ImportStudentModal } from '../../components/Student/ImportStudentModal';
 import { Pagination } from '../../components/ui/Pagination';
@@ -29,18 +28,16 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
   const { students, loading } = useStudents();
   const { toast } = useToast();
   const [category, setCategory] = useState<CategoryFilter>('Tất cả');
-  const [status, setStatus] = useState<StatusFilter>('Tất cả');
+  const [selectedStatuses, setSelectedStatuses] = useState<StatusFilter[]>(['Tất cả']);
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [rankFilter, setRankFilter] = useState('Tất cả hạng');
-  const [areaFilter, setAreaFilter] = useState('Tất cả khu vực');
   const [feeStatusFilter, setFeeStatusFilter] = useState('Tất cả học phí');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [transitioningStudent, setTransitioningStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
 
@@ -50,7 +47,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
       setCurrentPage(1);
     }, 0);
     return () => clearTimeout(timer);
-  }, [category, status, searchQuery, startDate, endDate, rankFilter, areaFilter, feeStatusFilter]);
+  }, [category, selectedStatuses, searchQuery, startDate, endDate, rankFilter, feeStatusFilter]);
 
   // Helper to parse DD/MM/YYYY to Date object
   const parseDate = (dateStr: string) => {
@@ -64,22 +61,21 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
     if (category === 'Ô tô' && ['A1', 'A2'].includes(student.rank)) return false;
 
     // 2. Status Filter
-    if (status !== 'Tất cả') {
+    if (!selectedStatuses.includes('Tất cả') && selectedStatuses.length > 0) {
       const statusMap: Record<string, string> = {
         'Nộp HS': 'Đã nộp HS',
         'KSK': 'Chờ KSK'
       };
-      const normalizedStatus = statusMap[status] || status;
-      if (student.status !== normalizedStatus) return false;
+      const dbStatuses = selectedStatuses.map(s => statusMap[s] || s);
+      const studentStatuses = Array.isArray(student.status) ? student.status : [student.status];
+      const hasMatch = studentStatuses.some(s => dbStatuses.includes(s));
+      if (!hasMatch) return false;
     }
 
     // 3. Rank Filter
     if (rankFilter !== 'Tất cả hạng' && student.rank !== rankFilter) return false;
 
-    // 4. Area Filter
-    if (areaFilter !== 'Tất cả khu vực' && student.area !== areaFilter) return false;
-
-    // 5. Date Range Filter
+    // 4. Date Range Filter
     if (startDate || endDate) {
       const regDate = parseDate(student.registrationDate);
       if (startDate) {
@@ -127,14 +123,14 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
 
   const statusTabs: { label: StatusFilter; count?: number }[] = [
     { label: 'Tất cả', count: students.length },
-    { label: 'KSK', count: students.filter(s => s.status === 'Chờ KSK').length },
-    { label: 'Đã KSK', count: students.filter(s => s.status === 'Đã KSK').length },
-    { label: 'Nộp HS', count: students.filter(s => s.status === 'Đã nộp HS').length },
-    { label: 'Đang học', count: students.filter(s => s.status === 'Đang học').length },
-    { label: 'Đang thi', count: students.filter(s => s.status === 'Đang thi').length },
-    { label: 'Đã đậu', count: students.filter(s => s.status === 'Đã đậu').length },
-    { label: 'Thi lại', count: students.filter(s => s.status === 'Thi lại').length },
-    { label: 'Nghỉ học', count: students.filter(s => s.status === 'Nghỉ học').length },
+    { label: 'KSK', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Chờ KSK') : s.status === 'Chờ KSK').length },
+    { label: 'Đã KSK', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đã KSK') : s.status === 'Đã KSK').length },
+    { label: 'Nộp HS', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đã nộp HS') : s.status === 'Đã nộp HS').length },
+    { label: 'Đang học', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đang học') : s.status === 'Đang học').length },
+    { label: 'Đang thi', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đang thi') : s.status === 'Đang thi').length },
+    { label: 'Đã đậu', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đã đậu') : s.status === 'Đã đậu').length },
+    { label: 'Thi lại', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Thi lại') : s.status === 'Thi lại').length },
+    { label: 'Nghỉ học', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Nghỉ học') : s.status === 'Nghỉ học').length },
   ];
 
   const getStatusBadgeClass = (status: string) => {
@@ -173,8 +169,10 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
     }
 
     const headers = [
-      'Họ và tên', 'Số điện thoại', 'Hạng bằng', 'Khu vực', 'Ngày đăng ký',
-      'Học phí', 'Đã đóng', 'Còn nợ', 'Trạng thái học phí', 'Trạng thái học tập'
+      'Họ và tên', 'Số điện thoại', 'Hạng bằng', 'Học phí', 'Đã đóng', 'Còn nợ',
+      'Ngày đăng ký', 'Trạng thái học phí', 'Trạng thái học tập',
+      'Ngày sinh', 'CCCD / CMND', 'Email', 'Người giới thiệu', 'Địa chỉ', 'Ngày nhập học',
+      'Ảnh CCCD mặt trước', 'Ảnh CCCD mặt sau', 'Ảnh chân dung'
     ];
 
     const data = filteredStudents.map(student => {
@@ -193,13 +191,21 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         student.fullName,
         student.phone,
         student.rank,
-        student.area,
-        student.registrationDate,
         totalFeeNum.toLocaleString('vi-VN'),
         paidSoFar.toLocaleString('vi-VN'),
         remaining.toLocaleString('vi-VN'),
+        student.registrationDate,
         feeStatusStr,
-        student.status
+        Array.isArray(student.status) ? student.status.join(', ') : student.status,
+        student.birthday || '',
+        student.idCard || '',
+        student.email || '',
+        student.referral || '',
+        student.address || '',
+        student.enrollmentDate || '',
+        student.idCardFrontFile?.url || '',
+        student.idCardBackFile?.url || '',
+        student.portraitFile?.url || ''
       ];
     });
 
@@ -211,13 +217,21 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         { wch: 20 }, // Họ và tên
         { wch: 15 }, // Số điện thoại
         { wch: 10 }, // Hạng bằng
-        { wch: 15 }, // Khu vực
-        { wch: 15 }, // Ngày đăng ký
         { wch: 15 }, // Học phí
         { wch: 15 }, // Đã đóng
         { wch: 15 }, // Còn nợ
+        { wch: 15 }, // Ngày đăng ký
         { wch: 18 }, // Trạng thái học phí
-        { wch: 18 }  // Trạng thái học tập
+        { wch: 18 }, // Trạng thái học tập
+        { wch: 12 }, // Ngày sinh
+        { wch: 18 }, // CCCD / CMND
+        { wch: 22 }, // Email
+        { wch: 18 }, // Người giới thiệu
+        { wch: 35 }, // Địa chỉ
+        { wch: 16 }, // Ngày nhập học
+        { wch: 30 }, // Ảnh CCCD mặt trước
+        { wch: 30 }, // Ảnh CCCD mặt sau
+        { wch: 30 }  // Ảnh chân dung
       ];
 
       const wb = XLSX.utils.book_new();
@@ -249,9 +263,8 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         <td style="padding: 10px; border: 1px solid #ddd;">${student.fullName}</td>
         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${student.phone}</td>
         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${student.rank}</td>
-        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${student.area}</td>
         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${student.registrationDate}</td>
-        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${student.status}</td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${Array.isArray(student.status) ? student.status.join(', ') : student.status}</td>
       </tr>
     `).join('');
 
@@ -278,7 +291,6 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
                 <th>Họ và tên</th>
                 <th>Số điện thoại</th>
                 <th>Hạng</th>
-                <th>Khu vực</th>
                 <th>Ngày đăng ký</th>
                 <th>Trạng thái</th>
               </tr>
@@ -366,32 +378,46 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
 
       {/* Sub-Tabs (Status Workflow) */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 status-tabs">
-        {statusTabs.map((tab) => (
-          <button
-            key={tab.label}
-            onClick={() => setStatus(tab.label)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all whitespace-nowrap",
-              status === tab.label
-                ? "bg-slate-900 border-slate-900 text-white shadow-lg"
-                : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-            )}
-          >
-            {tab.label}
-            {tab.count !== undefined && (
-              <span className={cn(
-                "px-2 py-0.5 rounded-full text-[10px]",
-                status === tab.label ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"
-              )}>
-                {tab.count}
-              </span>
-            )}
-          </button>
-        ))}
+        {statusTabs.map((tab) => {
+          const isSelected = selectedStatuses.includes(tab.label);
+          return (
+            <button
+              key={tab.label}
+              onClick={() => {
+                setSelectedStatuses((prev) => {
+                  if (tab.label === 'Tất cả') {
+                    return ['Tất cả'];
+                  }
+                  const withoutAll = prev.filter(x => x !== 'Tất cả');
+                  const next = withoutAll.includes(tab.label)
+                    ? withoutAll.filter(x => x !== tab.label)
+                    : [...withoutAll, tab.label];
+                  return next.length === 0 ? ['Tất cả'] : next;
+                });
+              }}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all whitespace-nowrap",
+                isSelected
+                  ? "bg-slate-900 border-slate-900 text-white shadow-lg"
+                  : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+              )}
+            >
+              {tab.label}
+              {tab.count !== undefined && (
+                <span className={cn(
+                  "px-2 py-0.5 rounded-full text-[10px]",
+                  isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"
+                )}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Filters Bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm filters-bar">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm filters-bar">
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Từ ngày</label>
           <div className="relative">
@@ -431,22 +457,6 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
               <option>B2</option>
               <option>C</option>
               <option>D</option>
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-          </div>
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Khu vực</label>
-          <div className="relative">
-            <select
-              value={areaFilter}
-              onChange={(e) => setAreaFilter(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-cyan-600"
-            >
-              <option>Tất cả khu vực</option>
-              <option>Nội thành</option>
-              <option>Ngoại thành</option>
-              <option>Tỉnh lân cận</option>
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
@@ -501,7 +511,6 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
                 </th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Họ và tên</th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Hạng</th>
-                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Khu vực</th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Ngày ĐK</th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Tiến độ</th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Học phí</th>
@@ -511,27 +520,38 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td colSpan={9} className="px-6 py-20 text-center text-slate-400 text-sm italic">Đang nạp dữ liệu...</td></tr>
+                <tr><td colSpan={8} className="px-6 py-20 text-center text-slate-400 text-sm italic">Đang nạp dữ liệu...</td></tr>
               ) : paginatedStudents.length === 0 ? (
-                <tr><td colSpan={9} className="px-6 py-20 text-center text-slate-400 text-sm italic">Không tìm thấy học viên nào phù hợp với bộ lọc.</td></tr>
+                <tr><td colSpan={8} className="px-6 py-20 text-center text-slate-400 text-sm italic">Không tìm thấy học viên nào phù hợp với bộ lọc.</td></tr>
               ) : paginatedStudents.map((student) => (
                 <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4 no-print">
                     <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-600" />
                   </td>
                   <td className="px-4 py-4">
-                    <div className="flex flex-col">
-                      <span className="text-base font-bold text-slate-800">{student.fullName}</span>
-                      <span className="text-xs font-medium text-slate-400">{student.phone}</span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-base font-bold text-slate-800 capitalize">{student.fullName}</span>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium text-slate-400">
+                        <span>{student.phone}</span>
+                        {student.idCard && (
+                          <>
+                            <span className="text-slate-200">•</span>
+                            <span className="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] text-slate-600 font-semibold">CCCD: {student.idCard}</span>
+                          </>
+                        )}
+                        {student.birthday && (
+                          <>
+                            <span className="text-slate-200">•</span>
+                            <span>NS: {student.birthday}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-4 text-center">
                     <span className="px-3 py-1 bg-cyan-50 text-cyan-700 rounded text-xs font-bold border border-cyan-100">
                       {student.rank}
                     </span>
-                  </td>
-                  <td className="px-4 py-4 text-center text-sm font-medium text-slate-500">
-                    {student.area}
                   </td>
                   <td className="px-4 py-4 text-center text-sm font-medium text-slate-500">
                     {formatDisplayDate(student.registrationDate)}
@@ -583,22 +603,22 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
                     </div>
                   </td>
                   <td className="px-4 py-4 text-center">
-                    <span className={cn(
-                      "px-4 py-1.5 rounded-full text-xs font-bold border shadow-sm whitespace-nowrap",
-                      getStatusBadgeClass(student.status)
-                    )}>
-                      {student.status}
-                    </span>
+                    <div className="flex flex-wrap justify-center gap-1">
+                      {(Array.isArray(student.status) ? student.status : [student.status]).map((st) => (
+                        <span
+                          key={st}
+                          className={cn(
+                            "px-2 py-0.5 rounded-md text-[10px] font-bold border shadow-none whitespace-nowrap",
+                            getStatusBadgeClass(st)
+                          )}
+                        >
+                          {st}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                   <td className="px-6 py-4 no-print">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => setTransitioningStudent(student)}
-                        title="Chuyển trạng thái"
-                        className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
                       <button
                         onClick={() => setEditingStudent(student)}
                         title="Sửa thông tin"
@@ -676,12 +696,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         />
       </div>
 
-      {/* Status Transition Modal */}
-      <StatusTransitionModal
-        student={transitioningStudent}
-        isOpen={!!transitioningStudent}
-        onClose={() => setTransitioningStudent(null)}
-      />
+
 
       {/* Edit Student Modal */}
       <EditStudentModal
