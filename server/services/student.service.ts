@@ -21,6 +21,10 @@ interface StudentUpdateData {
   [key: string]: unknown;
 }
 
+function normalizeIdCard(idCard: string): string {
+  return String(idCard || "").replace(/\D/g, "");
+}
+
 export class StudentService {
   static async createStudent(ownerId: string, data: StudentCreateData): Promise<IStudent> {
     logger.info(`[Student] Creating student for ownerId=${ownerId}, phone=${data.phone}`);
@@ -32,6 +36,7 @@ export class StudentService {
 
     const student = new Student({
       ...data,
+      idCard: typeof data.idCard === "string" ? normalizeIdCard(data.idCard) : data.idCard,
       ownerId,
     });
     const savedStudent = await student.save();
@@ -93,6 +98,9 @@ export class StudentService {
     
     if (data.fullName) {
       data.slug = slugify(String(data.fullName));
+    }
+    if (typeof data.idCard === "string") {
+      data.idCard = normalizeIdCard(data.idCard);
     }
     
     const query: Record<string, unknown> = { _id: id };
@@ -269,7 +277,7 @@ export class StudentService {
         email: email || undefined,
         referral,
         birthday,
-        idCard,
+        idCard: normalizeIdCard(idCard),
         rank,
         registrationDate,
         enrollmentDate,
@@ -343,6 +351,22 @@ export class StudentService {
 
   static async getStudentByIdCard(idCard: string): Promise<IStudent | null> {
     logger.info(`[Student] Public lookup by idCard=${idCard}`);
-    return Student.findOne({ idCard: idCard.trim() });
+    const normalizedIdCard = normalizeIdCard(idCard);
+    if (!normalizedIdCard) {
+      return null;
+    }
+
+    const flexibleDigitPattern = normalizedIdCard
+      .split("")
+      .map((digit) => `${digit}\\D*`)
+      .join("");
+
+    return Student.findOne({
+      $or: [
+        { idCard: normalizedIdCard },
+        { idCard: idCard.trim() },
+        { idCard: { $regex: `^\\D*${flexibleDigitPattern}$` } },
+      ],
+    });
   }
 }
