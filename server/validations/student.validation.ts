@@ -33,10 +33,7 @@ export const createStudentSchema = Joi.object({
   referral: Joi.string().allow("").optional(),
   birthday: Joi.string().allow("").optional(),
   idCard: Joi.string().allow("").optional(),
-  rank: Joi.string().valid("A1", "A2", "B1", "B2", "C").required().messages({
-    "any.required": "Háº¡ng báº±ng lÃ  báº¯t buá»™c.",
-    "any.only": "Háº¡ng báº±ng khÃ´ng há»£p lá»‡.",
-  }),
+  rank: Joi.string().allow("").optional(),
   registrationDate: Joi.string().required().messages({
     "any.required": "NgÃ y Ä‘Äƒng kÃ½ lÃ  báº¯t buá»™c.",
   }),
@@ -67,7 +64,7 @@ export const updateStudentSchema = Joi.object({
   referral: Joi.string().allow("").optional(),
   birthday: Joi.string().allow("").optional(),
   idCard: Joi.string().allow("").optional(),
-  rank: Joi.string().valid("A1", "A2", "B1", "B2", "C").optional(),
+  rank: Joi.string().allow("").optional(),
   registrationDate: Joi.string().optional(),
   enrollmentDate: Joi.string().allow("").optional(),
   fee: Joi.string().optional(),
@@ -136,10 +133,7 @@ export const publicRegisterStudentSchema = Joi.object({
     "any.required": "Sá»‘ CCCD/CMND lÃ  báº¯t buá»™c.",
     "string.empty": "Sá»‘ CCCD/CMND khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.",
   }),
-  rank: Joi.string().valid("A1", "A2", "B1", "B2", "C").required().messages({
-    "any.required": "Háº¡ng báº±ng lÃ  báº¯t buá»™c.",
-    "any.only": "Háº¡ng báº±ng khÃ´ng há»£p lá»‡.",
-  }),
+  rank: Joi.string().allow("").optional(),
   enrollmentDate: Joi.string().required().messages({
     "any.required": "NgÃ y nháº­p há» c lÃ  báº¯t buá»™c.",
     "string.empty": "NgÃ y nháº­p há» c khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.",

@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
   Search, Download, Printer, Plus,
   Eye, Trash2, Pencil,
   X, Calendar as CalendarIcon, ChevronDown,
-  Users, Bike, Car, Upload
+  Users, Car, Upload, Languages, Lightbulb, BookOpen, UserX
 } from 'lucide-react';
 import { cn, formatVND, formatDisplayDate } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
+import { useBatches } from '../../hooks/useBatches';
+import { useCourses } from '../../hooks/useCourses';
+import { useCourseCategories } from '../../hooks/useCourseCategories';
 import { useToast } from '../../hooks/useToast';
 import { Student } from '../../types';
 import { apiFetch } from '../../lib/api';
@@ -21,13 +24,28 @@ interface StudentsPageProps {
   onAddStudent: () => void;
 }
 
-type CategoryFilter = 'Tất cả' | 'Xe máy' | 'Ô tô';
 type StatusFilter = 'Tất cả' | 'KSK' | 'Đã KSK' | 'Nộp HS' | 'Đang học' | 'Đang thi' | 'Đã đậu' | 'Thi lại' | 'Nghỉ học';
+
+// Tab phân loại ảo, luôn có bên cạnh các phân loại khóa học động
+const TAB_ALL = 'Tất cả';
+const TAB_UNASSIGNED = 'Chưa xếp lớp';
+
+// Icon gợi ý theo tên phân loại; phân loại mới chưa nhận diện được thì dùng icon chung
+function categoryIcon(name: string): React.ComponentType<{ className?: string }> {
+  const n = name.toLowerCase();
+  if (n.includes('lái xe') || n.includes('lai xe')) return Car;
+  if (n.includes('ngoại ngữ') || n.includes('ngoai ngu') || n.includes('tiếng')) return Languages;
+  if (n.includes('kỹ năng') || n.includes('ky nang')) return Lightbulb;
+  return BookOpen;
+}
 
 export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProps) {
   const { students, loading } = useStudents();
+  const { batches } = useBatches();
+  const { courses } = useCourses();
+  const { categories } = useCourseCategories();
   const { toast } = useToast();
-  const [category, setCategory] = useState<CategoryFilter>('Tất cả');
+  const [category, setCategory] = useState<string>(TAB_ALL);
   const [selectedStatuses, setSelectedStatuses] = useState<StatusFilter[]>(['Tất cả']);
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -40,6 +58,14 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
+
+  // Nếu phân loại đang chọn bị xóa khỏi danh mục thì quay về "Tất cả"
+  React.useEffect(() => {
+    if (category !== TAB_ALL && category !== TAB_UNASSIGNED && categories.length > 0 && !categories.some(c => c.name === category)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCategory(TAB_ALL);
+    }
+  }, [categories, category]);
 
   // Reset to first page when filtering
   React.useEffect(() => {
@@ -55,10 +81,35 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
     return new Date(year, month - 1, day);
   };
 
+  // Học viên thuộc phân loại nào = phân loại của các khóa học mà lớp (batch) của họ đang mở
+  const studentCategories = useMemo(() => {
+    const categoryByCourseId = new Map<string, string>(courses.map(c => [c.id, c.category]));
+    const map = new Map<string, Set<string>>();
+    for (const b of batches) {
+      const cat = categoryByCourseId.get(b.courseId);
+      if (!cat) continue;
+      for (const sid of b.learnerIds) {
+        const set = map.get(sid) || new Set<string>();
+        set.add(cat);
+        map.set(sid, set);
+      }
+    }
+    return map;
+  }, [batches, courses]);
+
+  // Hạng bằng là dữ liệu riêng ngành lái xe — chỉ hiện filter/cột khi còn học viên có hạng
+  const hasRankData = useMemo(() => students.some(s => s.rank), [students]);
+
   const filteredStudents = students.filter(student => {
-    // 1. Category Filter
-    if (category === 'Xe máy' && !['A1', 'A2'].includes(student.rank)) return false;
-    if (category === 'Ô tô' && ['A1', 'A2'].includes(student.rank)) return false;
+    // 1. Category Filter (theo phân loại khóa học của lớp học viên đang tham gia)
+    if (category !== TAB_ALL) {
+      const cats = studentCategories.get(student.id);
+      if (category === TAB_UNASSIGNED) {
+        if (cats && cats.size > 0) return false;
+      } else if (!cats || !cats.has(category)) {
+        return false;
+      }
+    }
 
     // 2. Status Filter
     if (!selectedStatuses.includes('Tất cả') && selectedStatuses.length > 0) {
@@ -72,8 +123,8 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
       if (!hasMatch) return false;
     }
 
-    // 3. Rank Filter
-    if (rankFilter !== 'Tất cả hạng' && student.rank !== rankFilter) return false;
+    // 3. Rank Filter (chỉ áp dụng với dữ liệu ngành lái xe)
+    if (hasRankData && rankFilter !== 'Tất cả hạng' && student.rank !== rankFilter) return false;
 
     // 4. Date Range Filter
     if (startDate || endDate) {
@@ -121,7 +172,10 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
     currentPage * pageSize
   );
 
-  const statusTabs: { label: StatusFilter; count?: number }[] = [
+  // Nhóm trạng thái riêng quy trình lái xe — ẩn tab khi không có học viên nào mang trạng thái đó
+  const DRIVING_STATUS_TABS: StatusFilter[] = ['KSK', 'Đã KSK', 'Nộp HS'];
+
+  const allStatusTabs: { label: StatusFilter; count?: number }[] = [
     { label: 'Tất cả', count: students.length },
     { label: 'KSK', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Chờ KSK') : s.status === 'Chờ KSK').length },
     { label: 'Đã KSK', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đã KSK') : s.status === 'Đã KSK').length },
@@ -132,6 +186,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
     { label: 'Thi lại', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Thi lại') : s.status === 'Thi lại').length },
     { label: 'Nghỉ học', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Nghỉ học') : s.status === 'Nghỉ học').length },
   ];
+  const statusTabs = allStatusTabs.filter(tab => !(DRIVING_STATUS_TABS.includes(tab.label) && tab.count === 0));
 
   const getStatusBadgeClass = (status: string) => {
     const map: Record<string, string> = {
@@ -169,7 +224,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
     }
 
     const headers = [
-      'Họ và tên', 'Số điện thoại', 'Hạng bằng', 'Học phí', 'Đã đóng', 'Còn nợ',
+      'Họ và tên', 'Số điện thoại', 'Ngành / Hạng', 'Học phí', 'Đã đóng', 'Còn nợ',
       'Ngày đăng ký', 'Trạng thái học phí', 'Trạng thái học tập',
       'Ngày sinh', 'CCCD / CMND', 'Email', 'Người giới thiệu', 'Địa chỉ', 'Ngày nhập học',
       'Ảnh CCCD mặt trước', 'Ảnh CCCD mặt sau', 'Ảnh chân dung'
@@ -187,10 +242,12 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         feeStatusStr = 'Còn thiếu';
       }
 
+      const cats = Array.from(studentCategories.get(student.id) || []);
+
       return [
         student.fullName,
         student.phone,
-        student.rank,
+        cats.length > 0 ? cats.join(', ') : (student.rank || ''),
         totalFeeNum.toLocaleString('vi-VN'),
         paidSoFar.toLocaleString('vi-VN'),
         remaining.toLocaleString('vi-VN'),
@@ -258,15 +315,18 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
       return;
     }
 
-    const rowsHtml = filteredStudents.map(student => `
+    const rowsHtml = filteredStudents.map(student => {
+      const cats = Array.from(studentCategories.get(student.id) || []);
+      return `
       <tr>
         <td style="padding: 10px; border: 1px solid #ddd;">${student.fullName}</td>
         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${student.phone}</td>
-        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${student.rank}</td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${cats.length > 0 ? cats.join(', ') : (student.rank || '')}</td>
         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${student.registrationDate}</td>
         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${Array.isArray(student.status) ? student.status.join(', ') : student.status}</td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
     const printContent = `
       <html>
@@ -290,7 +350,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
               <tr>
                 <th>Họ và tên</th>
                 <th>Số điện thoại</th>
-                <th>Hạng</th>
+                <th>Ngành / Hạng</th>
                 <th>Ngày đăng ký</th>
                 <th>Trạng thái</th>
               </tr>
@@ -300,7 +360,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
             </tbody>
           </table>
           <div class="footer">
-            Xuất bởi Hệ thống Quản lý Học viên Lái xe
+            Xuất bởi Hệ thống Quản lý Đào tạo & Học viên iGen
           </div>
           <script>
             window.onload = function() {
@@ -352,16 +412,16 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         </div>
       </div>
 
-      {/* Primary Tabs */}
+      {/* Primary Tabs — sinh động từ phân loại khóa học */}
       <div className="flex items-center gap-2 sm:gap-6 border-b border-slate-200 overflow-x-auto no-scrollbar">
         {[
-          { id: 'Tất cả', icon: Users },
-          { id: 'Xe máy', icon: Bike },
-          { id: 'Ô tô', icon: Car }
+          { id: TAB_ALL, icon: Users },
+          ...categories.map((cat) => ({ id: cat.name, icon: categoryIcon(cat.name) })),
+          { id: TAB_UNASSIGNED, icon: UserX },
         ].map((item) => (
           <button
             key={item.id}
-            onClick={() => setCategory(item.id as CategoryFilter)}
+            onClick={() => setCategory(item.id)}
             className={cn(
               "flex items-center gap-2 px-3 sm:px-4 py-3 text-base sm:text-lg font-bold transition-all relative whitespace-nowrap",
               category === item.id ? "text-cyan-600" : "text-slate-400 hover:text-slate-600"
@@ -442,25 +502,27 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
             <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Hạng bằng</label>
-          <div className="relative">
-            <select
-              value={rankFilter}
-              onChange={(e) => setRankFilter(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-cyan-600"
-            >
-              <option>Tất cả hạng</option>
-              <option>A1</option>
-              <option>A2</option>
-              <option>B1</option>
-              <option>B2</option>
-              <option>C</option>
-              <option>D</option>
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        {hasRankData && (
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Hạng bằng (lái xe)</label>
+            <div className="relative">
+              <select
+                value={rankFilter}
+                onChange={(e) => setRankFilter(e.target.value)}
+                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-cyan-600"
+              >
+                <option>Tất cả hạng</option>
+                <option>A1</option>
+                <option>A2</option>
+                <option>B1</option>
+                <option>B2</option>
+                <option>C</option>
+                <option>D</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
           </div>
-        </div>
+        )}
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Học phí</label>
           <div className="relative">
@@ -510,7 +572,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
                   <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-600" />
                 </th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Họ và tên</th>
-                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Hạng</th>
+                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Ngành / Hạng</th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Ngày ĐK</th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Tiến độ</th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Học phí</th>
@@ -549,9 +611,28 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
                     </div>
                   </td>
                   <td className="px-4 py-4 text-center">
-                    <span className="px-3 py-1 bg-cyan-50 text-cyan-700 rounded text-xs font-bold border border-cyan-100">
-                      {student.rank}
-                    </span>
+                    {(() => {
+                      const cats = Array.from(studentCategories.get(student.id) || []);
+                      if (cats.length > 0) {
+                        return (
+                          <div className="flex flex-wrap justify-center gap-1">
+                            {cats.map(c => (
+                              <span key={c} className="px-2 py-1 bg-cyan-50 text-cyan-700 rounded text-xs font-bold border border-cyan-100 whitespace-nowrap">
+                                {c}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      }
+                      if (student.rank) {
+                        return (
+                          <span className="px-3 py-1 bg-cyan-50 text-cyan-700 rounded text-xs font-bold border border-cyan-100">
+                            {student.rank}
+                          </span>
+                        );
+                      }
+                      return <span className="text-xs text-slate-300 font-medium italic">Chưa xếp lớp</span>;
+                    })()}
                   </td>
                   <td className="px-4 py-4 text-center text-sm font-medium text-slate-500">
                     {formatDisplayDate(student.registrationDate)}

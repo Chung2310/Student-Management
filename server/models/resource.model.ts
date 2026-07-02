@@ -17,8 +17,8 @@ const resourceSchema = new Schema<IResource>(
     name: { type: String, required: true, trim: true },
     type: {
       type: String,
-      enum: ["ROOM", "VEHICLE", "EQUIPMENT"],
       required: true,
+      trim: true,
       index: true,
     },
     identifier: { type: String, required: true, trim: true },

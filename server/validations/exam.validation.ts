@@ -9,9 +9,7 @@ export const createExamSchema = Joi.object({
   status: Joi.string().valid("Sắp diễn ra", "Đã xác nhận", "Đã hoàn thành", "Đã hủy").required().messages({
     "any.required": "Trạng thái kỳ thi là bắt buộc.",
   }),
-  rank: Joi.string().valid("A1", "A2", "B1", "B2", "C").required().messages({
-    "any.required": "Hạng bằng là bắt buộc.",
-  }),
+  rank: Joi.string().allow("").optional(),
   area: Joi.string().required().messages({
     "any.required": "Khu vực là bắt buộc.",
   }),
@@ -30,7 +28,7 @@ export const createExamSchema = Joi.object({
 export const updateExamSchema = Joi.object({
   name: Joi.string().optional(),
   status: Joi.string().valid("Sắp diễn ra", "Đã xác nhận", "Đã hoàn thành", "Đã hủy").optional(),
-  rank: Joi.string().valid("A1", "A2", "B1", "B2", "C").optional(),
+  rank: Joi.string().allow("").optional(),
   area: Joi.string().optional(),
   tentativeDate: Joi.string().optional(),
   officialDate: Joi.string().allow("").optional(),

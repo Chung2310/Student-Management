@@ -4,6 +4,7 @@ import { X, Save, ChevronDown, Loader2, Upload, Image as ImageIcon, Trash2 } fro
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
+import { useBatches } from '../../hooks/useBatches';
 import { formatVND } from '../../lib/utils';
 import { DrivingStudent, UploadedFile } from '../../types';
 
@@ -18,9 +19,11 @@ type FileField = 'idCardFrontFile' | 'idCardBackFile' | 'portraitFile';
 export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalProps) {
   const { user, login } = useAuth();
   const { toast } = useToast();
+  const { batches } = useBatches();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingField, setUploadingField] = useState<FileField | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [batchId, setBatchId] = useState('');
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -50,7 +53,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
     return {
       fullName: true,
       phone: true,
-      rank: true,
+      rank: false, // Hạng bằng chỉ dành cho ngành lái xe — mặc định không bắt buộc
       birthday: false,
       idCard: false,
       email: false
@@ -123,13 +126,29 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
           ...formData,
           idCardFront: formData.idCardFrontFile.url,
           idCardBack: formData.idCardBackFile.url,
-          status: 'Chờ KSK',
+          // Quy trình KSK chỉ áp dụng cho ngành lái xe (có hạng bằng)
+          status: formData.rank ? 'Chờ KSK' : 'Đang học',
           registrationDate: new Date().toLocaleDateString('vi-VN'),
         }),
       });
 
       if (res.success && res.data) {
         const studentWithId = { id: res.data._id, ...res.data };
+
+        // Xếp học viên vào lớp đã chọn (không chặn luồng tạo nếu lỗi)
+        if (batchId) {
+          try {
+            await apiFetch(`/batches/${batchId}/learners`, {
+              method: 'POST',
+              body: JSON.stringify({ studentId: res.data._id }),
+            });
+            window.dispatchEvent(new Event('batch-mutation'));
+          } catch (batchError: unknown) {
+            const msg = batchError instanceof Error ? batchError.message : 'Không thể xếp lớp.';
+            toast.warning(`Đã tạo học viên nhưng chưa xếp được vào lớp: ${msg}`);
+          }
+        }
+
         window.dispatchEvent(new Event('student-mutation'));
         toast.success('Đã lưu hồ sơ học viên thành công!');
         onClose();
@@ -152,6 +171,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
           idCardBackFile: undefined,
           portraitFile: undefined,
         });
+        setBatchId('');
       }
     } catch (error: unknown) {
       console.error('Error saving student:', error);
@@ -188,7 +208,23 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
               <Input label="Người giới thiệu" name="referral" value={formData.referral} onChange={handleInputChange} className="sm:col-span-2" />
               <Input label="Ngày sinh" name="birthday" value={formData.birthday} onChange={handleInputChange} required={requiredFields.birthday} placeholder="DD/MM/YYYY" />
               <Input label="CCCD / CMND" name="idCard" value={formData.idCard} onChange={handleInputChange} required={requiredFields.idCard} />
-              <Select label="Hạng bằng" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} options={['A1', 'A2', 'B1', 'B2', 'C']} />
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Xếp vào lớp (tùy chọn)</label>
+                <div className="relative">
+                  <select
+                    value={batchId}
+                    onChange={(e) => setBatchId(e.target.value)}
+                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
+                  >
+                    <option value="">-- Chưa xếp lớp --</option>
+                    {batches.filter(b => b.status !== 'Đã kết thúc').map(b => (
+                      <option key={b.id} value={b.id}>{b.code} — {b.courseTitle}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                </div>
+              </div>
+              <Select label="Hạng bằng (lái xe)" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} options={['A1', 'A2', 'B1', 'B2', 'C']} />
               <Input label="Ngày đăng ký" name="registrationDate" value={formData.registrationDate} onChange={handleInputChange} readOnly />
               <Input label="Ngày nhập học" name="enrollmentDate" value={formData.enrollmentDate} onChange={handleInputChange} placeholder="DD/MM/YYYY" />
               <Input label="Học phí (VND)" name="fee" value={formData.fee} onChange={handleInputChange} />

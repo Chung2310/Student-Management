@@ -186,9 +186,11 @@ export const ExamCard: React.FC<ExamCardProps> = ({
               >
                 <status.icon className="w-3 h-3 sm:w-4 h-4" /> {status.label}
               </button>
-              <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-cyan-50 text-cyan-700 rounded-lg text-[10px] sm:text-xs font-bold border border-cyan-100">
-                {exam.rank}
-              </span>
+              {exam.rank && (
+                <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-cyan-50 text-cyan-700 rounded-lg text-[10px] sm:text-xs font-bold border border-cyan-100">
+                  {exam.rank}
+                </span>
+              )}
               <span className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">
                 <MapPin className="w-3 h-3 sm:w-4 h-4 text-slate-300" /> {exam.area || 'Tất cả khu vực'}
               </span>

@@ -52,12 +52,12 @@ const StudentsPage = lazyWithRetry(() => import('./pages/Students/StudentsPage')
 const ExamsPage = lazyWithRetry(() => import('./pages/Exams/ExamsPage').then(m => ({ default: m.ExamsPage })));
 const FeesPage = lazyWithRetry(() => import('./pages/Fees/FeesPage').then(m => ({ default: m.FeesPage })));
 const NotificationsPage = lazyWithRetry(() => import('./pages/Notifications/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
-const CoursesPage = lazyWithRetry(() => import('./pages/CoursesPage').then(m => ({ default: m.CoursesPage })));
-const InstructorsPage = lazyWithRetry(() => import('./pages/InstructorsPage').then(m => ({ default: m.InstructorsPage })));
-const ResourcesPage = lazyWithRetry(() => import('./pages/ResourcesPage').then(m => ({ default: m.ResourcesPage })));
+const CoursesPage = lazyWithRetry(() => import('./pages/Courses/CoursesPage').then(m => ({ default: m.CoursesPage })));
+const BatchesPage = lazyWithRetry(() => import('./pages/Batches/BatchesPage').then(m => ({ default: m.BatchesPage })));
+const InstructorsPage = lazyWithRetry(() => import('./pages/Instructors/InstructorsPage').then(m => ({ default: m.InstructorsPage })));
+const ResourcesPage = lazyWithRetry(() => import('./pages/Resources/ResourcesPage').then(m => ({ default: m.ResourcesPage })));
 const UserManagementPage = lazyWithRetry(() => import('./pages/UserManagement/UserManagementPage').then(m => ({ default: m.UserManagementPage })));
 const SettingsPage = lazyWithRetry(() => import('./pages/Settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
-const ErpDemoLayout = lazyWithRetry(() => import('./pages/ErpDemo/ErpDemoLayout').then(m => ({ default: m.ErpDemoLayout })));
 
 // Lazy load modals and heavy widgets
 const AddStudentModal = lazyWithRetry(() => import('./components/Student/AddStudentModal').then(m => ({ default: m.AddStudentModal })));
@@ -71,7 +71,27 @@ const PageLoader = () => (
   </div>
 );
 
-export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'Courses' | 'Instructors' | 'Resources' | 'UserManagement' | 'SettingsAdmin' | 'ErpDemo';
+export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'Courses' | 'Batches' | 'Instructors' | 'Resources' | 'UserManagement' | 'SettingsAdmin';
+
+// Map đường dẫn của bản demo ERP (đã gỡ) về route chính thức để bookmark cũ không chết
+const LEGACY_ERP_PATH_MAP: Record<string, string> = {
+  learners: '/students',
+  courses: '/courses',
+  batches: '/batches',
+  instructors: '/instructors',
+  resources: '/resources',
+  exams: '/exams',
+  fees: '/fees',
+  notifications: '/bot',
+  users: '/user-management',
+  settings: '/settings',
+};
+
+function mapLegacyErpPath(path: string): string {
+  const base = path.startsWith('/demo-erp') ? '/demo-erp' : '/erp';
+  const segment = path.slice(base.length).replace(/^\//, '').split('/')[0];
+  return LEGACY_ERP_PATH_MAP[segment] || '/dashboard';
+}
 export type TabType = 'Hồ sơ' | 'KSK' | 'Tiến độ học' | 'Lịch thi & KQ' | 'Học phí' | 'Lịch sử' | 'Trợ lý AI';
 
 export default function App() {
@@ -84,14 +104,15 @@ export default function App() {
   // Helper to parse current path to ViewType
   const getViewFromPath = (): ViewType => {
     if (typeof window === 'undefined') return 'Dashboard';
-    const path = window.location.pathname;
-    if (path.startsWith('/demo-erp') || path.startsWith('/erp')) return 'ErpDemo';
-    if (path === '/') return 'ErpDemo';
+    let path = window.location.pathname;
+    if (path.startsWith('/demo-erp') || path.startsWith('/erp')) path = mapLegacyErpPath(path);
+    if (path === '/') return 'Dashboard';
     if (path.startsWith('/students')) return 'Students';
     if (path.startsWith('/exams')) return 'Exams';
     if (path.startsWith('/fees')) return 'Fees';
     if (path.startsWith('/bot')) return 'Bot';
     if (path.startsWith('/courses')) return 'Courses';
+    if (path.startsWith('/batches')) return 'Batches';
     if (path.startsWith('/instructors')) return 'Instructors';
     if (path.startsWith('/resources')) return 'Resources';
     if (path.startsWith('/user-management')) return 'UserManagement';
@@ -126,11 +147,11 @@ export default function App() {
     else if (view === 'Fees') path = '/fees';
     else if (view === 'Bot') path = '/bot';
     else if (view === 'Courses') path = '/courses';
+    else if (view === 'Batches') path = '/batches';
     else if (view === 'Instructors') path = '/instructors';
     else if (view === 'Resources') path = '/resources';
     else if (view === 'UserManagement') path = '/user-management';
     else if (view === 'SettingsAdmin') path = '/settings';
-    else if (view === 'ErpDemo') path = '/erp';
     else if (view === 'Dashboard') path = '/dashboard';
 
     if (window.location.pathname !== path) {
@@ -159,16 +180,30 @@ export default function App() {
     updateUrlForView(currentView);
   };
 
-  // Redirect logged-in users from / or /login to /dashboard
+  // Redirect logged-in users from / or /login to /dashboard; map legacy /erp paths to official routes
   React.useEffect(() => {
-    if (user && (window.location.pathname === '/' || window.location.pathname === '/login')) {
+    if (!user) return;
+    const path = window.location.pathname;
+    if (path === '/' || path === '/login') {
       window.history.replaceState(null, '', '/dashboard');
       setTimeout(() => {
         setCurrentPath('/dashboard');
         setCurrentView('Dashboard');
       }, 0);
+    } else if (path.startsWith('/erp') || path.startsWith('/demo-erp')) {
+      const mapped = mapLegacyErpPath(path);
+      window.history.replaceState(null, '', mapped);
+      setTimeout(() => {
+        setCurrentPath(mapped);
+        setCurrentView(getViewFromPath());
+      }, 0);
     }
   }, [user]);
+
+  // Dọn key theme của bản demo ERP đã gỡ
+  React.useEffect(() => {
+    localStorage.removeItem('erp-dark-mode');
+  }, []);
 
   // Synchronize history navigation (back/forward buttons)
   React.useEffect(() => {
@@ -258,20 +293,6 @@ export default function App() {
     );
   }
 
-  // Tách biệt render hoàn toàn khi đang xem ERP Demo để giữ nguyên cấu trúc gốc
-  if (currentView === 'ErpDemo') {
-    return (
-      <Suspense fallback={
-        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
-          <Loader2 className="w-12 h-12 text-violet-500 animate-spin mb-4" />
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.3em] animate-pulse">Đang tải bản ERP Demo...</p>
-        </div>
-      }>
-        <ErpDemoLayout />
-      </Suspense>
-    );
-  }
-
   const renderView = () => {
     switch (currentView) {
       case 'Dashboard':
@@ -298,6 +319,8 @@ export default function App() {
         return <NotificationsPage />;
       case 'Courses':
         return <CoursesPage />;
+      case 'Batches':
+        return <BatchesPage />;
       case 'Instructors':
         return <InstructorsPage />;
       case 'Resources':

@@ -72,7 +72,8 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
         console.error('Error parsing requiredFieldsConfig', e);
       }
     }
-    return { fullName: true, phone: true, rank: true, birthday: false, idCard: false, email: false };
+    // Hạng bằng chỉ dành cho ngành lái xe — mặc định không bắt buộc
+    return { fullName: true, phone: true, rank: false, birthday: false, idCard: false, email: false };
   };
   const requiredFields = getRequiredFieldsConfig();
 
@@ -158,7 +159,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess }: EditSt
               <Input label="Người giới thiệu" name="referral" value={formData.referral} onChange={handleInputChange} className="sm:col-span-2" />
               <Input label="Ngày sinh" name="birthday" value={formData.birthday} onChange={handleInputChange} required={requiredFields.birthday} />
               <Input label="CCCD / CMND" name="idCard" value={formData.idCard} onChange={handleInputChange} required={requiredFields.idCard} />
-              <Select label="Hạng bằng" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} options={['A1', 'A2', 'B1', 'B2', 'C']} />
+              <Select label="Hạng bằng (lái xe)" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} options={['A1', 'A2', 'B1', 'B2', 'C']} />
               <Input label="Ngày đăng ký" name="registrationDate" value={formData.registrationDate} onChange={handleInputChange} readOnly />
               <Input label="Ngày nhập học" name="enrollmentDate" value={formData.enrollmentDate} onChange={handleInputChange} />
               <Input label="Học phí (VND)" name="fee" value={formData.fee} onChange={handleInputChange} />

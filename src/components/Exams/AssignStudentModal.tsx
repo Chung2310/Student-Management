@@ -26,7 +26,8 @@ export function AssignStudentModal({ exam, isOpen, onClose, onSuccess }: AssignS
 
   // Filter students who are not yet assigned to an exam and match search query
   const eligibleStudents = students.filter(student => {
-    const matchesRank = student.rank === exam.rank;
+    // Kỳ thi không gắn hạng (ngành khác) thì mọi học viên đều đủ điều kiện
+    const matchesRank = !exam.rank || student.rank === exam.rank;
     const notInExam = !student.examId;
     const matchesSearch = student.fullName.toLowerCase().includes(searchQuery.toLowerCase());
     
@@ -102,7 +103,7 @@ export function AssignStudentModal({ exam, isOpen, onClose, onSuccess }: AssignS
               </button>
             </div>
             <p className="text-sm text-slate-400 font-medium">
-              Đợt thi: <span className="text-cyan-600 font-bold">{exam.name}</span> • {exam.rank}
+              Đợt thi: <span className="text-cyan-600 font-bold">{exam.name}</span>{exam.rank ? ` • ${exam.rank}` : ''}
             </p>
           </div>
 

@@ -66,7 +66,7 @@ export function AddExamModal({ isOpen, onClose, onSuccess, initialData }: AddExa
       return;
     }
 
-    if (!formData.name || !formData.rank || !formData.tentativeDate || !formData.location) {
+    if (!formData.name || !formData.tentativeDate || !formData.location) {
       toast.warning("Vui lòng điền đầy đủ các trường bắt buộc (*)");
       return;
     }
@@ -190,17 +190,16 @@ export function AddExamModal({ isOpen, onClose, onSuccess, initialData }: AddExa
                 {/* Rank Selection */}
                 <div className="space-y-1 relative">
                   <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                    Hạng bằng <span className="text-rose-500">*</span>
+                    Hạng bằng (lái xe)
                   </label>
                   <div className="relative">
-                    <select 
+                    <select
                       name="rank"
                       value={formData.rank}
                       onChange={handleInputChange}
-                      required
                       className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all pr-10"
                     >
-                      <option value="">-- Chọn hạng --</option>
+                      <option value="">-- Không (ngành khác) --</option>
                       <option value="A1">A1</option>
                       <option value="A2">A2</option>
                       <option value="B1">B1</option>

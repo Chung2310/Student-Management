@@ -439,7 +439,7 @@ export function LandingPage({ onNavigateToLogin, onNavigateToPath }: LandingPage
             Sẵn sàng tối ưu hóa quản lý trung tâm của bạn?
           </h3>
           <p className="text-slate-500 text-base sm:text-lg font-medium max-w-2xl mx-auto">
-            Hàng trăm trung tâm đào tạo lái xe, ngoại ngữ và lớp dạy thêm đang vận hành trơn tru hơn nhờ hệ thống quản trị của chúng tôi. Hãy bắt đầu ngay hôm nay!
+            Hàng trăm trung tâm đào tạo đang vận hành trơn tru hơn nhờ hệ thống quản trị của chúng tôi — từ lái xe, ngoại ngữ đến dạy thêm và trường nghề. Hãy bắt đầu ngay hôm nay!
           </p>
           <div className="flex justify-center">
             <button

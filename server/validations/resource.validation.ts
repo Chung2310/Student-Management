@@ -8,8 +8,9 @@ export const createResourceSchema = Joi.object({
     "any.required": "Tên tài nguyên là bắt buộc.",
     "string.empty": "Tên tài nguyên không được để trống.",
   }),
-  type: Joi.string().valid("ROOM", "VEHICLE", "EQUIPMENT").required().messages({
+  type: Joi.string().required().messages({
     "any.required": "Loại tài nguyên là bắt buộc.",
+    "string.empty": "Loại tài nguyên không được để trống.",
   }),
   identifier: Joi.string().required().messages({
     "any.required": "Mã định danh (số phòng/biển số/serial) là bắt buộc.",
@@ -22,7 +23,7 @@ export const createResourceSchema = Joi.object({
 
 export const updateResourceSchema = Joi.object({
   name: Joi.string().optional(),
-  type: Joi.string().valid("ROOM", "VEHICLE", "EQUIPMENT").optional(),
+  type: Joi.string().optional(),
   identifier: Joi.string().optional(),
   capacity: Joi.string().optional(),
   status: Joi.string().valid("AVAILABLE", "OCCUPIED", "MAINTENANCE").optional(),

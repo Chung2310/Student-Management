@@ -1,5 +1,7 @@
 import { Instructor } from "../models/instructor.model";
 import { IInstructor } from "../interfaces/instructor.interface";
+import { BatchService } from "./batch.service";
+import { Batch } from "../models/batch.model";
 import { logger } from "../config/logger";
 
 interface InstructorFilters {
@@ -49,11 +51,21 @@ export class InstructorService {
       .skip(skip)
       .limit(limit);
 
-    return { instructors, total, page, limit, totalPages: Math.ceil(total / limit) };
+    // activeClasses tính từ số lớp còn hoạt động được gán cho giảng viên
+    const activeCounts = await BatchService.countActiveByInstructor(instructors.map(i => String(i._id)));
+    const withClasses = instructors.map(i => ({
+      ...i.toObject(),
+      activeClasses: activeCounts.get(String(i._id)) || 0,
+    }));
+
+    return { instructors: withClasses, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  static async getInstructorById(ownerId: string | string[], id: string): Promise<IInstructor | null> {
-    return await Instructor.findOne({ _id: id, ...buildOwnerQuery(ownerId) });
+  static async getInstructorById(ownerId: string | string[], id: string) {
+    const instructor = await Instructor.findOne({ _id: id, ...buildOwnerQuery(ownerId) });
+    if (!instructor) return null;
+    const activeCounts = await BatchService.countActiveByInstructor([String(instructor._id)]);
+    return { ...instructor.toObject(), activeClasses: activeCounts.get(String(instructor._id)) || 0 };
   }
 
   static async updateInstructor(ownerId: string | string[], id: string, data: InstructorData): Promise<IInstructor | null> {
@@ -67,6 +79,11 @@ export class InstructorService {
 
   static async deleteInstructor(ownerId: string | string[], id: string): Promise<IInstructor | null> {
     logger.info(`[Instructor] Deleting instructor: id=${id}`);
-    return await Instructor.findOneAndDelete({ _id: id, ...buildOwnerQuery(ownerId) });
+    const deleted = await Instructor.findOneAndDelete({ _id: id, ...buildOwnerQuery(ownerId) });
+    if (deleted) {
+      // Gỡ giảng viên khỏi các lớp đang được gán
+      await Batch.updateMany({ instructorId: id }, { $set: { instructorId: "" } });
+    }
+    return deleted;
   }
 }

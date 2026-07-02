@@ -135,7 +135,20 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
     }
   }, [student, isUpdatingKSK, isEditingProgress, isUpdatingProgress, isEditingExams, isUpdatingExams]);
 
-  const tabs: TabType[] = ['Hồ sơ', 'KSK', 'Tiến độ học', 'Lịch thi & KQ', 'Học phí', 'Lịch sử', 'Trợ lý AI'];
+  // KSK & Tiến độ học là nghiệp vụ riêng ngành lái xe — chỉ hiện với học viên có hạng bằng
+  const isDrivingStudent = !!student?.rank;
+  const tabs: TabType[] = isDrivingStudent
+    ? ['Hồ sơ', 'KSK', 'Tiến độ học', 'Lịch thi & KQ', 'Học phí', 'Lịch sử', 'Trợ lý AI']
+    : ['Hồ sơ', 'Lịch thi & KQ', 'Học phí', 'Lịch sử', 'Trợ lý AI'];
+
+  // Nếu tab đang mở không còn khả dụng (ví dụ mở từ deep-link) thì quay về Hồ sơ
+  React.useEffect(() => {
+    if (!tabs.includes(activeTab)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveTab('Hồ sơ');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDrivingStudent, activeTab]);
 
   const handleUpdateExams = async () => {
     if (!student) return;

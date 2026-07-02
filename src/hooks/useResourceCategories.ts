@@ -1,0 +1,54 @@
+import { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from '../lib/api';
+import { useAuth } from './useAuth';
+
+export interface ResourceCategoryItem {
+  id: string;
+  name: string;
+}
+
+export function useResourceCategories() {
+  const { user } = useAuth();
+  const [categories, setCategories] = useState<ResourceCategoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCategories = useCallback(async () => {
+    if (!user) {
+      setCategories([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await apiFetch("/resources/categories");
+      if (res.success && res.data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mapped = res.data.map((cat: any) => ({
+          id: cat._id,
+          name: cat.name,
+        }));
+        setCategories(mapped);
+      }
+    } catch (error) {
+      console.error("Error fetching resource categories:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchCategories();
+
+    const handleMutation = () => {
+      fetchCategories();
+    };
+
+    window.addEventListener("resource-category-mutation", handleMutation);
+    return () => {
+      window.removeEventListener("resource-category-mutation", handleMutation);
+    };
+  }, [fetchCategories]);
+
+  return { categories, loading, refetch: fetchCategories };
+}

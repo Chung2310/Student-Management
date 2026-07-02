@@ -10,10 +10,11 @@ const examSchema = new Schema<IExam>(
       required: true,
       index: true,
     },
+    // Hạng bằng lái — riêng ngành lái xe, kỳ thi ngành khác để trống
     rank: {
       type: String,
-      enum: ["A1", "A2", "B1", "B2", "C"],
-      required: true,
+      default: "",
+      trim: true,
       index: true,
     },
     area: { type: String, required: true },

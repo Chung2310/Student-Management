@@ -31,7 +31,7 @@ export function LoginPage({ onNavigateToPath }: LoginPageProps) {
   const [emailReg, setEmailReg] = useState('');
   const [birthday, setBirthday] = useState('');
   const [idCard, setIdCard] = useState('');
-  const [rank, setRank] = useState('B2');
+  const [rank, setRank] = useState('Không (ngành khác)');
   const [area, setArea] = useState('Nội thành');
   const [address, setAddress] = useState('');
   const [enrollmentDate, setEnrollmentDate] = useState('');
@@ -101,7 +101,7 @@ export function LoginPage({ onNavigateToPath }: LoginPageProps) {
     setErrorMsg('');
     setIsRegistering(true);
 
-    if (!fullName || !phone || !emailReg || !birthday || !idCard || !rank || !area || !address || !enrollmentDate) {
+    if (!fullName || !phone || !emailReg || !birthday || !idCard || !area || !address || !enrollmentDate) {
       setErrorMsg('Vui lòng điền đầy đủ tất cả các trường thông tin.');
       setIsRegistering(false);
       return;
@@ -121,7 +121,7 @@ export function LoginPage({ onNavigateToPath }: LoginPageProps) {
           email: emailReg,
           birthday,
           idCard,
-          rank,
+          rank: rank === 'Không (ngành khác)' ? '' : rank,
           area,
           address,
           enrollmentDate,
@@ -242,7 +242,7 @@ export function LoginPage({ onNavigateToPath }: LoginPageProps) {
                     <Input icon={Calendar} value={birthday} onChange={(value) => setBirthday(formatDate(value))} placeholder="dd/mm/yyyy" label="Ngày sinh *" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <Select value={rank} onChange={setRank} label="Hạng bằng *" options={['A1', 'A2', 'B1', 'B2', 'C']} />
+                    <Select value={rank} onChange={setRank} label="Hạng bằng (lái xe)" options={['Không (ngành khác)', 'A1', 'A2', 'B1', 'B2', 'C']} />
                     <Select value={area} onChange={setArea} label="Khu vực *" options={['Nội thành', 'Ngoại thành', 'Tỉnh lân cận']} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
