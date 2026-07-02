@@ -214,6 +214,7 @@ export function TuitionTab({
                     type="text"
                     value={paymentAmountInput}
                     onChange={(e) => handleAmountInputChange(e.target.value)}
+                    placeholder="Nhập số tiền..."
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:border-cyan-500 transition-colors"
                   />
                   <div className="flex justify-between text-[9px] text-slate-400 font-medium">

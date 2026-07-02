@@ -350,6 +350,7 @@ export function ExamsPage() {
               <input 
                 type="date" 
                 value={fromDate}
+                placeholder="Từ ngày..."
                 onChange={(e) => setFromDate(e.target.value)}
                 className="w-full bg-transparent outline-none text-xs font-bold relative" 
               />
@@ -358,6 +359,7 @@ export function ExamsPage() {
               <input 
                 type="date" 
                 value={toDate}
+                placeholder="Đến ngày..."
                 onChange={(e) => setToDate(e.target.value)}
                 className="w-full bg-transparent outline-none text-xs font-bold relative" 
               />

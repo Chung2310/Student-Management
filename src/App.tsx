@@ -376,6 +376,7 @@ export default function App() {
           <AddStudentModal
             isOpen={isAddModalOpen}
             onClose={() => setIsAddModalOpen(false)}
+            students={students}
             onSuccess={handleOpenProfile}
           />
         </Suspense>
