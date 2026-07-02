@@ -21,7 +21,8 @@ export function Header({ currentView, onMenuClick }: HeaderProps) {
       Fees: 'Học phí',
       Bot: 'BOT Thông báo',
       UserManagement: 'Quản lý người dùng',
-      SettingsAdmin: 'Cài đặt & Quản trị'
+      SettingsAdmin: 'Cài đặt & Quản trị',
+      ErpDemo: 'Bản ERP Demo'
     };
     return names[view];
   };
