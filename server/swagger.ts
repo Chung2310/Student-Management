@@ -350,6 +350,82 @@ const swaggerDefinition = {
         responses: { 201: { description: "Tạo thành công" } },
       },
     },
+    "/students/{id}/installment/{no}/mark-paid": {
+      patch: {
+        summary: "Đánh dấu đã thu tiền đợt học phí cho học viên",
+        tags: ["Students"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" }, description: "MongoDB ObjectId của học viên" },
+          { name: "no", in: "path", required: true, schema: { type: "integer", minimum: 1 }, description: "Số thứ tự đợt thu (bắt đầu từ 1)" },
+        ],
+        responses: {
+          200: { description: "Đánh dấu thành công — status đợt chuyển sang 'Đã thu'" },
+          400: { description: "Số đợt không hợp lệ hoặc không tìm thấy đợt cho học viên" },
+          401: { description: "Chưa đăng nhập" },
+          404: { description: "Không tìm thấy học viên" },
+        },
+      },
+    },
+    "/notifications": {
+      get: {
+        summary: "Lấy danh sách lịch sử thông báo đã gửi",
+        tags: ["Notifications"],
+        security: [{ bearerAuth: [] }],
+        responses: { 200: { description: "Thành công" } },
+      },
+      post: {
+        summary: "Lưu lịch sử thông báo sau khi gửi hàng loạt",
+        tags: ["Notifications"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["title", "content", "recipients", "recipientCount", "channels", "status"],
+                properties: {
+                  title: { type: "string", example: "THÔNG BÁO HOÀN THÀNH HỌC PHÍ" },
+                  content: { type: "string" },
+                  recipients: { type: "string", example: "Học viên còn nợ học phí" },
+                  recipientCount: { type: "integer" },
+                  channels: { type: "array", items: { type: "string" }, example: ["Email"] },
+                  status: { type: "string", enum: ["Đã gửi", "Đang gửi", "Thất bại"] },
+                  studentIds: { type: "array", items: { type: "string" }, description: "Danh sách ID học viên được gửi (để cập nhật installmentStatus)" },
+                  installmentPlan: {
+                    type: "object",
+                    description: "Thông tin đợt thu học phí (optional — chỉ khi gửi theo đợt)",
+                    properties: {
+                      installmentNo: { type: "integer", minimum: 1, example: 1 },
+                      percent: { type: "number", minimum: 1, maximum: 100, example: 40, description: "% tổng học phí gốc của đợt này" },
+                      label: { type: "string", example: "Đợt 1" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: "Lưu thành công" },
+          400: { description: "Dữ liệu không hợp lệ" },
+        },
+      },
+    },
+    "/notifications/{id}": {
+      delete: {
+        summary: "Xóa một bản ghi lịch sử thông báo",
+        tags: ["Notifications"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          200: { description: "Xóa thành công" },
+          404: { description: "Không tìm thấy" },
+        },
+      },
+    },
+
     "/upload": {
       post: {
         summary: "Tải file lên Cloudinary",

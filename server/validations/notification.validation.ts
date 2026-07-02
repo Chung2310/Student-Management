@@ -17,4 +17,16 @@ export const createNotificationSchema = Joi.object({
   status: Joi.string().valid("Đã gửi", "Đang gửi", "Thất bại").required().messages({
     "any.required": "Trạng thái là bắt buộc.",
   }),
+  // Thông tin đợt thu học phí (optional)
+  installmentPlan: Joi.object({
+    installmentNo: Joi.number().integer().min(1).required().messages({
+      "number.min": "Số đợt phải từ 1 trở lên.",
+    }),
+    percent: Joi.number().min(1).max(100).required().messages({
+      "number.min": "Phần trăm đợt phải lớn hơn 0.",
+      "number.max": "Phần trăm đợt không được vượt quá 100.",
+    }),
+    label: Joi.string().allow("").optional(),
+  }).optional(),
 });
+

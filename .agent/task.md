@@ -13,4 +13,10 @@
 - [x] Update EmailService to log missing SMTP config as warning instead of error to avoid cluttering logs (Done)
 - [x] Run lint and build validations to verify everything compiles and runs (Done)
 
+# Installment Payment Reminder Feature
+- [x] Update replaceVariables, buildQrEmailHtml, templates, and UI tags in NotificationsPage.tsx to implement the installment fee reminder mechanism (> 1 million VND) (Done)
+- [x] Run typecheck, lint, and build validations to verify (Done)
+
+
+
 

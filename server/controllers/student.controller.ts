@@ -107,4 +107,29 @@ export class StudentController {
       res.status(400).json({ success: false, error: msg });
     }
   }
+
+  /**
+   * PATCH /students/:id/installment/:no/mark-paid
+   * Đánh dấu đã thu tiền đợt :no cho học viên :id
+   */
+  static async markInstallmentPaid(req: AuthRequest, res: Response) {
+    try {
+      const ownerId = await getAllowedOwnerIds(req.user!);
+      const { id, no } = req.params;
+      const installmentNo = parseInt(no, 10);
+
+      if (isNaN(installmentNo) || installmentNo < 1) {
+        return res.status(400).json({ success: false, error: "Số đợt không hợp lệ." });
+      }
+
+      const result = await StudentService.markInstallmentPaid(ownerId, id, installmentNo);
+      if (!result.success) {
+        return res.status(400).json({ success: false, error: result.error });
+      }
+      res.json({ success: true, message: `Đã đánh dấu đã thu đợt ${installmentNo}.` });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Lỗi không xác định.";
+      res.status(400).json({ success: false, error: msg });
+    }
+  }
 }

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Send, History, UserCheck, 
   ChevronDown, SendHorizontal,
   AlertCircle, MessageCircle, Smartphone, Mail,
-  Inbox, Loader2, CheckCircle2, X, Trash2, Lock
+  Inbox, Loader2, CheckCircle2, X, Trash2, Lock,
+  Plus, Minus, ToggleLeft, ToggleRight, Banknote, BadgeCheck
 } from 'lucide-react';
 import { cn, parseVND, getVietQRBankCode } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
@@ -14,17 +15,31 @@ import { BroadcastNotification, Student } from '../../types';
 import { useToast } from '../../hooks/useToast';
 import { AddPaymentModal } from '../../components/Fees/AddPaymentModal';
 
-interface HistoryCardProps {
-  key?: string | number;
-  notification: BroadcastNotification;
-  onDelete: (id: string) => void;
+// ─── Interfaces ─────────────────────────────────────────────────────────────
+
+interface InstallmentPlanItem {
+  installmentNo: number;
+  percent: number;
+  label: string;
 }
 
 interface SendResult {
   student: Student;
   status: 'Thành công' | 'Thất bại';
   error?: string;
+  installmentAmount?: number;   // Số tiền đợt này (nếu có)
+  installmentNo?: number;
+  markingPaid?: boolean;        // Loading state khi đang đánh dấu đã thu
+  markedPaid?: boolean;         // Đã đánh dấu thành công
 }
+
+interface HistoryCardProps {
+  key?: string | number;
+  notification: BroadcastNotification;
+  onDelete: (id: string) => void;
+}
+
+// ─── HistoryCard ─────────────────────────────────────────────────────────────
 
 function HistoryCard({ notification, onDelete }: HistoryCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
@@ -67,6 +82,10 @@ function HistoryCard({ notification, onDelete }: HistoryCardProps) {
     }
   };
 
+  // Lấy installmentPlan nếu có
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const installmentPlan = (notification as any).installmentPlan as InstallmentPlanItem | undefined;
+
   return (
     <div className="p-5 rounded-[1.5rem] border border-slate-100 hover:border-cyan-100 hover:bg-cyan-50/20 transition-all group relative">
       <div className="flex items-start justify-between gap-4 mb-3">
@@ -75,6 +94,12 @@ function HistoryCard({ notification, onDelete }: HistoryCardProps) {
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">{formattedDate}</p>
         </div>
         <div className="flex items-center gap-2">
+          {installmentPlan && (
+            <div className="px-2 py-1 rounded-lg text-[10px] font-black border bg-violet-50 text-violet-600 border-violet-100/50 flex items-center gap-1">
+              <Banknote className="w-3 h-3" />
+              {installmentPlan.label || `Đợt ${installmentPlan.installmentNo}`} · {installmentPlan.percent}%
+            </div>
+          )}
           <div className={cn(
             "px-2.5 py-1 rounded-lg text-[10px] font-black border",
             notification.status === 'Đã gửi' ? "bg-emerald-50 text-emerald-600 border-emerald-100/50" : "bg-rose-50 text-rose-600 border-rose-100/50"
@@ -116,6 +141,169 @@ function HistoryCard({ notification, onDelete }: HistoryCardProps) {
   );
 }
 
+// ─── InstallmentPlanEditor ────────────────────────────────────────────────────
+
+interface InstallmentPlanEditorProps {
+  plan: InstallmentPlanItem[];
+  onChange: (plan: InstallmentPlanItem[]) => void;
+  selectedInstallmentNo: number;
+  onSelectInstallmentNo: (no: number) => void;
+}
+
+function InstallmentPlanEditor({
+  plan,
+  onChange,
+  selectedInstallmentNo,
+  onSelectInstallmentNo,
+}: InstallmentPlanEditorProps) {
+  const totalPercent = plan.reduce((s, p) => s + p.percent, 0);
+  const isOver = totalPercent > 100;
+
+  const addInstallment = () => {
+    const nextNo = plan.length + 1;
+    const remaining = Math.max(0, 100 - totalPercent);
+    onChange([
+      ...plan,
+      { installmentNo: nextNo, percent: remaining > 0 ? remaining : 10, label: `Đợt ${nextNo}` },
+    ]);
+    onSelectInstallmentNo(nextNo);
+  };
+
+  const removeLastInstallment = () => {
+    if (plan.length <= 1) return;
+    const newPlan = plan.slice(0, -1);
+    onChange(newPlan);
+    if (selectedInstallmentNo > newPlan.length) {
+      onSelectInstallmentNo(newPlan[newPlan.length - 1].installmentNo);
+    }
+  };
+
+  const updatePercent = (idx: number, value: number) => {
+    const clamped = Math.max(1, Math.min(100, value));
+    const updated = plan.map((p, i) => i === idx ? { ...p, percent: clamped } : p);
+    onChange(updated);
+  };
+
+  const updateLabel = (idx: number, value: string) => {
+    const updated = plan.map((p, i) => i === idx ? { ...p, label: value } : p);
+    onChange(updated);
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Danh sách đợt */}
+      <div className="space-y-2">
+        {plan.map((item, idx) => (
+          <motion.div
+            key={item.installmentNo}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className={cn(
+              "flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer",
+              selectedInstallmentNo === item.installmentNo
+                ? "bg-violet-50 border-violet-200 shadow-sm shadow-violet-100"
+                : "bg-slate-50 border-slate-100 hover:border-violet-100"
+            )}
+            onClick={() => onSelectInstallmentNo(item.installmentNo)}
+          >
+            {/* Radio indicator */}
+            <div className={cn(
+              "w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all",
+              selectedInstallmentNo === item.installmentNo
+                ? "border-violet-600 bg-violet-600"
+                : "border-slate-300"
+            )}>
+              {selectedInstallmentNo === item.installmentNo && (
+                <div className="w-1.5 h-1.5 rounded-full bg-white" />
+              )}
+            </div>
+
+            {/* Label input */}
+            <input
+              type="text"
+              value={item.label}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => updateLabel(idx, e.target.value)}
+              className="flex-1 bg-transparent text-xs font-bold text-slate-700 outline-none min-w-0"
+              placeholder={`Đợt ${item.installmentNo}`}
+            />
+
+            {/* Percent input */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); updatePercent(idx, item.percent - 5); }}
+                className="w-5 h-5 rounded-md bg-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-300 transition-colors text-xs font-black"
+              >−</button>
+              <div className="flex items-center gap-0.5">
+                <input
+                  type="number"
+                  value={item.percent}
+                  min={1}
+                  max={100}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => updatePercent(idx, parseInt(e.target.value) || 0)}
+                  className={cn(
+                    "w-10 text-center text-xs font-black rounded-lg border px-1 py-0.5 outline-none",
+                    isOver ? "border-rose-300 bg-rose-50 text-rose-600" : "border-slate-200 bg-white text-violet-700"
+                  )}
+                />
+                <span className="text-[10px] font-black text-slate-500">%</span>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); updatePercent(idx, item.percent + 5); }}
+                className="w-5 h-5 rounded-md bg-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-300 transition-colors text-xs font-black"
+              >+</button>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={addInstallment}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 text-violet-600 rounded-xl text-[11px] font-black border border-violet-100 hover:bg-violet-100 transition-all active:scale-95"
+          >
+            <Plus className="w-3 h-3" />
+            Thêm đợt
+          </button>
+          {plan.length > 1 && (
+            <button
+              type="button"
+              onClick={removeLastInstallment}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-500 rounded-xl text-[11px] font-black border border-rose-100 hover:bg-rose-100 transition-all active:scale-95"
+            >
+              <Minus className="w-3 h-3" />
+              Xóa đợt cuối
+            </button>
+          )}
+        </div>
+
+        {/* Tổng % */}
+        <div className={cn(
+          "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black border",
+          isOver
+            ? "bg-rose-50 text-rose-600 border-rose-100"
+            : totalPercent === 100
+            ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+            : "bg-amber-50 text-amber-600 border-amber-100"
+        )}>
+          {isOver ? <AlertCircle className="w-3 h-3" /> : totalPercent === 100 ? <CheckCircle2 className="w-3 h-3" /> : null}
+          Tổng: {totalPercent}%
+          {totalPercent === 100 && " ✓"}
+          {isOver && " — Vượt quá 100%!"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export function NotificationsPage() {
   const { students } = useStudents();
   const { user } = useAuth();
@@ -127,6 +315,15 @@ export function NotificationsPage() {
   const [channels, setChannels] = useState<string[]>(['Email']);
   const [history, setHistory] = useState<BroadcastNotification[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
+
+  // Installment state
+  const [useInstallment, setUseInstallment] = useState(false);
+  const [installmentPlan, setInstallmentPlan] = useState<InstallmentPlanItem[]>([
+    { installmentNo: 1, percent: 50, label: 'Đợt 1' },
+    { installmentNo: 2, percent: 50, label: 'Đợt 2' },
+  ]);
+  const [selectedInstallmentNo, setSelectedInstallmentNo] = useState(1);
+
   const [sendProgress, setSendProgress] = useState<{
     current: number;
     total: number;
@@ -154,7 +351,6 @@ export function NotificationsPage() {
   });
 
   const vietqrConfig = {
-    // "enabled" luôn lấy từ backend (bankQrEnabled) để không bị kẹt theo giá trị cũ trong localStorage
     enabled: user?.bankQrEnabled !== false,
     bankId: localVietqrConfig?.bankId || user?.bankId || '',
     accountNo: localVietqrConfig?.accountNo || user?.bankAccountNo || '',
@@ -214,7 +410,7 @@ export function NotificationsPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
       setLoadingHistory(true);
       const res = await apiFetch('/notifications');
@@ -231,9 +427,8 @@ export function NotificationsPage() {
     } finally {
       setLoadingHistory(false);
     }
-  };
+  }, []);
 
-  // Fetch history
   useEffect(() => {
     if (!user) return;
 
@@ -250,7 +445,7 @@ export function NotificationsPage() {
       clearTimeout(timer);
       window.removeEventListener('notification-mutation', handleMutation);
     };
-  }, [user]);
+  }, [user, fetchHistory]);
 
   const toggleChannel = (channel: string) => {
     if (channel === 'Zalo OA' || channel === 'SMS') {
@@ -282,13 +477,30 @@ export function NotificationsPage() {
     }
   };
 
-  const replaceVariables = (str: string, student: Student) => {
+  // Tính số tiền đợt hiện tại cho 1 học viên (dựa trên tổng học phí gốc × %)
+  const calcInstallmentAmount = (student: Student, percent: number) => {
+    const totalFee = parseInt(parseVND(student.fee) || '0');
+    return Math.round(totalFee * percent / 100);
+  };
+
+  const replaceVariables = (str: string, student: Student, installmentAmount?: number) => {
     const examDate = student.exams?.find(e => e.status === 'Sắp thi')?.date || 
                     (student.status === 'Đang thi' ? student.examDate : '') || 
                     'Chưa có lịch';
     const totalFee = parseInt(parseVND(student.fee) || '0');
     const debtAmount = totalFee - (student.paidAmount || 0);
     const formattedSotien = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(debtAmount);
+
+    // {tiendot} = số tiền đợt hiện tại
+    const dotAmount = installmentAmount ?? Math.round(debtAmount * 0.5);
+    const formattedTiendot = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(dotAmount);
+
+    // {nhac_dong_phi} = gợi ý văn bản nhắc đóng phí
+    const currentInstallment = installmentPlan.find(p => p.installmentNo === selectedInstallmentNo);
+    const dotLabel = currentInstallment?.label || `Đợt ${selectedInstallmentNo}`;
+    const nhacDongPhi = useInstallment && currentInstallment
+      ? `Đề nghị bạn hoàn thành ${formattedTiendot} (${dotLabel} - ${currentInstallment.percent}% học phí). Số dư còn lại sau đợt này: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Math.max(0, debtAmount - dotAmount))}.`
+      : `Đề nghị bạn hoàn thành toàn bộ ${formattedSotien} học phí còn lại.`;
     
     return str
       .replace(/\{ten\}/g, student.fullName)
@@ -296,17 +508,17 @@ export function NotificationsPage() {
       .replace(/\{kv\}/g, student.area)
       .replace(/\{email\}/g, student.email || '')
       .replace(/\{ngaythi\}/g, examDate)
-      .replace(/\{sotien\}/g, formattedSotien);
+      .replace(/\{sotien\}/g, formattedSotien)
+      .replace(/\{tiendot\}/g, formattedTiendot)
+      .replace(/\{nhac_dong_phi\}/g, nhacDongPhi);
   };
 
   const buildQrEmailHtml = (
     student: Student,
     config: { bankId: string; accountNo: string; accountName: string; template: string },
-    textContent: string
+    textContent: string,
+    qrAmount: number  // Số tiền QR — có thể là đợt hoặc toàn bộ nợ
   ) => {
-    const totalFee = parseInt(parseVND(student.fee) || "0");
-    const debtAmount = totalFee - (student.paidAmount || 0);
-    
     let note = config.template || "Nop hoc phi {ten} {phone}";
     note = note
       .replace(/\[Mã HV\]|\[Ma HV\]|\{id\}|\{ma\}|\{mahv\}/gi, student.id || '')
@@ -339,7 +551,8 @@ export function NotificationsPage() {
     };
     note = removeVietnameseTones(note);
 
-    const qrUrl = `https://img.vietqr.io/image/${getVietQRBankCode(config.bankId)}-${config.accountNo}-compact2.png?amount=${debtAmount}&addInfo=${encodeURIComponent(note)}&accountName=${encodeURIComponent(config.accountName)}`;
+    const qrUrl = `https://img.vietqr.io/image/${getVietQRBankCode(config.bankId)}-${config.accountNo}-compact2.png?amount=${qrAmount}&addInfo=${encodeURIComponent(note)}&accountName=${encodeURIComponent(config.accountName)}`;
+    const formattedAmount = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(qrAmount);
 
     return `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
@@ -355,7 +568,7 @@ export function NotificationsPage() {
             <p style="margin: 4px 0;"><b>Ngân hàng:</b> ${config.bankId.toUpperCase()}</p>
             <p style="margin: 4px 0;"><b>Số tài khoản:</b> ${config.accountNo}</p>
             <p style="margin: 4px 0;"><b>Chủ tài khoản:</b> ${config.accountName}</p>
-            <p style="margin: 4px 0;"><b>Số tiền:</b> <span style="color: #0284c7; font-weight: bold;">${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(debtAmount)}</span></p>
+            <p style="margin: 4px 0;"><b>Số tiền:</b> <span style="color: #0284c7; font-weight: bold;">${formattedAmount}</span></p>
             <p style="margin: 4px 0;"><b>Nội dung CK:</b> <span style="background-color: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: bold; color: #0f172a;">${note}</span></p>
           </div>
         </div>
@@ -368,11 +581,25 @@ export function NotificationsPage() {
     e.preventDefault();
     if (!user || !title || !content || channels.length === 0) return;
 
+    // Validate installment plan nếu đang dùng
+    if (useInstallment && recipientFilter === 'Học viên còn nợ học phí') {
+      const totalPercent = installmentPlan.reduce((s, p) => s + p.percent, 0);
+      if (totalPercent > 100) {
+        toast.error(`Tổng % các đợt đang là ${totalPercent}%, không được vượt quá 100%.`);
+        return;
+      }
+    }
+
     const targetStudents = getTargetStudents();
     if (targetStudents.length === 0) {
       toast.warning("Không tìm thấy học viên phù hợp với bộ lọc này.");
       return;
     }
+
+    // Lấy thông tin đợt đang chọn gửi
+    const currentInstallment = useInstallment && recipientFilter === 'Học viên còn nợ học phí'
+      ? installmentPlan.find(p => p.installmentNo === selectedInstallmentNo)
+      : null;
 
     setIsSubmitting(true);
     setSendProgress({
@@ -387,20 +614,34 @@ export function NotificationsPage() {
       const results: SendResult[] = [];
       for (let i = 0; i < targetStudents.length; i++) {
         const student = targetStudents[i];
-        const personalizedContent = replaceVariables(content, student);
-        const personalizedTitle = replaceVariables(title, student);
+
+        // Tính số tiền đợt (nếu có installment plan)
+        const installmentAmount = currentInstallment
+          ? calcInstallmentAmount(student, currentInstallment.percent)
+          : undefined;
+
+        const personalizedContent = replaceVariables(content, student, installmentAmount);
+        const personalizedTitle = replaceVariables(title, student, installmentAmount);
         
         let isSuccess = true;
         let errorMessage = '';
 
-        // If Email channel is selected, call our real API
+        // Email channel
         if (channels.includes('Email') && student.email) {
           try {
             const hasVietQr = vietqrConfig && vietqrConfig.enabled && vietqrConfig.bankId && vietqrConfig.accountNo;
             const isDebtFilter = recipientFilter === 'Học viên còn nợ học phí';
-            const emailHtml = (isDebtFilter && hasVietQr)
-              ? buildQrEmailHtml(student, vietqrConfig, personalizedContent)
-              : personalizedContent.replace(/\n/g, '<br/>');
+
+            let emailHtml: string;
+            if (isDebtFilter && hasVietQr) {
+              // QR amount = installmentAmount nếu đang gửi theo đợt, ngược lại = toàn bộ nợ
+              const totalFee = parseInt(parseVND(student.fee) || '0');
+              const debtAmount = totalFee - (student.paidAmount || 0);
+              const qrAmount = installmentAmount ?? debtAmount;
+              emailHtml = buildQrEmailHtml(student, vietqrConfig, personalizedContent, qrAmount);
+            } else {
+              emailHtml = personalizedContent.replace(/\n/g, '<br/>');
+            }
 
             const data = await apiFetch('/send-email', {
               method: 'POST',
@@ -420,7 +661,7 @@ export function NotificationsPage() {
           }
         }
 
-        // Handle SMS real API
+        // SMS channel
         if (channels.includes('SMS')) {
           try {
             const token = getAccessToken();
@@ -459,7 +700,9 @@ export function NotificationsPage() {
         results.push({
           student,
           status: isSuccess ? 'Thành công' : 'Thất bại',
-          error: isSuccess ? undefined : errorMessage
+          error: isSuccess ? undefined : errorMessage,
+          installmentAmount,
+          installmentNo: currentInstallment?.installmentNo,
         });
 
         setSendProgress(prev => ({
@@ -471,7 +714,12 @@ export function NotificationsPage() {
 
       setSendProgress(prev => ({ ...prev, isFinishing: true }));
 
-      // Save to history
+      // Lưu vào history — kèm installmentPlan và studentIds để backend update trạng thái
+      const successStudentIds = results
+        .filter(r => r.status === 'Thành công')
+        .map(r => r.student.id)
+        .filter(Boolean) as string[];
+
       await apiFetch('/notifications', {
         method: 'POST',
         body: JSON.stringify({
@@ -481,6 +729,14 @@ export function NotificationsPage() {
           recipientCount: targetStudents.length,
           channels,
           status: 'Đã gửi',
+          ...(currentInstallment ? {
+            installmentPlan: {
+              installmentNo: currentInstallment.installmentNo,
+              percent: currentInstallment.percent,
+              label: currentInstallment.label,
+            },
+            studentIds: successStudentIds,
+          } : {}),
         }),
       });
 
@@ -513,6 +769,35 @@ export function NotificationsPage() {
     }
   };
 
+  // Đánh dấu đã thu đợt cho học viên trong danh sách kết quả
+  const handleMarkInstallmentPaid = async (resultIdx: number) => {
+    const result = sendProgress.results[resultIdx];
+    if (!result || !result.installmentNo || result.markingPaid || result.markedPaid) return;
+
+    // Optimistic update — show loading
+    setSendProgress(prev => ({
+      ...prev,
+      results: prev.results.map((r, i) => i === resultIdx ? { ...r, markingPaid: true } : r)
+    }));
+
+    try {
+      await apiFetch(`/students/${result.student.id}/installment/${result.installmentNo}/mark-paid`, {
+        method: 'PATCH',
+      });
+      setSendProgress(prev => ({
+        ...prev,
+        results: prev.results.map((r, i) => i === resultIdx ? { ...r, markingPaid: false, markedPaid: true } : r)
+      }));
+      toast.success(`Đã đánh dấu đã thu đợt ${result.installmentNo} cho ${result.student.fullName}!`);
+    } catch (error) {
+      setSendProgress(prev => ({
+        ...prev,
+        results: prev.results.map((r, i) => i === resultIdx ? { ...r, markingPaid: false } : r)
+      }));
+      toast.error("Không thể đánh dấu đã thu: " + (error instanceof Error ? error.message : "Lỗi không xác định"));
+    }
+  };
+
   const recipientCounts = {
     'Tất cả học viên đang học': students.filter(s => s.status === 'Đang học').length,
     'Học viên sắp thi': students.filter(s => s.status === 'Đang thi' || s.exams?.some(e => e.status === 'Sắp thi')).length,
@@ -522,11 +807,16 @@ export function NotificationsPage() {
 
   const currentRecipientCount = recipientCounts[recipientFilter as keyof typeof recipientCounts] || 0;
 
+  // Thông tin đợt đang chọn gửi
+  const currentInstallment = useInstallment && recipientFilter === 'Học viên còn nợ học phí'
+    ? installmentPlan.find(p => p.installmentNo === selectedInstallmentNo)
+    : null;
+
   const templates = [
     {
       name: 'Nhắc phí',
       title: 'THÔNG BÁO HOÀN THÀNH HỌC PHÍ - {ten}',
-      content: 'Kính gửi học viên {ten}, Trung tâm xin thông báo học phí khóa học hạng {hang} của bạn hiện vẫn còn nợ {sotien}. Để đảm bảo tiến độ học tập và dự thi đúng hạn, bạn vui lòng hoàn tất học phí trong tuần này tại {kv}. Trân trọng.'
+      content: 'Kính gửi học viên {ten}, Trung tâm xin thông báo học phí khóa học hạng {hang} của bạn hiện vẫn còn nợ {sotien}. {nhac_dong_phi} Để đảm bảo tiến độ học tập và dự thi đúng hạn, bạn vui lòng hoàn tất học phí trong tuần này tại {kv}. Trân trọng.'
     },
     {
       name: 'Lịch thi',
@@ -545,6 +835,9 @@ export function NotificationsPage() {
     setContent(tpl.content);
   };
 
+  const isDebtFilter = recipientFilter === 'Học viên còn nợ học phí';
+  const totalInstallmentPercent = installmentPlan.reduce((s, p) => s + p.percent, 0);
+
   return (
     <div className="space-y-6">
       {/* Send Progress Modal */}
@@ -561,12 +854,19 @@ export function NotificationsPage() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-lg bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+              className="relative w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
             >
               <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-black text-slate-900 tracking-tight">Kết quả gửi thông báo</h3>
                   <p className="text-slate-500 text-xs font-bold mt-1">Đang xử lý: {sendProgress.current}/{sendProgress.total} học viên</p>
+                  {currentInstallment && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="px-2 py-0.5 bg-violet-100 text-violet-700 rounded-lg text-[10px] font-black border border-violet-200">
+                        {currentInstallment.label} · {currentInstallment.percent}% học phí gốc
+                      </span>
+                    </div>
+                  )}
                 </div>
                 {!isSubmitting && (
                   <button onClick={closeResults} className="p-2 bg-white text-slate-400 hover:text-slate-600 rounded-xl transition-colors">
@@ -584,7 +884,10 @@ export function NotificationsPage() {
                   </div>
                   <div className="h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50 p-0.5">
                     <motion.div 
-                      className="h-full bg-cyan-600 rounded-full"
+                      className={cn(
+                        "h-full rounded-full",
+                        currentInstallment ? "bg-violet-500" : "bg-cyan-600"
+                      )}
                       initial={{ width: 0 }}
                       animate={{ width: `${(sendProgress.current / sendProgress.total) * 100}%` }}
                     />
@@ -595,39 +898,73 @@ export function NotificationsPage() {
                 <div className="space-y-2">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Danh sách phản hồi</p>
                   <div className="space-y-1.5 min-h-[200px]">
-                    {sendProgress.results.slice().reverse().map((res, i) => (
-                      <motion.div 
-                        key={i}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className={cn(
-                          "flex items-center justify-between p-3 rounded-xl border text-xs font-bold gap-2",
-                          res.status === 'Thành công' ? "bg-emerald-50/50 border-emerald-100 text-emerald-700" : "bg-rose-50/50 border-rose-100 text-rose-700"
-                        )}
-                      >
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          {res.status === 'Thành công' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />}
-                          <span className="truncate">{res.student.fullName} ({res.student.phone})</span>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {res.status === 'Thành công' && recipientFilter === 'Học viên còn nợ học phí' && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedStudentForPayment(res.student);
-                                setIsPaymentModalOpen(true);
-                              }}
-                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] rounded-lg transition-colors font-black active:scale-95"
-                            >
-                              Đánh dấu đã thu
-                            </button>
+                    {sendProgress.results.slice().reverse().map((res, i) => {
+                      // index trong mảng gốc (chưa reverse)
+                      const originalIdx = sendProgress.results.length - 1 - i;
+                      return (
+                        <motion.div 
+                          key={i}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className={cn(
+                            "flex items-center justify-between p-3 rounded-xl border text-xs font-bold gap-2",
+                            res.status === 'Thành công' ? "bg-emerald-50/50 border-emerald-100 text-emerald-700" : "bg-rose-50/50 border-rose-100 text-rose-700"
                           )}
-                          <span className="text-[10px] uppercase opacity-60">
-                            {res.status} {res.error ? `- ${res.error}` : ''}
-                          </span>
-                        </div>
-                      </motion.div>
-                    ))}
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            {res.status === 'Thành công' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />}
+                            <div className="min-w-0">
+                              <span className="truncate block">{res.student.fullName}</span>
+                              {res.installmentAmount !== undefined && (
+                                <span className="text-[10px] text-violet-600 font-black">
+                                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(res.installmentAmount)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {/* Nút đánh dấu đã thu (chỉ khi thành công + có đợt + chưa mark) */}
+                            {res.status === 'Thành công' && isDebtFilter && res.installmentNo && !res.markedPaid && (
+                              <button
+                                type="button"
+                                onClick={() => handleMarkInstallmentPaid(originalIdx)}
+                                disabled={res.markingPaid}
+                                className={cn(
+                                  "flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black transition-all active:scale-95",
+                                  res.markingPaid
+                                    ? "bg-slate-100 text-slate-400"
+                                    : "bg-violet-600 hover:bg-violet-700 text-white"
+                                )}
+                              >
+                                {res.markingPaid ? <Loader2 className="w-3 h-3 animate-spin" /> : <BadgeCheck className="w-3 h-3" />}
+                                {res.markingPaid ? "..." : "Đã thu"}
+                              </button>
+                            )}
+                            {res.markedPaid && (
+                              <span className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                <BadgeCheck className="w-3 h-3" /> Đã thu
+                              </span>
+                            )}
+                            {/* Nút đánh dấu đã thu (thanh toán manual — không có đợt) */}
+                            {res.status === 'Thành công' && isDebtFilter && !res.installmentNo && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedStudentForPayment(res.student);
+                                  setIsPaymentModalOpen(true);
+                                }}
+                                className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] rounded-lg transition-colors font-black active:scale-95"
+                              >
+                                Đánh dấu đã thu
+                              </button>
+                            )}
+                            <span className="text-[10px] uppercase opacity-60">
+                              {res.status} {res.error ? `- ${res.error}` : ''}
+                            </span>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -687,6 +1024,71 @@ export function NotificationsPage() {
               </div>
             </div>
 
+            {/* ── Installment Plan Section ── */}
+            <AnimatePresence>
+              {isDebtFilter && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-5 rounded-2xl border border-violet-100 bg-violet-50/40 space-y-4">
+                    {/* Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setUseInstallment(v => !v)}
+                      className="w-full flex items-center justify-between group"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 rounded-lg bg-violet-100 text-violet-600">
+                          <Banknote className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm font-black text-violet-800">Thu học phí theo đợt</span>
+                      </div>
+                      <div className={cn("transition-colors", useInstallment ? "text-violet-600" : "text-slate-300")}>
+                        {useInstallment
+                          ? <ToggleRight className="w-8 h-8" />
+                          : <ToggleLeft className="w-8 h-8" />
+                        }
+                      </div>
+                    </button>
+
+                    {/* Plan editor */}
+                    <AnimatePresence>
+                      {useInstallment && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden space-y-3 pt-1"
+                        >
+                          <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest">
+                            Cấu hình đợt · Chọn đợt muốn gửi thông báo lần này
+                          </p>
+                          <InstallmentPlanEditor
+                            plan={installmentPlan}
+                            onChange={setInstallmentPlan}
+                            selectedInstallmentNo={selectedInstallmentNo}
+                            onSelectInstallmentNo={setSelectedInstallmentNo}
+                          />
+                          {/* Summary */}
+                          {currentInstallment && (
+                            <div className="flex items-center gap-2 p-3 rounded-xl bg-violet-100/60 border border-violet-200/50">
+                              <Send className="w-3.5 h-3.5 text-violet-600 flex-shrink-0" />
+                              <p className="text-xs font-black text-violet-700">
+                                Sẽ gửi thông báo cho <b>{currentInstallmentCount()}</b> học viên với QR số tiền = <b>{currentInstallment.percent}%</b> tổng học phí gốc ({currentInstallment.label})
+                              </p>
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left block">Tiêu đề</label>
               <input 
@@ -725,33 +1127,40 @@ export function NotificationsPage() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="Nội dung thông báo..."
-                  className="w-full p-6 bg-slate-50 rounded-2xl border border-slate-200 text-sm font-medium outline-none focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/5 transition-all min-h-[220px] resize-none text-left pb-24"
+                  className="w-full p-6 bg-slate-50 rounded-2xl border border-slate-200 text-sm font-medium outline-none focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/5 transition-all min-h-[220px] resize-none text-left pb-28"
                 />
                 <div className="absolute bottom-4 left-6 right-6 p-4 rounded-xl bg-white/80 border border-slate-100 backdrop-blur-sm">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 text-left">Biến dùng được:</p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
                     <VariableTag name="ten" label="Tên" />
                     <VariableTag name="hang" label="Hạng" />
                     <VariableTag name="kv" label="KV" />
                     <VariableTag name="email" label="Email" />
                     <VariableTag name="ngaythi" label="Ngày thi" />
-                    <VariableTag name="sotien" label="Tiền nợ" />
+                    <VariableTag name="sotien" label="Tổng nợ" />
+                    <VariableTag name="tiendot" label="Tiền đợt" highlight={useInstallment && isDebtFilter} />
+                    <VariableTag name="nhac_dong_phi" label="Gợi ý đóng phí" highlight={useInstallment && isDebtFilter} />
                   </div>
                 </div>
               </div>
             </div>
 
-            {recipientFilter === 'Học viên còn nợ học phí' && channels.includes('Email') && (
+            {isDebtFilter && channels.includes('Email') && (
               <div className="text-xs font-bold text-left">
                 {vietqrConfig && vietqrConfig.enabled && vietqrConfig.bankId && vietqrConfig.accountNo ? (
                   <div className="flex items-center gap-2 text-cyan-700 bg-cyan-50/50 border border-cyan-100/50 p-3.5 rounded-2xl">
                     <Smartphone size={16} className="text-cyan-600 flex-shrink-0" />
-                    <span>📲 Mã VietQR cá nhân hóa chứa số tiền còn nợ sẽ được tự động nhúng trực tiếp vào email của từng học viên.</span>
+                    <span>
+                      📲 Mã VietQR sẽ được nhúng vào email.
+                      {useInstallment && currentInstallment
+                        ? ` Số tiền QR = ${currentInstallment.percent}% học phí gốc (${currentInstallment.label}).`
+                        : ' Số tiền QR = toàn bộ nợ còn lại.'}
+                    </span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-amber-700 bg-amber-50/50 border border-amber-100/50 p-3.5 rounded-2xl">
                     <AlertCircle size={16} className="text-amber-600 flex-shrink-0" />
-                    <span>⚠️ Chưa cấu hình VietQR hoặc VietQR đang tắt. Email nhắc phí gửi đi sẽ chỉ là plain text. Bạn có thể vào Cài đặt để kích hoạt VietQR.</span>
+                    <span>⚠️ Chưa cấu hình VietQR hoặc VietQR đang tắt. Email sẽ chỉ là plain text. Vào Cài đặt để kích hoạt.</span>
                   </div>
                 )}
               </div>
@@ -854,11 +1263,18 @@ export function NotificationsPage() {
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <button 
                   type="submit"
-                  disabled={isSubmitting || channels.length === 0 || currentRecipientCount === 0}
-                  className="w-full flex items-center justify-center gap-2 px-10 py-3.5 bg-cyan-600 text-white rounded-2xl text-sm font-black shadow-lg shadow-cyan-100 hover:bg-cyan-700 transition-all disabled:opacity-50 active:scale-95"
+                  disabled={isSubmitting || channels.length === 0 || currentRecipientCount === 0 || (useInstallment && totalInstallmentPercent > 100)}
+                  className={cn(
+                    "w-full flex items-center justify-center gap-2 px-10 py-3.5 rounded-2xl text-sm font-black shadow-lg transition-all disabled:opacity-50 active:scale-95",
+                    useInstallment && isDebtFilter
+                      ? "bg-violet-600 text-white shadow-violet-100 hover:bg-violet-700"
+                      : "bg-cyan-600 text-white shadow-cyan-100 hover:bg-cyan-700"
+                  )}
                 >
                   {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                  Gửi hàng loạt
+                  {useInstallment && currentInstallment
+                    ? `Gửi ${currentInstallment.label}`
+                    : 'Gửi hàng loạt'}
                 </button>
               </div>
             </div>
@@ -917,12 +1333,25 @@ export function NotificationsPage() {
       )}
     </div>
   );
+
+  // Helper — số học viên nợ phí (dùng trong summary installment)
+  function currentInstallmentCount() {
+    return students.filter(s => (s.paidAmount || 0) < parseInt(parseVND(s.fee) || '0')).length;
+  }
 }
 
-function VariableTag({ name, label }: { name: string, label: string }) {
+function VariableTag({ name, label, highlight = false }: { name: string, label: string, highlight?: boolean }) {
   return (
-    <div className="flex items-center gap-1.5 group cursor-help bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-      <span className="text-[11px] font-black text-cyan-600 leading-none">{"{"}{name}{"}"}</span>
+    <div className={cn(
+      "flex items-center gap-1.5 group cursor-help px-2 py-1 rounded-lg border transition-all",
+      highlight
+        ? "bg-violet-50 border-violet-200"
+        : "bg-slate-50 border-slate-100"
+    )}>
+      <span className={cn(
+        "text-[11px] font-black leading-none",
+        highlight ? "text-violet-600" : "text-cyan-600"
+      )}>{"{" + name + "}"}</span>
       <span className="text-[10px] font-extrabold text-slate-400 tracking-tight"> - {label}</span>
     </div>
   );
