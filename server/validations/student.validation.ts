@@ -43,6 +43,14 @@ export const createStudentSchema = Joi.object({
   enrollmentDate: Joi.string().allow("").optional(),
   fee: Joi.string().allow("").optional(),
   address: Joi.string().allow("").optional(),
+  idCardFront: Joi.string().required().messages({
+    "any.required": "Ảnh mặt trước CCCD là bắt buộc.",
+    "string.empty": "Ảnh mặt trước CCCD không được để trống.",
+  }),
+  idCardBack: Joi.string().required().messages({
+    "any.required": "Ảnh mặt sau CCCD là bắt buộc.",
+    "string.empty": "Ảnh mặt sau CCCD không được để trống.",
+  }),
   idCardFrontFile: uploadedFileSchema.optional(),
   idCardBackFile: uploadedFileSchema.optional(),
   portraitFile: uploadedFileSchema.optional(),
@@ -102,6 +110,8 @@ export const updateStudentSchema = Joi.object({
   examId: Joi.string().allow("").optional(),
   examName: Joi.string().allow("").optional(),
   examDate: Joi.string().allow("").optional(),
+  idCardFront: Joi.string().allow("").optional(),
+  idCardBack: Joi.string().allow("").optional(),
 });
 
 export const publicRegisterStudentSchema = Joi.object({

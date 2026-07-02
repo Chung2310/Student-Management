@@ -33,7 +33,7 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
         if (!hasReloaded) {
           sessionStorage.setItem('chunk-load-reload', 'true');
           window.location.reload();
-          return new Promise<{ default: T }>(() => {});
+          return new Promise<{ default: T }>(() => { });
         }
       }
       throw error;
@@ -75,14 +75,15 @@ export default function App() {
   const { user, loading } = useAuth();
   useRealtimePayment();
   const { students } = useStudents();
-  
+
   const [currentPath, setCurrentPath] = React.useState(() => typeof window !== 'undefined' ? window.location.pathname : '/');
 
   // Helper to parse current path to ViewType
   const getViewFromPath = (): ViewType => {
     if (typeof window === 'undefined') return 'Dashboard';
     const path = window.location.pathname;
-    if (path.startsWith('/demo-erp')) return 'ErpDemo';
+    if (path.startsWith('/demo-erp') || path.startsWith('/erp')) return 'ErpDemo';
+    if (path === '/') return 'ErpDemo';
     if (path.startsWith('/students')) return 'Students';
     if (path.startsWith('/exams')) return 'Exams';
     if (path.startsWith('/fees')) return 'Fees';
@@ -120,7 +121,7 @@ export default function App() {
     else if (view === 'Bot') path = '/bot';
     else if (view === 'UserManagement') path = '/user-management';
     else if (view === 'SettingsAdmin') path = '/settings';
-    else if (view === 'ErpDemo') path = '/demo-erp';
+    else if (view === 'ErpDemo') path = '/erp';
     else if (view === 'Dashboard') path = '/dashboard';
 
     if (window.location.pathname !== path) {
@@ -239,8 +240,8 @@ export default function App() {
         {isLoginPath ? (
           <LoginPage onNavigateToPath={navigateTo} />
         ) : (
-          <LandingPage 
-            onNavigateToLogin={() => navigateTo('/login')} 
+          <LandingPage
+            onNavigateToLogin={() => navigateTo('/login')}
             onNavigateToPath={navigateTo}
           />
         )}
@@ -266,7 +267,7 @@ export default function App() {
     switch (currentView) {
       case 'Dashboard':
         return (
-          <DashboardPage 
+          <DashboardPage
             formattedDate={formattedDate}
             onAddStudent={() => setIsAddModalOpen(true)}
             onSelectStudent={handleOpenProfile}
@@ -275,8 +276,8 @@ export default function App() {
         );
       case 'Students':
         return (
-          <StudentsPage 
-            onSelectStudent={handleOpenProfile} 
+          <StudentsPage
+            onSelectStudent={handleOpenProfile}
             onAddStudent={() => setIsAddModalOpen(true)}
           />
         );
@@ -302,9 +303,9 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen bg-brand-bg relative">
-      <Sidebar 
-        currentView={currentView} 
-        onViewChange={handleViewChange} 
+      <Sidebar
+        currentView={currentView}
+        onViewChange={handleViewChange}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
@@ -313,8 +314,8 @@ export default function App() {
         "flex-1 flex flex-col min-w-0 transition-all duration-300",
         isSidebarOpen ? "lg:pl-64" : "lg:pl-0"
       )}>
-        <Header 
-          currentView={currentView} 
+        <Header
+          currentView={currentView}
           onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
         />
 
@@ -334,8 +335,8 @@ export default function App() {
       {/* Add Student Modal */}
       {isAddModalOpen && (
         <Suspense fallback={null}>
-          <AddStudentModal 
-            isOpen={isAddModalOpen} 
+          <AddStudentModal
+            isOpen={isAddModalOpen}
             onClose={() => setIsAddModalOpen(false)}
             onSuccess={handleOpenProfile}
           />

@@ -86,6 +86,8 @@ export interface IStudent extends Document {
   examId?: string;
   examName?: string;
   examDate?: string;
+  idCardFront?: string;
+  idCardBack?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -38,8 +38,6 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
     portraitFile: undefined as UploadedFile | undefined,
   });
 
-  if (!isOpen) return null;
-
   const getRequiredFieldsConfig = () => {
     const saved = localStorage.getItem('requiredFieldsConfig');
     if (saved) {
@@ -58,6 +56,8 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
       email: false
     };
   };
+
+  if (!isOpen) return null;
 
   const requiredFields = getRequiredFieldsConfig();
 
@@ -110,13 +110,20 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
       return;
     }
 
+    if (!formData.idCardFrontFile || !formData.idCardBackFile) {
+      setErrorMsg("Vui lòng tải lên cả ảnh mặt trước và mặt sau của CCCD.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const res = await apiFetch('/students', {
         method: 'POST',
         body: JSON.stringify({
           ...formData,
-          status: ['Chờ KSK'],
+          idCardFront: formData.idCardFrontFile.url,
+          idCardBack: formData.idCardBackFile.url,
+          status: 'Chờ KSK',
           registrationDate: new Date().toLocaleDateString('vi-VN'),
         }),
       });
@@ -127,6 +134,24 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
         toast.success('Đã lưu hồ sơ học viên thành công!');
         onClose();
         onSuccess(studentWithId);
+
+        // Reset form
+        setFormData({
+          fullName: '',
+          phone: '',
+          referral: '',
+          birthday: '',
+          idCard: '',
+          rank: '',
+          registrationDate: new Date().toLocaleDateString('vi-VN'),
+          enrollmentDate: '',
+          fee: '',
+          address: '',
+          email: '',
+          idCardFrontFile: undefined,
+          idCardBackFile: undefined,
+          portraitFile: undefined,
+        });
       }
     } catch (error: unknown) {
       console.error('Error saving student:', error);

@@ -20,6 +20,8 @@ export interface DrivingStudent {
   referral?: string;
   birthday: string;
   idCard: string;
+  idCardFront?: string;
+  idCardBack?: string;
   rank: 'A1' | 'A2' | 'B1' | 'B2' | 'C';
   registrationDate: string;
   enrollmentDate?: string;
@@ -140,6 +142,76 @@ export interface ExamSession {
   failCount: number;
   createdAt?: Date | string;
   updatedAt?: Date | string;
+}
+
+// ==== ERP: Khóa học / Giảng viên / Tài nguyên / Lịch tổng hợp ====
+
+export type CourseCategory = string;
+export type CourseStatus = 'Hoạt động' | 'Tạm dừng';
+
+export interface Course {
+  id: string;
+  code: string;
+  title: string;
+  category: CourseCategory;
+  fee: string;
+  duration: string;
+  maxLearners: number;
+  activeBatches: number;
+  status: CourseStatus;
+  ownerId: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
+export type InstructorStatus = 'Available' | 'On Leave' | 'Busy';
+
+export interface Instructor {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  specializations: string[];
+  rating: number;
+  activeClasses: number;
+  status: InstructorStatus;
+  ownerId: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
+export type ResourceType = 'ROOM' | 'VEHICLE' | 'EQUIPMENT';
+export type ResourceStatus = 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE';
+
+export interface ResourceBooking {
+  id?: string;
+  purpose: string;
+  by: string;
+  date: string;      // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string;   // HH:mm
+}
+
+export interface ResourceItem {
+  id: string;
+  name: string;
+  type: ResourceType;
+  identifier: string;
+  capacity: string;
+  status: ResourceStatus;
+  bookings: ResourceBooking[];
+  ownerId: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
+export interface ScheduleEvent {
+  id: string;
+  title: string;
+  type: 'class' | 'exam' | 'resource';
+  date: string; // YYYY-MM-DD
+  time: string;
+  details: string;
 }
 
 export interface StudentStats {
