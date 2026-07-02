@@ -10,10 +10,10 @@ import { apiFetch } from '../../lib/api';
 import { cn } from '../../lib/utils';
 import { analyzeStudentPerformance } from '../../services/geminiService';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
 
 import { ProfileTab } from './DetailTabs/ProfileTab';
-import { useBatches } from '../../hooks/useBatches';
-import { useCourses } from '../../hooks/useCourses';
+
 import { KskTab } from './DetailTabs/KskTab';
 import { ProgressTab } from './DetailTabs/ProgressTab';
 import { ExamsTab } from './DetailTabs/ExamsTab';
@@ -30,6 +30,7 @@ interface StudentDetailModalProps {
 type TabType = 'Hồ sơ' | 'KSK' | 'Tiến độ học' | 'Lịch thi & KQ' | 'Học phí' | 'Lịch sử' | 'Trợ lý AI';
 
 export function StudentDetailModal({ student: initialStudent, onClose, initialTab = 'Hồ sơ' }: StudentDetailModalProps) {
+  const { user } = useAuth();
   const [student, setStudent] = React.useState<Student | null>(initialStudent);
   const [activeTab, setActiveTab] = React.useState<TabType>(initialTab);
   const [analysis, setAnalysis] = React.useState<string | null>(null);
@@ -41,8 +42,7 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
   const [isEditingExams, setIsEditingExams] = React.useState(false);
   const [isUpdatingExams, setIsUpdatingExams] = React.useState(false);
   const [isUploadingFile, setIsUploadingFile] = React.useState(false);
-  const { batches } = useBatches();
-  const { courses } = useCourses();
+
   
   const [kskData, setKskData] = React.useState({
     status: (Array.isArray(student?.status) ? student.status.includes('Chờ KSK') : student?.status === 'Chờ KSK') ? 'Pending' : 'Completed',
@@ -139,22 +139,17 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
     }
   }, [student, isUpdatingKSK, isEditingProgress, isUpdatingProgress, isEditingExams, isUpdatingExams]);
 
-  // KSK & Tiến độ học là nghiệp vụ riêng ngành lái xe — chỉ hiện với học viên có hạng bằng hoặc thuộc lớp/khóa học lái xe
-  const isDrivingStudent = React.useMemo(() => {
-    if (!student) return false;
-    if (student.rank) return true;
-    const studentId = student.id || student._id;
-    const myBatches = batches.filter(b => b.learnerIds.includes(studentId));
-    const courseMap = new Map<string, string>(courses.map(c => [c.id, c.category]));
-    return myBatches.some(b => {
-      const cat = courseMap.get(b.courseId);
-      return cat && (cat.toLowerCase().includes('lái xe') || cat.toLowerCase().includes('lai xe'));
-    });
-  }, [student, batches, courses]);
+  const businessType = user?.businessType || 'driving';
 
-  const tabs: TabType[] = isDrivingStudent
-    ? ['Hồ sơ', 'KSK', 'Tiến độ học', 'Lịch thi & KQ', 'Học phí', 'Lịch sử', 'Trợ lý AI']
-    : ['Hồ sơ', 'Lịch thi & KQ', 'Học phí', 'Lịch sử', 'Trợ lý AI'];
+  const tabs = React.useMemo<TabType[]>(() => {
+    if (businessType === 'driving') {
+      return ['Hồ sơ', 'KSK', 'Tiến độ học', 'Lịch thi & KQ', 'Học phí', 'Lịch sử', 'Trợ lý AI'];
+    } else if (businessType === 'language') {
+      return ['Hồ sơ', 'Lịch thi & KQ', 'Học phí', 'Lịch sử', 'Trợ lý AI'];
+    } else {
+      return ['Hồ sơ', 'Học phí', 'Lịch sử', 'Trợ lý AI'];
+    }
+  }, [businessType]);
 
   // Nếu tab đang mở không còn khả dụng (ví dụ mở từ deep-link) thì quay về Hồ sơ
   React.useEffect(() => {
@@ -162,8 +157,7 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab('Hồ sơ');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDrivingStudent, activeTab]);
+  }, [tabs, activeTab]);
 
   const handleUpdateExams = async () => {
     if (!student) return;
@@ -437,9 +431,11 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
                   <div className="min-w-0">
                     <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight truncate">{student.fullName}</h2>
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1 sm:mt-2">
-                      <span className="px-2 py-0.5 bg-cyan-50 text-cyan-700 rounded text-[10px] sm:text-xs font-bold border border-cyan-100">
-                        {student.rank}
-                      </span>
+                      {student.rank && businessType !== 'general' && (
+                        <span className="px-2 py-0.5 bg-cyan-50 text-cyan-700 rounded text-[10px] sm:text-xs font-bold border border-cyan-100">
+                          {student.rank}
+                        </span>
+                      )}
                       <span className="text-slate-500 text-[10px] sm:text-xs font-medium">{student.phone}</span>
                     </div>
                   </div>

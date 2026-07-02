@@ -134,6 +134,7 @@ export class AuthController {
             smtpPass,
             smtpFrom,
             smtpSandboxEmail,
+            businessType: user.businessType || "driving",
             smsSettings: smsSettings ? {
               provider: smsSettings.provider,
               twilioAccountSid: smsSettings.twilioAccountSid,
@@ -190,6 +191,7 @@ export class AuthController {
             smtpPass: updatedUser.smtpPass,
             smtpFrom: updatedUser.smtpFrom,
             smtpSandboxEmail: updatedUser.smtpSandboxEmail,
+            businessType: updatedUser.businessType || "driving",
           },
         },
       });
@@ -228,6 +230,7 @@ export class AuthController {
             smtpPass: updatedUser.smtpPass,
             smtpFrom: updatedUser.smtpFrom,
             smtpSandboxEmail: updatedUser.smtpSandboxEmail,
+            businessType: updatedUser.businessType || "driving",
           },
         },
       });
@@ -311,6 +314,45 @@ export class AuthController {
       }
       await AuthService.deleteManagedUser(req.user, req.params.id);
       res.json({ success: true, message: "Đã xóa người dùng thành công." });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  static async updateBusinessSettings(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: "Chưa xác thực." });
+      }
+      if (req.user.role === "user") {
+        return res.status(403).json({ success: false, error: "Nhân viên không có quyền thay đổi lĩnh vực đào tạo." });
+      }
+      const updatedUser = await AuthService.updateBusinessSettings(req.user.uid, req.body);
+      if (!updatedUser) {
+        return res.status(404).json({ success: false, error: "Không tìm thấy người dùng." });
+      }
+      res.json({
+        success: true,
+        data: {
+          user: {
+            uid: updatedUser._id.toString(),
+            email: updatedUser.email,
+            displayName: updatedUser.displayName,
+            role: updatedUser.role,
+            centerId: updatedUser.centerId,
+            bankAccountNo: updatedUser.bankAccountNo,
+            bankId: updatedUser.bankId,
+            smtpHost: updatedUser.smtpHost,
+            smtpPort: updatedUser.smtpPort,
+            smtpSecure: updatedUser.smtpSecure,
+            smtpUser: updatedUser.smtpUser,
+            smtpPass: updatedUser.smtpPass,
+            smtpFrom: updatedUser.smtpFrom,
+            smtpSandboxEmail: updatedUser.smtpSandboxEmail,
+            businessType: updatedUser.businessType || "driving",
+          },
+        },
+      });
     } catch (error: unknown) {
       next(error);
     }

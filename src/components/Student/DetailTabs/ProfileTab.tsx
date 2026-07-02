@@ -1,12 +1,16 @@
 import React from 'react';
 import { Student } from '../../../types';
 import { formatDisplayDate } from '../../../lib/utils';
+import { useAuth } from '../../../hooks/useAuth';
 
 interface ProfileTabProps {
   student: Student;
 }
 
 export function ProfileTab({ student }: ProfileTabProps) {
+  const { user } = useAuth();
+  const businessType = user?.businessType || 'driving';
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-100 shadow-sm shadow-slate-200/50">
@@ -16,7 +20,13 @@ export function ProfileTab({ student }: ProfileTabProps) {
         <FormField label="EMAIL" value={student.email || 'Chưa cập nhật'} />
         <FormField label="NGƯỜI GIỚI THIỆU" value={student.referral || 'Trực tiếp'} />
         <FormField label="CCCD / CMND" value={student.idCard || 'Chưa cập nhật'} />
-        <FormField label="HẠNG BẰNG*" value={student.rank} />
+        
+        {businessType === 'language' ? (
+          <FormField label="KHÓA HỌC ĐĂNG KÝ*" value={student.rank} />
+        ) : businessType === 'driving' ? (
+          <FormField label="HẠNG BẰNG*" value={student.rank} />
+        ) : null}
+
         <FormField label="NGÀY ĐĂNG KÝ" value={formatDisplayDate(student.registrationDate)} />
         <FormField label="NGÀY NHẬP HỌC" value={formatDisplayDate(student.enrollmentDate || '') || 'Chưa cập nhật'} />
         <div className="md:col-span-2">
@@ -27,14 +37,16 @@ export function ProfileTab({ student }: ProfileTabProps) {
         </div>
       </div>
 
-      <div className="bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-100 shadow-sm shadow-slate-200/50">
-        <h3 className="text-sm font-bold text-slate-800 mb-4">Giấy tờ & Ảnh hồ sơ</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <DocumentCard label="CCCD mặt trước" file={student.idCardFrontFile} />
-          <DocumentCard label="CCCD mặt sau" file={student.idCardBackFile} />
-          <DocumentCard label="Ảnh chân dung" file={student.portraitFile} />
+      {businessType === 'driving' && (
+        <div className="bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-100 shadow-sm shadow-slate-200/50">
+          <h3 className="text-sm font-bold text-slate-800 mb-4">Giấy tờ & Ảnh hồ sơ</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <DocumentCard label="CCCD mặt trước" file={student.idCardFrontFile} />
+            <DocumentCard label="CCCD mặt sau" file={student.idCardBackFile} />
+            <DocumentCard label="Ảnh chân dung" file={student.portraitFile} />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

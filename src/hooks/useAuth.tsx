@@ -22,6 +22,7 @@ export interface AuthUser {
   smtpPass?: string;
   smtpFrom?: string;
   smtpSandboxEmail?: string;
+  businessType?: "driving" | "language" | "general";
   smsSettings?: {
     provider?: "twilio" | "stringee" | "tingting";
     twilioAccountSid?: string;
@@ -82,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           smtpPass: res.data.user.smtpPass,
           smtpFrom: res.data.user.smtpFrom,
           smtpSandboxEmail: res.data.user.smtpSandboxEmail,
+          businessType: res.data.user.businessType || "driving",
           smsSettings: res.data.user.smsSettings || null,
         });
       } else {

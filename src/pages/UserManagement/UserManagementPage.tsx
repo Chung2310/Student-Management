@@ -14,6 +14,7 @@ type ManagedUser = {
   uid: string; email: string; displayName: string;
   role: 'superadmin' | 'admin' | 'user'; centerId: string; createdBy?: string; isActive?: boolean;
   bankAccountNo?: string; bankId?: string;
+  businessType?: 'driving' | 'language' | 'general';
 };
 type RoleFilter = 'all' | 'superadmin' | 'admin' | 'user';
 type ModalMode = null | 'center' | 'user' | 'edit-user' | 'edit-center';
@@ -85,6 +86,7 @@ export function UserManagementPage() {
   const [fActive, setFActive] = useState(true);
   const [fBankAccountNo, setFBankAccountNo] = useState('');
   const [fBankId, setFBankId] = useState('mbbank');
+  const [fBusinessType, setFBusinessType] = useState<'driving' | 'language' | 'general'>('driving');
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
 
   const resetForm = () => {
@@ -95,6 +97,7 @@ export function UserManagementPage() {
     setFActive(true);
     setFBankAccountNo('');
     setFBankId('mbbank');
+    setFBusinessType('driving');
     setEditingUser(null);
     setShowPass(false);
   };
@@ -108,6 +111,7 @@ export function UserManagementPage() {
     setFActive(item.isActive !== false);
     setFBankAccountNo(item.bankAccountNo || '');
     setFBankId(item.bankId || 'mbbank');
+    setFBusinessType(item.businessType || 'driving');
     setModal(item.role === 'admin' ? 'edit-center' : 'edit-user');
   };
 
@@ -187,6 +191,7 @@ export function UserManagementPage() {
           centerId: isCenter ? '' : (isSA ? fCenter : user?.centerId),
           bankAccountNo: fBankAccountNo,
           bankId: fBankId,
+          businessType: fBusinessType,
         }),
       });
       const r = await apiFetch('/auth/users');
@@ -230,6 +235,7 @@ export function UserManagementPage() {
         isActive: fActive,
         bankAccountNo: fBankAccountNo,
         bankId: fBankId,
+        businessType: fBusinessType,
       };
       if (fPass.trim()) {
         payload.password = fPass;
@@ -502,12 +508,23 @@ export function UserManagementPage() {
             <div><label className={LABEL}>Email đăng nhập</label>
               <input type="email" value={fEmail} onChange={e => setFEmail(e.target.value)} placeholder="admin@trungtam.vn" className={INPUT} /></div>
           </div>
-          <div><label className={LABEL}>Mật khẩu</label>
-            <div className="relative">
-              <input type={showPass ? 'text' : 'password'} value={fPass} onChange={e => setFPass(e.target.value)} placeholder="Tối thiểu 6 ký tự" className={cn(INPUT, 'pr-10')} />
-              <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={LABEL}>Mật khẩu</label>
+              <div className="relative">
+                <input type={showPass ? 'text' : 'password'} value={fPass} onChange={e => setFPass(e.target.value)} placeholder="Tối thiểu 6 ký tự" className={cn(INPUT, 'pr-10')} />
+                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className={LABEL}>Lĩnh vực hoạt động</label>
+              <select value={fBusinessType} onChange={e => setFBusinessType(e.target.value as 'driving' | 'language' | 'general')} className={INPUT}>
+                <option value="driving">Đào tạo lái xe</option>
+                <option value="language">Đào tạo ngoại ngữ</option>
+                <option value="general">Lĩnh vực tổng hợp (Chung)</option>
+              </select>
             </div>
           </div>
 
@@ -604,12 +621,23 @@ export function UserManagementPage() {
             <div><label className={LABEL}>Email đăng nhập</label>
               <input type="email" value={fEmail} onChange={e => setFEmail(e.target.value)} placeholder="admin@trungtam.vn" className={INPUT} /></div>
           </div>
-          <div><label className={LABEL}>Mật khẩu mới (Bỏ trống nếu không đổi)</label>
-            <div className="relative">
-              <input type={showPass ? 'text' : 'password'} value={fPass} onChange={e => setFPass(e.target.value)} placeholder="Nhập mật khẩu mới..." className={cn(INPUT, 'pr-10')} />
-              <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={LABEL}>Mật khẩu mới (Bỏ trống nếu không đổi)</label>
+              <div className="relative">
+                <input type={showPass ? 'text' : 'password'} value={fPass} onChange={e => setFPass(e.target.value)} placeholder="Nhập mật khẩu mới..." className={cn(INPUT, 'pr-10')} />
+                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className={LABEL}>Lĩnh vực hoạt động</label>
+              <select value={fBusinessType} onChange={e => setFBusinessType(e.target.value as 'driving' | 'language' | 'general')} className={INPUT}>
+                <option value="driving">Đào tạo lái xe</option>
+                <option value="language">Đào tạo ngoại ngữ</option>
+                <option value="general">Lĩnh vực tổng hợp (Chung)</option>
+              </select>
             </div>
           </div>
 

@@ -53,7 +53,7 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
       </AnimatePresence>
 
       <aside className={cn(
-        "bg-brand-sidebar flex flex-col h-screen fixed top-0 left-0 transition-all duration-300 z-[50] text-slate-300",
+        "bg-white border-r border-slate-200/60 shadow-[4px_0_24px_-4px_rgba(0,0,0,0.05)] flex flex-col h-screen fixed top-0 left-0 transition-all duration-300 z-[50] text-slate-600",
         "w-72 lg:w-64",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
@@ -61,43 +61,43 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <img
-                src="https://res.cloudinary.com/dgaofuhmv/image/upload/v1775301001/unnamed_tcmlmp.png"
+                src="/logo-igen.png"
                 alt="Logo"
-                className="w-10 h-10 rounded-xl object-cover shadow-lg bg-white/5"
+                className="w-10 h-10 rounded-xl object-contain shadow-lg"
               />
               <div>
-                <h1 className="font-bold text-white text-sm leading-tight">iGen Education</h1>
-                <p className="text-[10px] text-slate-400 font-medium">Quản lý đào tạo & học viên</p>
+                <h1 className="font-bold text-slate-900 text-sm leading-tight">iGen Education</h1>
+                <p className="text-[10px] text-slate-500 font-medium">Quản lý đào tạo & học viên</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="lg:hidden p-2 text-slate-500 hover:text-white transition-colors"
+              className="lg:hidden p-2 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-
+ 
           <nav className="space-y-1">
             {visibleMenuItems.map((item, idx) => (
               <button
                 key={idx}
                 onClick={() => onViewChange(item.view)}
                 className={cn(
-                  "w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group",
+                  "w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group cursor-pointer",
                   currentView === item.view
-                    ? "bg-brand-primary text-white shadow-lg"
-                    : "hover:text-white hover:bg-white/5"
+                    ? "bg-cyan-50 text-cyan-600 font-bold shadow-sm shadow-cyan-100/30"
+                    : "hover:text-slate-900 hover:bg-slate-50/50"
                 )}
               >
                 <div className="flex items-center gap-4">
-                  <item.icon className={cn("w-4 h-4", currentView === item.view ? "text-white" : "text-slate-400 group-hover:text-white")} />
+                  <item.icon className={cn("w-4 h-4", currentView === item.view ? "text-cyan-600" : "text-slate-400 group-hover:text-slate-600")} />
                   {item.label}
                 </div>
                 {item.count && item.count > 0 && (
                   <span className={cn(
                     "px-2 py-0.5 rounded-full text-[10px] font-bold",
-                    currentView === item.view ? "bg-white/20 text-white" : "bg-slate-700 text-slate-400 group-hover:bg-slate-600"
+                    currentView === item.view ? "bg-cyan-100 text-cyan-700" : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
                   )}>
                     {item.count}
                   </span>
@@ -106,26 +106,26 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
             ))}
           </nav>
         </div>
-
-        <div className="mt-auto p-4 border-t border-white/5 bg-black/20">
+ 
+        <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/80">
           {user ? (
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-3 min-w-0">
                 {user.photoURL ? (
                   <img src={user.photoURL} alt={user.displayName || ''} className="w-8 h-8 rounded-full shrink-0" />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-700 shrink-0">
                     {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
                   </div>
                 )}
                 <div className="min-w-0 overflow-hidden">
-                  <p className="text-xs font-bold text-white leading-none mb-1 truncate">{user.displayName || 'Người dùng'}</p>
+                  <p className="text-xs font-bold text-slate-800 leading-none mb-1 truncate">{user.displayName || 'Người dùng'}</p>
                   <p className="text-[10px] text-slate-500 font-medium truncate">{user.email}</p>
                 </div>
               </div>
               <button
                 onClick={logout}
-                className="p-2 text-slate-500 hover:text-white transition-colors shrink-0"
+                className="p-2 text-slate-400 hover:text-slate-700 transition-colors shrink-0 cursor-pointer"
                 title="Đăng xuất"
               >
                 <LogOut className="w-4 h-4" />
@@ -136,8 +136,8 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
               onClick={login}
               disabled={isLoggingIn}
               className={cn(
-                "w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed",
-                isLoggingIn ? "bg-slate-700 text-slate-400" : "bg-brand-primary/20 hover:bg-brand-primary/30 text-white"
+                "w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                isLoggingIn ? "bg-slate-100 text-slate-400" : "bg-cyan-50 hover:bg-cyan-100 text-cyan-600"
               )}
             >
               {isLoggingIn ? (
