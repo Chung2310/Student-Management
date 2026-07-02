@@ -102,6 +102,8 @@ const studentSchema = new Schema<IStudent>(
     examId: { type: String, default: "" },
     examName: { type: String, default: "" },
     examDate: { type: String, default: "" },
+    idCardFront: { type: String, default: "" },
+    idCardBack: { type: String, default: "" },
   },
   {
     timestamps: true,

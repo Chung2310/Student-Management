@@ -1,347 +1,294 @@
 import React, { useState } from 'react';
-import { 
-  Plus, Search, MapPin, 
-  Clock, FileText, ChevronRight
+import {
+  Plus, ClipboardList, CheckCircle2, Clock, Users as UsersIcon, X, Trash2, Download
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { cn } from '../../lib/utils';
+import { apiFetch } from '../../lib/api';
+import { useExams } from '../../hooks/useExams';
+import { useStudents } from '../../hooks/useStudents';
+import { ExamSession, ExamStatus } from '../../types';
+import { AddExamModal } from '../../components/Exams/AddExamModal';
+import { ExamStatusModal } from '../../components/Exams/ExamStatusModal';
+import { AssignStudentModal } from '../../components/Exams/AssignStudentModal';
+import { ExamCard } from '../../components/Exams/ExamCard';
 import { useToast } from '../../hooks/useToast';
+import { Pagination } from '../../components/ui/Pagination';
+import { useErpTheme } from './ErpThemeContext';
+import {
+  ErpPageHeader, ErpPrimaryButton, ErpStatCard, ErpSearchBar, ErpFilterTab, ErpModal
+} from '../../components/Erp/ErpUI';
 
-interface Exam {
-  id: string;
-  name: string;
-  courseCode: string;
-  date: string;
-  time: string;
-  location: string;
-  type: 'Lý thuyết' | 'Thực hành' | 'Tổng hợp';
-  candidateCount: number;
-  status: 'Sắp diễn ra' | 'Đã hoàn thành' | 'Đã hủy';
-}
+export function ErpExams() {
+  const { darkMode } = useErpTheme();
+  const { exams, loading: examsLoading } = useExams();
+  const { students } = useStudents();
+  const { toast } = useToast();
 
-export function ErpExams({ darkMode = false }: { darkMode?: boolean }) {
-  const { toast } = useState(() => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useToast();
-  })[0];
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingExam, setEditingExam] = useState<ExamSession | null>(null);
+  const [statusModalExam, setStatusModalExam] = useState<ExamSession | null>(null);
+  const [assignModalExam, setAssignModalExam] = useState<ExamSession | null>(null);
+  const [deleteModalExam, setDeleteModalExam] = useState<ExamSession | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('Tất cả');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 5;
 
-  const [exams, setExams] = useState<Exam[]>([
-    { id: '1', name: 'Thi sát hạch tốt nghiệp khóa B2-K31', courseCode: 'DRV-B2', date: '12/07/2026', time: '07:30 - 17:00', location: 'Sân thi sát hạch trung tâm', type: 'Tổng hợp', candidateCount: 45, status: 'Sắp diễn ra' },
-    { id: '2', name: 'Thi thử IELTS Mock Test nghe - đọc', courseCode: 'ENG-IELTS', date: '05/07/2026', time: '09:00 - 12:00', location: 'Phòng thực hành Lab 101', type: 'Lý thuyết', candidateCount: 18, status: 'Sắp diễn ra' },
-    { id: '3', name: 'Thi lý thuyết Luật giao thông đường bộ', courseCode: 'DRV-C', date: '25/06/2026', time: '14:00 - 16:00', location: 'Phòng học lý thuyết 301', type: 'Lý thuyết', candidateCount: 20, status: 'Đã hoàn thành' },
-    { id: '4', name: 'Thi kết thúc môn Kỹ năng mềm Batch 5', courseCode: 'SOFT-COMM', date: '30/06/2026', time: '15:30 - 17:00', location: 'Phòng học lý thuyết 301', type: 'Thực hành', candidateCount: 30, status: 'Đã hoàn thành' },
-  ]);
+  React.useEffect(() => {
+    const timer = setTimeout(() => setCurrentPage(1), 0);
+    return () => clearTimeout(timer);
+  }, [searchQuery, statusFilter]);
 
-  const [newExam, setNewExam] = useState({
-    name: '',
-    courseCode: '',
-    date: '',
-    time: '',
-    location: '',
-    type: 'Lý thuyết' as 'Lý thuyết' | 'Thực hành' | 'Tổng hợp',
-    candidateCount: 15
-  });
-
-  const handleAddExam = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newExam.name || !newExam.courseCode || !newExam.date || !newExam.time || !newExam.location) {
-      toast.error('Vui lòng nhập đầy đủ thông tin kỳ thi.');
-      return;
-    }
-
-    const created: Exam = {
-      id: Date.now().toString(),
-      name: newExam.name,
-      courseCode: newExam.courseCode.toUpperCase(),
-      date: newExam.date,
-      time: newExam.time,
-      location: newExam.location,
-      type: newExam.type,
-      candidateCount: newExam.candidateCount,
-      status: 'Sắp diễn ra'
-    };
-
-    setExams([created, ...exams]);
-    setShowAddModal(false);
-    setNewExam({
-      name: '',
-      courseCode: '',
-      date: '',
-      time: '',
-      location: '',
-      type: 'Lý thuyết',
-      candidateCount: 15
-    });
-    toast.success(`Đã khởi tạo đợt thi ${created.name} thành công!`);
+  const stats = {
+    totalExams: exams.length,
+    upcoming: exams.filter(e => e.status === 'Sắp diễn ra' || e.status === 'Đã xác nhận').length,
+    completed: exams.filter(e => e.status === 'Đã hoàn thành').length,
+    unassignedStudents: students.filter(s => s.status === 'Đang học' && !s.examId).length,
   };
 
-  const filteredExams = exams.filter(ex => {
-    const matchesSearch = ex.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          ex.courseCode.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || 
-                          (statusFilter === 'upcoming' && ex.status === 'Sắp diễn ra') ||
-                          (statusFilter === 'completed' && ex.status === 'Đã hoàn thành');
-    return matchesSearch && matchesStatus;
+  const filteredExams = exams.filter(exam => {
+    if (statusFilter !== 'Tất cả' && exam.status !== statusFilter) return false;
+    if (searchQuery && !exam.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
   });
+
+  const totalPages = Math.ceil(filteredExams.length / pageSize);
+  const paginatedExams = filteredExams.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const getStatusInfo = (status: ExamStatus) => {
+    switch (status) {
+      case 'Đã hoàn thành':
+        return { color: 'text-emerald-500 bg-emerald-50 border-emerald-100', icon: CheckCircle2, label: 'Đã hoàn thành' };
+      case 'Sắp diễn ra':
+        return { color: 'text-amber-500 bg-amber-50 border-amber-100', icon: Clock, label: 'Sắp diễn ra' };
+      case 'Đã xác nhận':
+        return { color: 'text-blue-500 bg-blue-50 border-blue-100', icon: CheckCircle2, label: 'Đã xác nhận' };
+      case 'Đã hủy':
+        return { color: 'text-rose-500 bg-rose-50 border-rose-100', icon: X, label: 'Đã hủy' };
+      default:
+        return { color: 'text-slate-500 bg-slate-50 border-slate-100', icon: ClipboardList, label: status };
+    }
+  };
+
+  const handleDeleteExam = async () => {
+    if (!deleteModalExam) return;
+    setIsDeleting(true);
+    try {
+      await apiFetch(`/exams/${deleteModalExam.id}`, { method: 'DELETE' });
+      window.dispatchEvent(new Event("exam-mutation"));
+      setDeleteModalExam(null);
+      toast.success("Xóa đợt thi thành công!");
+    } catch (error: unknown) {
+      console.error("Error deleting exam:", error);
+      const msg = error instanceof Error ? error.message : "Có lỗi xảy ra khi xóa đợt thi.";
+      toast.error(msg);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleExport = () => {
+    if (filteredExams.length === 0) {
+      toast.warning('Không có dữ liệu đợt thi để xuất.');
+      return;
+    }
+    const headers = ['Tên đợt thi', 'Hạng', 'Trạng thái', 'Ngày dự kiến', 'Ngày chính thức', 'Địa điểm', 'Số học viên', 'Đậu', 'Trượt'];
+    const rows = filteredExams.map(exam => [
+      exam.name, exam.rank, exam.status, exam.tentativeDate, exam.officialDate || '',
+      exam.location, exam.studentCount, exam.passCount, exam.failCount
+    ]);
+    try {
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      ws['!cols'] = [{ wch: 25 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 10 }, { wch: 10 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Danh sách đợt thi");
+      XLSX.writeFile(wb, `danh_sach_lich_thi_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.xlsx`);
+      toast.success('Xuất file Excel thành công.');
+    } catch (error) {
+      console.error('Error exporting exams to excel:', error);
+      toast.error('Có lỗi xảy ra khi xuất file Excel.');
+    }
+  };
 
   return (
     <div className="space-y-6 text-left">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h3 className={cn("text-lg font-black tracking-tight", darkMode ? "text-white" : "text-slate-800")}>Quản lý Kỳ thi & Lịch thi</h3>
-          <p className={cn("text-xs font-bold", darkMode ? "text-slate-400" : "text-slate-500")}>Khởi tạo đợt thi tốt nghiệp, sát hạch, thi cuối khóa và quản lý điểm số</p>
-        </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-5 py-3 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-2xl text-xs font-black shadow-lg shadow-brand-primary/10 active:scale-95 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          Tạo kỳ thi mới
-        </button>
+      <ErpPageHeader
+        title="Lịch thi & Kỳ thi"
+        subtitle="Quản lý đợt thi, gắn học viên và theo dõi kết quả sát hạch"
+        action={
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExport}
+              className={cn(
+                "flex items-center gap-2 px-5 py-3 border rounded-2xl text-xs font-black transition-all active:scale-95",
+                darkMode ? "bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+              )}
+            >
+              <Download className="w-4 h-4" /> Xuất Excel
+            </button>
+            <ErpPrimaryButton onClick={() => setIsAddModalOpen(true)} icon={Plus}>
+              Tạo đợt thi
+            </ErpPrimaryButton>
+          </div>
+        }
+      />
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <ErpStatCard name="Tổng đợt thi" value={stats.totalExams} icon={ClipboardList} color="from-brand-primary to-cyan-500" />
+        <ErpStatCard name="Sắp diễn ra" value={stats.upcoming} icon={Clock} color="from-amber-600 to-orange-500" />
+        <ErpStatCard name="Đã hoàn thành" value={stats.completed} icon={CheckCircle2} color="from-emerald-600 to-teal-500" />
+        <ErpStatCard name="HV chưa có lịch" value={stats.unassignedStudents} icon={UsersIcon} color="from-violet-600 to-fuchsia-500" />
       </div>
 
       {/* Controls */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Tìm kỳ thi bằng tên hoặc mã chương trình học..."
-            className={cn(
-              "w-full h-11 border rounded-2xl pl-11 pr-4 text-xs font-semibold outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/5 transition-all",
-              darkMode 
-                ? "bg-slate-900/60 border-slate-800/80 text-white" 
-                : "bg-white border-slate-200 text-slate-800"
-            )}
-          />
-        </div>
-
-        <div className="flex items-center gap-2 overflow-x-auto">
-          <button
-            onClick={() => setStatusFilter('all')}
-            className={cn(
-              "px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
-              statusFilter === 'all' 
-                ? "bg-brand-primary text-white font-black" 
-                : (darkMode ? "bg-slate-900/60 text-slate-400 border border-slate-800/60 hover:bg-slate-800" : "bg-white text-slate-500 border border-slate-200 hover:border-slate-300 hover:bg-slate-50")
-            )}
-          >
-            Tất cả
-          </button>
-          <button
-            onClick={() => setStatusFilter('upcoming')}
-            className={cn(
-              "px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
-              statusFilter === 'upcoming' 
-                ? "bg-brand-primary text-white font-black" 
-                : (darkMode ? "bg-slate-900/60 text-slate-400 border border-slate-800/60 hover:bg-slate-800" : "bg-white text-slate-500 border border-slate-200 hover:border-slate-300 hover:bg-slate-50")
-            )}
-          >
-            Sắp diễn ra
-          </button>
-          <button
-            onClick={() => setStatusFilter('completed')}
-            className={cn(
-              "px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
-              statusFilter === 'completed' 
-                ? "bg-brand-primary text-white font-black" 
-                : (darkMode ? "bg-slate-900/60 text-slate-400 border border-slate-800/60 hover:bg-slate-800" : "bg-white text-slate-500 border border-slate-200 hover:border-slate-300 hover:bg-slate-50")
-            )}
-          >
-            Đã hoàn thành
-          </button>
+        <ErpSearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Tìm đợt thi theo tên..." />
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+          {['Tất cả', 'Sắp diễn ra', 'Đã xác nhận', 'Đã hoàn thành', 'Đã hủy'].map(st => (
+            <ErpFilterTab key={st} active={statusFilter === st} onClick={() => setStatusFilter(st)}>{st}</ErpFilterTab>
+          ))}
         </div>
       </div>
 
-      {/* Grid of exams */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredExams.map((ex) => (
-          <div 
-            key={ex.id} 
-            className={cn(
-              "p-6 rounded-[2.5rem] border flex flex-col justify-between transition-all duration-300",
-              darkMode 
-                ? "bg-slate-900/60 border-slate-800/80 backdrop-blur-md hover:border-brand-primary/20" 
-                : "bg-white border-slate-100 hover:border-brand-primary/20 shadow-sm shadow-slate-100/50"
-            )}
-          >
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className={cn("text-[10px] font-black uppercase tracking-widest", darkMode ? "text-slate-500" : "text-slate-400")}>{ex.courseCode}</span>
-                <span className={cn(
-                  "px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wide border",
-                  ex.status === 'Sắp diễn ra' && "bg-blue-600/10 text-blue-400 border-blue-500/15",
-                  ex.status === 'Đã hoàn thành' && "bg-emerald-600/10 text-emerald-400 border-emerald-500/15",
-                  ex.status === 'Đã hủy' && "bg-rose-600/10 text-rose-400 border-rose-500/15"
-                )}>
-                  {ex.status}
-                </span>
-              </div>
-
-              <h4 className={cn("text-sm font-black line-clamp-1", darkMode ? "text-slate-100" : "text-slate-800")}>{ex.name}</h4>
-
-              <div className={cn("space-y-2 pt-4 border-t text-[10px] font-bold", darkMode ? "border-slate-800/30 text-slate-400" : "border-slate-100 text-slate-500")}>
-                <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-slate-400" /> {ex.date} ({ex.time})</div>
-                <div className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-slate-400" /> {ex.location}</div>
-                <div className="flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-slate-400" /> Hình thức thi: {ex.type}</div>
-              </div>
-            </div>
-
-            <div className={cn("flex items-center justify-between pt-4 mt-4 border-t", darkMode ? "border-slate-800/30" : "border-slate-100")}>
-              <span className="text-[10px] font-black text-brand-primary bg-brand-primary/10 border border-brand-primary/10 px-2.5 py-1 rounded-xl">
-                Sỹ số: {ex.candidateCount} thí sinh
-              </span>
-              <button className={cn(
-                "flex items-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase rounded-xl transition-all border",
-                darkMode 
-                  ? "bg-slate-800 hover:bg-slate-700 text-slate-300 border-transparent" 
-                  : "bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/60"
-              )}>
-                Xem điểm số <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+      {/* Exam List - tái sử dụng ExamCard nghiệp vụ đầy đủ (gắn HV, kết quả, import Excel) */}
+      <div className="space-y-4">
+        {examsLoading ? (
+          <div className="py-20 text-center text-slate-400 text-sm italic">Đang nạp dữ liệu đợt thi...</div>
+        ) : paginatedExams.length === 0 ? (
+          <div className={cn(
+            "py-20 rounded-3xl border text-center text-slate-400 text-sm italic",
+            darkMode ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-100"
+          )}>
+            Không tìm thấy đợt thi nào.
           </div>
+        ) : paginatedExams.map((exam) => (
+          <ExamCard
+            key={exam.id}
+            exam={exam}
+            assignedStudents={students.filter(s => s.examId === exam.id)}
+            getStatusInfo={getStatusInfo}
+            onDelete={() => setDeleteModalExam(exam)}
+            onEdit={() => { setEditingExam(exam); setIsAddModalOpen(true); }}
+            onStatusClick={() => setStatusModalExam(exam)}
+            onAssignClick={() => setAssignModalExam(exam)}
+            onUnassignStudent={async (studentId) => {
+              try {
+                await apiFetch(`/exams/${exam.id}/unassign`, {
+                  method: 'POST',
+                  body: JSON.stringify({ studentId })
+                });
+                window.dispatchEvent(new Event("student-mutation"));
+                window.dispatchEvent(new Event("exam-mutation"));
+                toast.success("Đã xóa học viên khỏi đợt thi.");
+              } catch (error) {
+                console.error("Error unassigning student:", error);
+                toast.error("Có lỗi xảy ra khi xóa học viên khỏi đợt thi.");
+              }
+            }}
+            onUpdateStudentResult={async (studentId, overallResult) => {
+              try {
+                await apiFetch(`/exams/${exam.id}/students/${studentId}/result`, {
+                  method: 'POST',
+                  body: JSON.stringify({ overallResult })
+                });
+                window.dispatchEvent(new Event("student-mutation"));
+                window.dispatchEvent(new Event("exam-mutation"));
+                toast.success("Cập nhật kết quả thi thành công.");
+              } catch (error) {
+                console.error("Error updating student result:", error);
+                toast.error("Có lỗi xảy ra khi cập nhật kết quả thi.");
+              }
+            }}
+            onImportExcelResults={async (results) => {
+              try {
+                const res = await apiFetch(`/exams/${exam.id}/import-results`, {
+                  method: 'POST',
+                  body: JSON.stringify({ results })
+                });
+                window.dispatchEvent(new Event("student-mutation"));
+                window.dispatchEvent(new Event("exam-mutation"));
+                if (res.success) {
+                  toast.success(`Đã cập nhật kết quả: ${res.successCount} thành công, ${res.failedCount} thất bại.`);
+                }
+              } catch (error) {
+                console.error("Error importing exam results:", error);
+                toast.error("Có lỗi xảy ra khi nhập kết quả thi từ Excel.");
+              }
+            }}
+          />
         ))}
       </div>
 
-      {/* Add Exam Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
-          <div className={cn(
-            "relative w-full max-w-md p-8 rounded-[2rem] border shadow-2xl space-y-6 transition-all duration-300",
-            darkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-100 text-slate-800"
-          )}>
-            <div className="flex items-center justify-between">
-              <h3 className={cn("text-base font-black uppercase tracking-wider", darkMode ? "text-white" : "text-slate-800")}>Tạo đợt thi mới</h3>
-              <button onClick={() => setShowAddModal(false)} className={cn("p-1.5 rounded-lg transition-colors", darkMode ? "bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200" : "bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800")}>
-                <Plus className="w-4 h-4 rotate-45" />
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        totalItems={filteredExams.length}
+        pageSize={pageSize}
+        itemName="đợt thi"
+        className={cn("mt-4 shadow-sm rounded-3xl border", darkMode ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-100")}
+      />
+
+      {/* Modals nghiệp vụ tái sử dụng từ giao diện cũ */}
+      <AddExamModal
+        isOpen={isAddModalOpen}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingExam(null);
+        }}
+        onSuccess={() => {}}
+        initialData={editingExam}
+      />
+
+      <ExamStatusModal
+        isOpen={!!statusModalExam}
+        exam={statusModalExam}
+        onClose={() => setStatusModalExam(null)}
+        onSuccess={() => {}}
+      />
+
+      <AssignStudentModal
+        isOpen={!!assignModalExam}
+        exam={assignModalExam}
+        onClose={() => setAssignModalExam(null)}
+        onSuccess={() => {}}
+      />
+
+      {/* Delete Confirmation */}
+      {deleteModalExam && (
+        <ErpModal title="Xác nhận xóa đợt thi" onClose={() => setDeleteModalExam(null)} maxWidth="max-w-sm">
+          <div className="text-center space-y-6">
+            <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto">
+              <Trash2 className="w-8 h-8 text-rose-500" />
+            </div>
+            <p className="text-slate-500 text-sm font-medium leading-relaxed">
+              Bạn có chắc chắn muốn xóa đợt thi <span className={cn("font-bold", darkMode ? "text-white" : "text-slate-800")}>"{deleteModalExam.name}"</span>?
+              Dữ liệu của học viên trong đợt thi này sẽ bị xóa khỏi lịch.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteModalExam(null)}
+                className={cn(
+                  "flex-1 px-6 py-3 font-bold rounded-2xl transition-all border",
+                  darkMode ? "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700" : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100"
+                )}
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleDeleteExam}
+                disabled={isDeleting}
+                className="flex-1 px-6 py-3 bg-rose-600 text-white font-bold rounded-2xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-500/10 disabled:opacity-50"
+              >
+                {isDeleting ? 'Đang xóa...' : 'Đúng, xóa nó'}
               </button>
             </div>
-
-            <form onSubmit={handleAddExam} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Tên kỳ thi / Đợt thi</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Thi sát hạch B2 Tháng 8"
-                  value={newExam.name}
-                  onChange={(e) => setNewExam({ ...newExam, name: e.target.value })}
-                  className={cn(
-                    "w-full h-11 border rounded-xl px-4 text-xs font-semibold outline-none focus:border-brand-primary transition-all",
-                    darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-800"
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Mã lớp học / Khóa học</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ví dụ: DRV-B2"
-                    value={newExam.courseCode}
-                    onChange={(e) => setNewExam({ ...newExam, courseCode: e.target.value })}
-                    className={cn(
-                      "w-full h-11 border rounded-xl px-4 text-xs font-semibold outline-none focus:border-brand-primary transition-all",
-                      darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-800"
-                    )}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Hình thức thi</label>
-                  <select
-                    value={newExam.type}
-                    onChange={(e) => setNewExam({ ...newExam, type: e.target.value as 'Lý thuyết' | 'Thực hành' | 'Tổng hợp' })}
-                    className={cn(
-                      "w-full h-11 border rounded-xl px-4 text-xs font-semibold outline-none focus:border-brand-primary transition-all appearance-none",
-                      darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-800"
-                    )}
-                  >
-                    <option value="Lý thuyết" className={darkMode ? "bg-slate-800" : "bg-white"}>Lý thuyết</option>
-                    <option value="Thực hành" className={darkMode ? "bg-slate-800" : "bg-white"}>Thực hành</option>
-                    <option value="Tổng hợp" className={darkMode ? "bg-slate-800" : "bg-white"}>Tổng hợp</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Ngày thi (DD/MM/YYYY)</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ví dụ: 15/07/2026"
-                    value={newExam.date}
-                    onChange={(e) => setNewExam({ ...newExam, date: e.target.value })}
-                    className={cn(
-                      "w-full h-11 border rounded-xl px-4 text-xs font-semibold outline-none focus:border-brand-primary transition-all",
-                      darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-800"
-                    )}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Thời gian thi</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ví dụ: 08:00 - 11:30"
-                    value={newExam.time}
-                    onChange={(e) => setNewExam({ ...newExam, time: e.target.value })}
-                    className={cn(
-                      "w-full h-11 border rounded-xl px-4 text-xs font-semibold outline-none focus:border-brand-primary transition-all",
-                      darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-800"
-                    )}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Địa điểm thi</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ví dụ: Phòng Lab 102"
-                    value={newExam.location}
-                    onChange={(e) => setNewExam({ ...newExam, location: e.target.value })}
-                    className={cn(
-                      "w-full h-11 border rounded-xl px-4 text-xs font-semibold outline-none focus:border-brand-primary transition-all",
-                      darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-800"
-                    )}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Số lượng thí sinh dự kiến</label>
-                  <input
-                    type="number"
-                    value={newExam.candidateCount}
-                    onChange={(e) => setNewExam({ ...newExam, candidateCount: parseInt(e.target.value) || 10 })}
-                    className={cn(
-                      "w-full h-11 border rounded-xl px-4 text-xs font-semibold outline-none focus:border-brand-primary transition-all",
-                      darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-800"
-                    )}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3.5 bg-gradient-to-r from-brand-primary to-sky-600 hover:from-brand-primary/90 hover:to-sky-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-brand-primary/20 active:scale-95 transition-all mt-4"
-              >
-                Khởi tạo kỳ thi
-              </button>
-            </form>
           </div>
-        </div>
+        </ErpModal>
       )}
     </div>
   );

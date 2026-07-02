@@ -595,6 +595,185 @@ const swaggerDefinition = {
         }
       }
     },
+    "/courses": {
+      get: {
+        summary: "Danh sách khóa học",
+        tags: ["Courses"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "category", in: "query", schema: { type: "string", enum: ["Lái xe", "Ngoại ngữ", "Kỹ năng", "Khác"] } },
+          { name: "status", in: "query", schema: { type: "string", enum: ["Hoạt động", "Tạm dừng"] } },
+          { name: "search", in: "query", schema: { type: "string" } }
+        ],
+        responses: { 200: { description: "Danh sách khóa học" }, 401: { description: "Chưa xác thực" } }
+      },
+      post: {
+        summary: "Tạo khóa học mới",
+        tags: ["Courses"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["code", "title", "category", "fee", "duration"],
+                properties: {
+                  code: { type: "string", example: "DRV-B2" },
+                  title: { type: "string", example: "Học lái xe Ô tô hạng B2" },
+                  category: { type: "string", enum: ["Lái xe", "Ngoại ngữ", "Kỹ năng", "Khác"] },
+                  fee: { type: "string", example: "15.500.000đ" },
+                  duration: { type: "string", example: "3.5 tháng" },
+                  maxLearners: { type: "number", example: 25 }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: "Tạo khóa học thành công" }, 400: { description: "Dữ liệu không hợp lệ hoặc trùng mã" } }
+      }
+    },
+    "/courses/{id}": {
+      patch: {
+        summary: "Cập nhật khóa học",
+        tags: ["Courses"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { 200: { description: "Cập nhật thành công" }, 404: { description: "Không tìm thấy khóa học" } }
+      },
+      delete: {
+        summary: "Xóa khóa học",
+        tags: ["Courses"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { 200: { description: "Xóa thành công" }, 404: { description: "Không tìm thấy khóa học" } }
+      }
+    },
+    "/instructors": {
+      get: {
+        summary: "Danh sách giảng viên",
+        tags: ["Instructors"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "status", in: "query", schema: { type: "string", enum: ["Available", "On Leave", "Busy"] } },
+          { name: "search", in: "query", schema: { type: "string" } }
+        ],
+        responses: { 200: { description: "Danh sách giảng viên" }, 401: { description: "Chưa xác thực" } }
+      },
+      post: {
+        summary: "Tạo hồ sơ giảng viên",
+        tags: ["Instructors"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["name", "phone", "email", "specializations"],
+                properties: {
+                  name: { type: "string", example: "Thầy Hoàng Xuân Cường" },
+                  phone: { type: "string", example: "0903111222" },
+                  email: { type: "string", example: "cuonghx@igen.vn" },
+                  specializations: { type: "array", items: { type: "string" }, example: ["Lý thuyết B2/C"] }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: "Tạo giảng viên thành công" }, 400: { description: "Dữ liệu không hợp lệ" } }
+      }
+    },
+    "/instructors/{id}": {
+      patch: {
+        summary: "Cập nhật giảng viên (trạng thái, chuyên môn...)",
+        tags: ["Instructors"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { 200: { description: "Cập nhật thành công" }, 404: { description: "Không tìm thấy giảng viên" } }
+      },
+      delete: {
+        summary: "Xóa giảng viên",
+        tags: ["Instructors"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { 200: { description: "Xóa thành công" }, 404: { description: "Không tìm thấy giảng viên" } }
+      }
+    },
+    "/resources": {
+      get: {
+        summary: "Danh sách tài nguyên (phòng học, xe tập lái, thiết bị)",
+        tags: ["Resources"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "type", in: "query", schema: { type: "string", enum: ["ROOM", "VEHICLE", "EQUIPMENT"] } },
+          { name: "status", in: "query", schema: { type: "string", enum: ["AVAILABLE", "OCCUPIED", "MAINTENANCE"] } }
+        ],
+        responses: { 200: { description: "Danh sách tài nguyên" }, 401: { description: "Chưa xác thực" } }
+      },
+      post: {
+        summary: "Khai báo tài nguyên mới",
+        tags: ["Resources"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["name", "type", "identifier", "capacity"],
+                properties: {
+                  name: { type: "string", example: "Xe Toyota Vios tập lái số 08" },
+                  type: { type: "string", enum: ["ROOM", "VEHICLE", "EQUIPMENT"] },
+                  identifier: { type: "string", example: "30E-666.88" },
+                  capacity: { type: "string", example: "1 học viên + 1 GV" }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: "Khai báo thành công" }, 400: { description: "Dữ liệu không hợp lệ" } }
+      }
+    },
+    "/resources/{id}/bookings": {
+      post: {
+        summary: "Đặt lịch sử dụng tài nguyên (có kiểm tra trùng khung giờ)",
+        tags: ["Resources"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["purpose", "by", "date", "startTime", "endTime"],
+                properties: {
+                  purpose: { type: "string", example: "Thực hành sa hình B2 (Khóa K32)" },
+                  by: { type: "string", example: "Thầy Cường" },
+                  date: { type: "string", example: "2026-07-10" },
+                  startTime: { type: "string", example: "08:00" },
+                  endTime: { type: "string", example: "11:30" }
+                }
+              }
+            }
+          }
+        },
+        responses: { 200: { description: "Đặt lịch thành công" }, 400: { description: "Trùng lịch hoặc dữ liệu không hợp lệ" } }
+      }
+    },
+    "/schedule": {
+      get: {
+        summary: "Lịch tổng hợp: kỳ thi + booking tài nguyên trong khoảng ngày",
+        tags: ["Schedule"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "from", in: "query", schema: { type: "string", example: "2026-07-01" } },
+          { name: "to", in: "query", schema: { type: "string", example: "2026-07-31" } }
+        ],
+        responses: { 200: { description: "Danh sách sự kiện đã gộp, sắp xếp theo ngày" }, 401: { description: "Chưa xác thực" } }
+      }
+    },
   },
 };
 

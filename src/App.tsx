@@ -76,7 +76,8 @@ export default function App() {
   const getViewFromPath = (): ViewType => {
     if (typeof window === 'undefined') return 'Dashboard';
     const path = window.location.pathname;
-    if (path.startsWith('/demo-erp')) return 'ErpDemo';
+    if (path.startsWith('/demo-erp') || path.startsWith('/erp')) return 'ErpDemo';
+    if (path === '/') return 'ErpDemo';
     if (path.startsWith('/students')) return 'Students';
     if (path.startsWith('/exams')) return 'Exams';
     if (path.startsWith('/fees')) return 'Fees';
@@ -106,7 +107,7 @@ export default function App() {
     else if (view === 'Bot') path = '/bot';
     else if (view === 'UserManagement') path = '/user-management';
     else if (view === 'SettingsAdmin') path = '/settings';
-    else if (view === 'ErpDemo') path = '/demo-erp';
+    else if (view === 'ErpDemo') path = '/erp';
     else if (view === 'Dashboard') path = '/dashboard';
 
     if (window.location.pathname !== path) {
@@ -134,10 +135,10 @@ export default function App() {
     updateUrlForView(currentView);
   };
 
-  // Redirect logged-in users from / to /dashboard
+  // Sau đăng nhập, mặc định vào giao diện ERP mới
   React.useEffect(() => {
     if (user && window.location.pathname === '/') {
-      window.history.replaceState(null, '', '/dashboard');
+      window.history.replaceState(null, '', '/erp');
     }
   }, [user]);
 

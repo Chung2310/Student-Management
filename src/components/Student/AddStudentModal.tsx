@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Save, ChevronDown, Loader2 } from 'lucide-react';
+import { X, Save, ChevronDown, Loader2, Upload, Trash2 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
@@ -18,6 +18,11 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [idCardFrontFile, setIdCardFrontFile] = useState<string>('');
+  const [idCardBackFile, setIdCardBackFile] = useState<string>('');
+  const [isUploadingFront, setIsUploadingFront] = useState(false);
+  const [isUploadingBack, setIsUploadingBack] = useState(false);
+
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -31,6 +36,47 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
     address: '',
     email: '',
   });
+
+  const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>, isFront: boolean) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    if (isFront) {
+      setIsUploadingFront(true);
+    } else {
+      setIsUploadingBack(true);
+    }
+
+    try {
+      const form = new FormData();
+      form.append("file", file);
+
+      const res = await apiFetch("/upload", {
+        method: "POST",
+        body: form,
+      });
+
+      if (res.success && res.data?.url) {
+        if (isFront) {
+          setIdCardFrontFile(res.data.url);
+          toast.success("Đã tải lên mặt trước CCCD thành công!");
+        } else {
+          setIdCardBackFile(res.data.url);
+          toast.success("Đã tải lên mặt sau CCCD thành công!");
+        }
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải ảnh lên:", err);
+      toast.error("Lỗi tải ảnh lên: " + (err instanceof Error ? err.message : "Không xác định"));
+    } finally {
+      if (isFront) {
+        setIsUploadingFront(false);
+      } else {
+        setIsUploadingBack(false);
+      }
+    }
+  };
 
   const getRequiredFieldsConfig = () => {
     const saved = localStorage.getItem('requiredFieldsConfig');
@@ -79,12 +125,19 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
       return;
     }
 
+    if (!idCardFrontFile || !idCardBackFile) {
+      setErrorMsg("Vui lòng tải lên cả mặt trước và mặt sau của CCCD.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const res = await apiFetch("/students", {
         method: "POST",
         body: JSON.stringify({
           ...formData,
+          idCardFront: idCardFrontFile,
+          idCardBack: idCardBackFile,
           status: 'Chờ KSK',
           registrationDate: new Date().toLocaleDateString('vi-VN'),
         }),
@@ -101,6 +154,8 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
         onSuccess(studentWithId);
         
         // Reset form
+        setIdCardFrontFile('');
+        setIdCardBackFile('');
         setFormData({
           fullName: '',
           phone: '',
@@ -282,6 +337,99 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
                   placeholder="Số định danh"
                   className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
                 />
+              </div>
+
+              {/* Upload ảnh CCCD */}
+              <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1 pb-2">
+                {/* Mặt trước */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider block">
+                    Mặt trước CCCD <span className="text-rose-500">*</span>
+                  </label>
+                  {idCardFrontFile ? (
+                    <div className="relative rounded-2xl overflow-hidden border border-slate-150 aspect-[8/5] bg-slate-50 flex items-center justify-center group shadow-sm">
+                      <img src={idCardFrontFile} alt="Mặt trước CCCD" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                          type="button"
+                          onClick={() => setIdCardFrontFile('')}
+                          className="p-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl active:scale-95 transition-all cursor-pointer shadow-md"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="border-2 border-dashed border-slate-200 hover:border-brand-primary hover:bg-slate-50/50 rounded-2xl aspect-[8/5] flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all p-3 text-center group">
+                      {isUploadingFront ? (
+                        <>
+                          <Loader2 className="w-5 h-5 text-brand-primary animate-spin" />
+                          <span className="text-[10px] font-bold text-slate-400">Đang tải ảnh lên...</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-brand-primary group-hover:bg-brand-primary/5 transition-all">
+                            <Upload className="w-4 h-4" />
+                          </div>
+                          <span className="text-[10px] font-black text-slate-700">Tải lên mặt trước</span>
+                          <span className="text-[8px] font-bold text-slate-400">Hỗ trợ JPG, PNG</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleUploadFile(e, true)}
+                        disabled={isUploadingFront}
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {/* Mặt sau */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider block">
+                    Mặt sau CCCD <span className="text-rose-500">*</span>
+                  </label>
+                  {idCardBackFile ? (
+                    <div className="relative rounded-2xl overflow-hidden border border-slate-150 aspect-[8/5] bg-slate-50 flex items-center justify-center group shadow-sm">
+                      <img src={idCardBackFile} alt="Mặt sau CCCD" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                          type="button"
+                          onClick={() => setIdCardBackFile('')}
+                          className="p-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl active:scale-95 transition-all cursor-pointer shadow-md"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="border-2 border-dashed border-slate-200 hover:border-brand-primary hover:bg-slate-50/50 rounded-2xl aspect-[8/5] flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all p-3 text-center group">
+                      {isUploadingBack ? (
+                        <>
+                          <Loader2 className="w-5 h-5 text-brand-primary animate-spin" />
+                          <span className="text-[10px] font-bold text-slate-400">Đang tải ảnh lên...</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-brand-primary group-hover:bg-brand-primary/5 transition-all">
+                            <Upload className="w-4 h-4" />
+                          </div>
+                          <span className="text-[10px] font-black text-slate-700">Tải lên mặt sau</span>
+                          <span className="text-[8px] font-bold text-slate-400">Hỗ trợ JPG, PNG</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleUploadFile(e, false)}
+                        disabled={isUploadingBack}
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
 
               {/* Row 4 */}
