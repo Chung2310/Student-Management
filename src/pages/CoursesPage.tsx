@@ -1,11 +1,11 @@
 import React from 'react';
-import { ErpCourses } from './ErpDemo/ErpCourses';
-import { ErpThemeProvider } from './ErpDemo/ErpThemeContext';
+import { CoursesManager } from '../components/CoursesManager';
+import { ManagementThemeProvider } from '../components/ManagementThemeContext';
 
 export function CoursesPage() {
   return (
-    <ErpThemeProvider>
-      <ErpCourses />
-    </ErpThemeProvider>
+    <ManagementThemeProvider>
+      <CoursesManager />
+    </ManagementThemeProvider>
   );
 }

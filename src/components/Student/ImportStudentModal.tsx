@@ -201,7 +201,11 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
   const handleImport = async () => {
     const validData = validationRows.filter(r => r.isValid).map(r => r.data);
     if (validData.length === 0) {
-      toast.warning('Không có dòng dữ liệu hợp lệ nào để nhập.');
+      const message = totalErrors > 0
+        ? `Có ${totalErrors} dòng không hợp lệ. Vui lòng sửa lỗi trước khi nhập.`
+        : 'Không có dòng dữ liệu hợp lệ nào để nhập.';
+      setErrorMsg(message);
+      toast.warning(message);
       return;
     }
 
@@ -425,9 +429,9 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
             <div className="flex items-center justify-end gap-4 px-8 py-5 border-t border-slate-100 flex-shrink-0">
               <button type="button" onClick={onClose} disabled={isUploading} className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50">Hủy</button>
               {validationRows.length > 0 && (
-                <button onClick={handleImport} disabled={isUploading || totalValid === 0} className="flex items-center gap-2 px-6 py-3 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-xs font-bold shadow-lg shadow-cyan-100 transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 disabled:hover:translate-y-0">
+                <button onClick={handleImport} disabled={isUploading} className="flex items-center gap-2 px-6 py-3 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-xs font-bold shadow-lg shadow-cyan-100 transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 disabled:hover:translate-y-0">
                   {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-                  {isUploading ? 'Đang nhập dữ liệu...' : `Nhập ${totalValid} học viên hợp lệ`}
+                  {isUploading ? 'Đang nhập dữ liệu...' : totalValid > 0 ? `Nhập ${totalValid} học viên hợp lệ` : 'Kiểm tra lỗi trước khi nhập'}
                 </button>
               )}
             </div>

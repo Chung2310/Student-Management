@@ -424,6 +424,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
             <input
               type="date"
               value={startDate}
+              placeholder="Từ ngày..."
               onChange={(e) => setStartDate(e.target.value)}
               className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-cyan-600 transition-all"
             />
@@ -436,6 +437,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
             <input
               type="date"
               value={endDate}
+              placeholder="Đến ngày..."
               onChange={(e) => setEndDate(e.target.value)}
               className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-cyan-600 transition-all"
             />
@@ -704,6 +706,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         isOpen={!!editingStudent}
         onClose={() => setEditingStudent(null)}
         onSuccess={() => setEditingStudent(null)}
+        students={students}
       />
 
       {/* Import Student Modal */}

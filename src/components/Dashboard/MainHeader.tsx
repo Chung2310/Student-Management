@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, ChevronRight, Menu, QrCode, X, Copy, Check, Download, Sparkles } from 'lucide-react';
+import { Home, ChevronRight, Menu, QrCode, X, Copy, Check, Download } from 'lucide-react';
 import { ViewType } from '../../App';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -25,7 +25,6 @@ export function MainHeader({ currentView, onMenuClick }: MainHeaderProps) {
       Resources: 'Thiết bị',
       UserManagement: 'Quản lý người dùng',
       SettingsAdmin: 'Cài đặt & Quản trị',
-      ErpDemo: 'iGen Unified ERP',
     };
     return names[view];
   };
@@ -77,14 +76,6 @@ export function MainHeader({ currentView, onMenuClick }: MainHeaderProps) {
 
         {user && (
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => { window.location.href = '/erp'; }}
-              title="Chuyển sang giao diện ERP mới"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand-primary text-white hover:bg-brand-primary/90 transition-all cursor-pointer text-xs font-bold shadow-sm"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">Giao diện mới</span>
-            </button>
             <button
               onClick={() => setIsQrModalOpen(true)}
               title="Mã QR đăng ký học viên"

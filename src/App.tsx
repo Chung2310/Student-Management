@@ -57,7 +57,6 @@ const InstructorsPage = lazyWithRetry(() => import('./pages/InstructorsPage').th
 const ResourcesPage = lazyWithRetry(() => import('./pages/ResourcesPage').then(m => ({ default: m.ResourcesPage })));
 const UserManagementPage = lazyWithRetry(() => import('./pages/UserManagement/UserManagementPage').then(m => ({ default: m.UserManagementPage })));
 const SettingsPage = lazyWithRetry(() => import('./pages/Settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
-const ErpDemoLayout = lazyWithRetry(() => import('./pages/ErpDemo/ErpDemoLayout').then(m => ({ default: m.ErpDemoLayout })));
 
 // Lazy load modals and heavy widgets
 const AddStudentModal = lazyWithRetry(() => import('./components/Student/AddStudentModal').then(m => ({ default: m.AddStudentModal })));
@@ -71,7 +70,7 @@ const PageLoader = () => (
   </div>
 );
 
-export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'Courses' | 'Instructors' | 'Resources' | 'UserManagement' | 'SettingsAdmin' | 'ErpDemo';
+export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'Courses' | 'Instructors' | 'Resources' | 'UserManagement' | 'SettingsAdmin';
 export type TabType = 'Hồ sơ' | 'KSK' | 'Tiến độ học' | 'Lịch thi & KQ' | 'Học phí' | 'Lịch sử' | 'Trợ lý AI';
 
 export default function App() {
@@ -85,8 +84,7 @@ export default function App() {
   const getViewFromPath = (): ViewType => {
     if (typeof window === 'undefined') return 'Dashboard';
     const path = window.location.pathname;
-    if (path.startsWith('/demo-erp') || path.startsWith('/erp')) return 'ErpDemo';
-    if (path === '/') return 'ErpDemo';
+    if (path === '/' || path.startsWith('/demo-erp') || path.startsWith('/erp')) return 'Dashboard';
     if (path.startsWith('/students')) return 'Students';
     if (path.startsWith('/exams')) return 'Exams';
     if (path.startsWith('/fees')) return 'Fees';
@@ -130,7 +128,6 @@ export default function App() {
     else if (view === 'Resources') path = '/resources';
     else if (view === 'UserManagement') path = '/user-management';
     else if (view === 'SettingsAdmin') path = '/settings';
-    else if (view === 'ErpDemo') path = '/erp';
     else if (view === 'Dashboard') path = '/dashboard';
 
     if (window.location.pathname !== path) {
@@ -161,7 +158,8 @@ export default function App() {
 
   // Redirect logged-in users from / or /login to /dashboard
   React.useEffect(() => {
-    if (user && (window.location.pathname === '/' || window.location.pathname === '/login')) {
+    const isLegacyErpPath = window.location.pathname.startsWith('/erp') || window.location.pathname.startsWith('/demo-erp');
+    if (user && (window.location.pathname === '/' || window.location.pathname === '/login' || isLegacyErpPath)) {
       window.history.replaceState(null, '', '/dashboard');
       setTimeout(() => {
         setCurrentPath('/dashboard');
@@ -258,20 +256,6 @@ export default function App() {
     );
   }
 
-  // Tách biệt render hoàn toàn khi đang xem ERP Demo để giữ nguyên cấu trúc gốc
-  if (currentView === 'ErpDemo') {
-    return (
-      <Suspense fallback={
-        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
-          <Loader2 className="w-12 h-12 text-violet-500 animate-spin mb-4" />
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.3em] animate-pulse">Đang tải bản ERP Demo...</p>
-        </div>
-      }>
-        <ErpDemoLayout />
-      </Suspense>
-    );
-  }
-
   const renderView = () => {
     switch (currentView) {
       case 'Dashboard':
@@ -353,6 +337,7 @@ export default function App() {
           <AddStudentModal
             isOpen={isAddModalOpen}
             onClose={() => setIsAddModalOpen(false)}
+            students={students}
             onSuccess={handleOpenProfile}
           />
         </Suspense>

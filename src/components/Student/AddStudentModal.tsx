@@ -5,17 +5,19 @@ import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { formatVND } from '../../lib/utils';
-import { DrivingStudent, UploadedFile } from '../../types';
+import { DrivingStudent, Student, UploadedFile } from '../../types';
+import { findDuplicateStudentField } from '../../lib/studentUniqueness';
 
 interface AddStudentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (student: DrivingStudent) => void;
+  students: Student[];
 }
 
 type FileField = 'idCardFrontFile' | 'idCardBackFile' | 'portraitFile';
 
-export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalProps) {
+export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStudentModalProps) {
   const { user, login } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,12 +108,28 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
     if (requiredFields.email && !formData.email) missingFields.push('Email');
 
     if (missingFields.length > 0) {
-      setErrorMsg(`Vui lòng điền đầy đủ các trường bắt buộc: ${missingFields.join(', ')}`);
+      const message = `Vui lòng điền đầy đủ các trường bắt buộc: ${missingFields.join(', ')}`;
+      setErrorMsg(message);
+      toast.error(message);
       return;
     }
 
     if (!formData.idCardFrontFile || !formData.idCardBackFile) {
-      setErrorMsg("Vui lòng tải lên cả ảnh mặt trước và mặt sau của CCCD.");
+      const message = "Vui lòng tải lên cả ảnh mặt trước và mặt sau của CCCD.";
+      setErrorMsg(message);
+      toast.error(message);
+      return;
+    }
+
+    const duplicateField = findDuplicateStudentField(students, {
+      email: formData.email,
+      phone: formData.phone,
+      idCard: formData.idCard,
+    });
+    if (duplicateField) {
+      const message = `${duplicateField.label} đã tồn tại trong hệ thống, không được trùng.`;
+      setErrorMsg(message);
+      toast.error(message);
       return;
     }
 
@@ -155,7 +173,9 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
       }
     } catch (error: unknown) {
       console.error('Error saving student:', error);
-      setErrorMsg(error instanceof Error ? error.message : 'Lỗi lưu hồ sơ học viên.');
+      const message = error instanceof Error ? error.message : 'Lỗi lưu hồ sơ học viên.';
+      setErrorMsg(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -182,17 +202,17 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
             {errorMsg && <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-sm font-bold text-rose-600">{errorMsg}</div>}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-              <Input label="Họ và tên" name="fullName" value={formData.fullName} onChange={handleInputChange} required={requiredFields.fullName} />
-              <Input label="Số điện thoại" name="phone" value={formData.phone} onChange={handleInputChange} required={requiredFields.phone} />
-              <Input label="Email học viên" name="email" value={formData.email} onChange={handleInputChange} required={requiredFields.email} className="sm:col-span-2" />
-              <Input label="Người giới thiệu" name="referral" value={formData.referral} onChange={handleInputChange} className="sm:col-span-2" />
+              <Input label="Họ và tên" name="fullName" value={formData.fullName} onChange={handleInputChange} required={requiredFields.fullName} placeholder="Nhập họ và tên..." />
+              <Input label="Số điện thoại" name="phone" value={formData.phone} onChange={handleInputChange} required={requiredFields.phone} placeholder="Nhập số điện thoại..." />
+              <Input label="Email học viên" name="email" value={formData.email} onChange={handleInputChange} required={requiredFields.email} placeholder="Nhập địa chỉ email..." className="sm:col-span-2" />
+              <Input label="Người giới thiệu" name="referral" value={formData.referral} onChange={handleInputChange} placeholder="Nhập tên người giới thiệu..." className="sm:col-span-2" />
               <Input label="Ngày sinh" name="birthday" value={formData.birthday} onChange={handleInputChange} required={requiredFields.birthday} placeholder="DD/MM/YYYY" />
-              <Input label="CCCD / CMND" name="idCard" value={formData.idCard} onChange={handleInputChange} required={requiredFields.idCard} />
+              <Input label="CCCD / CMND" name="idCard" value={formData.idCard} onChange={handleInputChange} required={requiredFields.idCard} placeholder="Nhập số CCCD (12 số)..." />
               <Select label="Hạng bằng" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} options={['A1', 'A2', 'B1', 'B2', 'C']} />
-              <Input label="Ngày đăng ký" name="registrationDate" value={formData.registrationDate} onChange={handleInputChange} readOnly />
+              <Input label="Ngày đăng ký" name="registrationDate" value={formData.registrationDate} onChange={handleInputChange} placeholder="DD/MM/YYYY" readOnly />
               <Input label="Ngày nhập học" name="enrollmentDate" value={formData.enrollmentDate} onChange={handleInputChange} placeholder="DD/MM/YYYY" />
-              <Input label="Học phí (VND)" name="fee" value={formData.fee} onChange={handleInputChange} />
-              <Input label="Địa chỉ" name="address" value={formData.address} onChange={handleInputChange} className="sm:col-span-2" />
+              <Input label="Học phí (VND)" name="fee" value={formData.fee} onChange={handleInputChange} placeholder="Nhập học phí..." />
+              <Input label="Địa chỉ" name="address" value={formData.address} onChange={handleInputChange} placeholder="Nhập địa chỉ..." className="sm:col-span-2" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
