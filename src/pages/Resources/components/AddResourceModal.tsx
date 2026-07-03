@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { apiFetch } from '../../../lib/api';
 import { useToast } from '../../../hooks/useToast';
 import { ErpModal, ErpField, ErpInput, ErpSelect, ErpSubmitButton } from '../../../components/Erp/ErpUI';
@@ -26,16 +26,11 @@ export function AddResourceModal({ isOpen, onClose, categories, onSuccess }: Add
     capacity: '',
   });
 
-  // Sync default category as default selection when loaded
-  useEffect(() => {
-    if (categories.length > 0 && !newResource.type) {
-      setNewResource(prev => ({ ...prev, type: categories[0].name }));
-    }
-  }, [categories, newResource.type]);
+  const selectedType = newResource.type || categories[0]?.name || '';
 
   const handleAddResource = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newResource.name || !newResource.identifier || !newResource.capacity || !newResource.type) {
+    if (!newResource.name || !newResource.identifier || !newResource.capacity || !selectedType) {
       toast.error('Vui lòng nhập đầy đủ thông tin tài nguyên.');
       return;
     }
@@ -46,13 +41,14 @@ export function AddResourceModal({ isOpen, onClose, categories, onSuccess }: Add
         method: 'POST',
         body: JSON.stringify({
           ...newResource,
+          type: selectedType,
           identifier: newResource.identifier.toUpperCase(),
         }),
       });
       toast.success(`Đã thêm mới tài nguyên ${newResource.name} vào danh sách!`);
       setNewResource({ 
         name: '', 
-        type: categories[0]?.name || '', 
+        type: '', 
         identifier: '', 
         capacity: '' 
       });
@@ -85,7 +81,7 @@ export function AddResourceModal({ isOpen, onClose, categories, onSuccess }: Add
           <ErpField label="Phân loại">
             <ErpSelect
               required
-              value={newResource.type}
+              value={selectedType}
               onChange={(e) => setNewResource({ ...newResource, type: e.target.value })}
             >
               <option value="" disabled>-- Chọn phân loại --</option>

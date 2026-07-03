@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserPlus, Shield, Loader2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { UserPlus, Loader2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { ModalShell } from './ModalShell';
 import { cn } from '../../../lib/utils';
 

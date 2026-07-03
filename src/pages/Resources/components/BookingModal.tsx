@@ -29,6 +29,7 @@ export function BookingModal({ bookingResource, onClose, onSuccess }: BookingMod
   // Reset form when resource changes
   useEffect(() => {
     if (bookingResource) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNewBooking({
         purpose: '',
         by: '',

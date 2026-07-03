@@ -159,7 +159,7 @@ export function CenterModal({
               <input
                 type="text"
                 value={fBankAccountNo}
-                onChange={(e) => setBankAccountNo(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => setFBankAccountNo(e.target.value.replace(/\D/g, ''))}
                 placeholder="Nhập số tài khoản..."
                 className={INPUT}
               />
