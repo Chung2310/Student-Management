@@ -35,7 +35,24 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
     { icon: Settings, label: 'Cài đặt & Quản trị', view: 'SettingsAdmin' },
   ];
 
-  const visibleMenuItems = menuItems.filter((item) => !((item.view === 'SettingsAdmin' || item.view === 'UserManagement') && user?.role === 'user'));
+  const visibleMenuItems = menuItems.filter((item) => {
+    // Hide SettingsAdmin and UserManagement for regular users
+    if ((item.view === 'SettingsAdmin' || item.view === 'UserManagement') && user?.role === 'user') {
+      return false;
+    }
+    // Restrict other views for user role based on permissions
+    if (user?.role === 'user') {
+      // Dashboard is always visible
+      if (item.view === 'Dashboard') return true;
+      // If user.permissions exists, filter by it
+      if (user.permissions && Array.isArray(user.permissions)) {
+        return user.permissions.includes(item.view);
+      }
+      // If permissions array is missing/legacy, default to true
+      return true;
+    }
+    return true;
+  });
 
   return (
     <>

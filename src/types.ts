@@ -179,6 +179,7 @@ export type ManagedUser = {
   bankId?: string;
   businessType?: 'driving' | 'language' | 'general';
   maxUsersLimit?: number;
+  permissions?: string[];
 };
 
 export type BatchStatus = 'Sắp khai giảng' | 'Đang học' | 'Đã kết thúc';

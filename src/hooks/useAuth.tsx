@@ -39,6 +39,7 @@ export interface AuthUser {
     stringeeSender?: string;
     stringeeStatusCallbackUrl?: string;
   } | null;
+  permissions?: string[];
 }
 
 interface AuthContextType {
@@ -85,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           smtpSandboxEmail: res.data.user.smtpSandboxEmail,
           businessType: res.data.user.businessType || "driving",
           smsSettings: res.data.user.smsSettings || null,
+          permissions: res.data.user.permissions || [],
         });
       } else {
         setUser(null);

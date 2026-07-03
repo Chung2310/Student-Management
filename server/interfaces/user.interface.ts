@@ -21,6 +21,7 @@ export interface IUser extends Document {
   businessType?: "driving" | "language" | "general";
   isActive?: boolean;
   maxUsersLimit?: number;
+  permissions?: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }

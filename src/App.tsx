@@ -11,7 +11,7 @@ import { Student } from './types';
 import { useAuth } from './hooks/useAuth';
 import { useRealtimePayment } from './hooks/useRealtimePayment';
 import { useStudents } from './hooks/useStudents';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Shield } from 'lucide-react';
 import { cn, toSlug } from './lib/utils';
 
 // Helper wrapper to handle dynamic import (chunk load) failures after server updates
@@ -289,7 +289,27 @@ export default function App() {
     );
   }
 
+  const hasPermission = (view: ViewType): boolean => {
+    if (!user) return false;
+    if (user.role === 'superadmin' || user.role === 'admin') return true;
+    if (view === 'Dashboard') return true;
+    if (view === 'SettingsAdmin' || view === 'UserManagement') return false;
+    if (user.permissions && Array.isArray(user.permissions)) {
+      return user.permissions.includes(view);
+    }
+    return true;
+  };
+
   const renderView = () => {
+    if (!hasPermission(currentView)) {
+      return (
+        <div className="flex min-h-[300px] flex-col items-center justify-center text-center p-8 bg-white border border-slate-200/60 rounded-[2.5rem] shadow-sm">
+          <Shield className="mb-3 h-10 w-10 text-rose-500" />
+          <p className="font-semibold text-slate-800 text-base">Không có quyền truy cập</p>
+          <p className="mt-1 text-sm text-slate-500 font-medium">Tài khoản của bạn không được cấp quyền truy cập tính năng này.</p>
+        </div>
+      );
+    }
     switch (currentView) {
       case 'Dashboard':
         return (

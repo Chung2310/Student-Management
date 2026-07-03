@@ -27,6 +27,7 @@ interface ManagedUserCreateData extends RegisterData {
   bankId?: string;
   businessType?: "driving" | "language" | "general";
   maxUsersLimit?: number;
+  permissions?: string[];
 }
 
 export class AuthService {
@@ -51,6 +52,7 @@ export class AuthService {
       isActive: user.isActive !== false,
       businessType: user.businessType || "driving",
       maxUsersLimit: user.maxUsersLimit,
+      permissions: user.permissions || [],
     };
   }
 
@@ -248,6 +250,7 @@ export class AuthService {
       centerId: requester.role === "admin" ? (requester.centerId || requester.uid) : (data.centerId || ""),
       createdBy: requester.uid,
       businessType: data.businessType || "driving",
+      permissions: data.permissions || [],
     });
 
     if (requester.role === "superadmin" && data.maxUsersLimit !== undefined) {
@@ -278,6 +281,7 @@ export class AuthService {
       bankId?: string;
       businessType?: "driving" | "language" | "general";
       maxUsersLimit?: number;
+      permissions?: string[];
     }
   ) {
     if (requester.role === "user") {
@@ -323,6 +327,11 @@ export class AuthService {
     if (data.bankAccountNo !== undefined) updates.bankAccountNo = data.bankAccountNo;
     if (data.bankId !== undefined) updates.bankId = data.bankId;
     if (data.businessType !== undefined) updates.businessType = data.businessType;
+    if (data.permissions !== undefined) {
+      if (requester.role === "superadmin" || (requester.role === "admin" && userToEdit.role === "user")) {
+        updates.permissions = data.permissions;
+      }
+    }
 
     // Superadmin is allowed to change role, center & user limit
     if (requester.role === "superadmin") {

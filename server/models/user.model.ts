@@ -106,6 +106,10 @@ const userSchema = new Schema<IUser>(
       type: Number,
       default: 10,
     },
+    permissions: {
+      type: [String],
+      default: [],
+    },
   },
   {
     timestamps: true,
