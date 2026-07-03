@@ -1,6 +1,6 @@
 import { Batch } from "../models/batch.model";
 import { Course } from "../models/course.model";
-import { Instructor } from "../models/instructor.model";
+import { User } from "../models/user.model";
 import { Student } from "../models/student.model";
 import { IBatch } from "../interfaces/batch.interface";
 import { logger } from "../config/logger";
@@ -57,7 +57,7 @@ async function enrichBatches(batches: IBatch[]): Promise<EnrichedBatch[]> {
 
   const [courses, instructors] = await Promise.all([
     Course.find({ _id: { $in: courseIds } }).select("code title maxLearners"),
-    Instructor.find({ _id: { $in: instructorIds } }).select("name"),
+    User.find({ _id: { $in: instructorIds } }).select("displayName"),
   ]);
 
   const courseMap = new Map(courses.map(c => [String(c._id), c]));
@@ -71,7 +71,7 @@ async function enrichBatches(batches: IBatch[]): Promise<EnrichedBatch[]> {
       courseCode: course?.code || "",
       courseTitle: course?.title || "(Khóa học đã xóa)",
       maxLearners: course?.maxLearners ?? 0,
-      instructorName: instructor?.name || "",
+      instructorName: instructor?.displayName || "",
     };
   });
 }
@@ -90,7 +90,7 @@ export class BatchService {
       throw new Error("Không tìm thấy khóa học của lớp.");
     }
     if (data.instructorId) {
-      const instructor = await Instructor.findOne({ _id: data.instructorId, ownerId });
+      const instructor = await User.findOne({ _id: data.instructorId, centerId: ownerId });
       if (!instructor) {
         throw new Error("Không tìm thấy giảng viên được gán.");
       }
@@ -157,7 +157,7 @@ export class BatchService {
       }
     }
     if (data.instructorId && data.instructorId !== batch.instructorId) {
-      const instructor = await Instructor.findOne({ _id: data.instructorId, ownerId: batch.ownerId });
+      const instructor = await User.findOne({ _id: data.instructorId, centerId: batch.ownerId });
       if (!instructor) {
         throw new Error("Không tìm thấy giảng viên được gán.");
       }

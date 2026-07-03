@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard, Users, Calendar, Wallet, MessageSquare, Settings,
-  Shield, LogOut, LogIn, RefreshCcw, X, BookOpen, GraduationCap, Warehouse, School
+  Shield, LogOut, LogIn, RefreshCcw, X, BookOpen, Warehouse, School
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
@@ -30,11 +30,10 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
     { icon: MessageSquare, label: 'BOT Thông báo', view: 'Bot' },
     { icon: BookOpen, label: 'Khóa học', view: 'Courses' },
     { icon: School, label: 'Lớp & Khai giảng', view: 'Batches' },
-    { icon: GraduationCap, label: 'Giảng viên', view: 'Instructors' },
     { icon: Warehouse, label: 'Thiết bị', view: 'Resources' },
-    { icon: Shield, label: 'Quản lý người dùng', view: 'UserManagement' },
+    { icon: Shield, label: user?.role === 'superadmin' ? 'Quản lý người dùng' : 'Quản lý giảng viên', view: 'UserManagement' },
     { icon: Settings, label: 'Cài đặt & Quản trị', view: 'SettingsAdmin' },
-  ] satisfies { icon: React.ComponentType<{ className?: string }>; label: string; view: ViewType; count?: number }[];
+  ];
 
   const visibleMenuItems = menuItems.filter((item) => !((item.view === 'SettingsAdmin' || item.view === 'UserManagement') && user?.role === 'user'));
 

@@ -3,7 +3,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import {
   Building2, ChevronDown, Eye, EyeOff, Filter, Loader2,
   Plus, Search, Shield, ShieldCheck, User as UserIcon,
-  UserPlus, Users, X, Edit2, Trash2, Lock, Unlock, CheckCircle2
+  UserPlus, Users, X, Edit2, Trash2, Lock, Unlock, CheckCircle2,
+  List, LayoutGrid
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../lib/api';
@@ -15,6 +16,7 @@ type ManagedUser = {
   role: 'superadmin' | 'admin' | 'user'; centerId: string; createdBy?: string; isActive?: boolean;
   bankAccountNo?: string; bankId?: string;
   businessType?: 'driving' | 'language' | 'general';
+  maxUsersLimit?: number;
 };
 type RoleFilter = 'all' | 'superadmin' | 'admin' | 'user';
 type ModalMode = null | 'center' | 'user' | 'edit-user' | 'edit-center';
@@ -77,6 +79,17 @@ export function UserManagementPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [showPass, setShowPass] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('erp_view_mode_users') as 'list' | 'grid') || 'list';
+    }
+    return 'list';
+  });
+
+  const toggleViewMode = (mode: 'list' | 'grid') => {
+    setViewMode(mode);
+    localStorage.setItem('erp_view_mode_users', mode);
+  };
 
   // Form fields
   const [fName, setFName] = useState('');
@@ -87,6 +100,7 @@ export function UserManagementPage() {
   const [fBankAccountNo, setFBankAccountNo] = useState('');
   const [fBankId, setFBankId] = useState('mbbank');
   const [fBusinessType, setFBusinessType] = useState<'driving' | 'language' | 'general'>('driving');
+  const [fMaxUsersLimit, setFMaxUsersLimit] = useState<number>(10);
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
 
   const resetForm = () => {
@@ -98,6 +112,7 @@ export function UserManagementPage() {
     setFBankAccountNo('');
     setFBankId('mbbank');
     setFBusinessType('driving');
+    setFMaxUsersLimit(10);
     setEditingUser(null);
     setShowPass(false);
   };
@@ -112,6 +127,7 @@ export function UserManagementPage() {
     setFBankAccountNo(item.bankAccountNo || '');
     setFBankId(item.bankId || 'mbbank');
     setFBusinessType(item.businessType || 'driving');
+    setFMaxUsersLimit(item.maxUsersLimit ?? 10);
     setModal(item.role === 'admin' ? 'edit-center' : 'edit-user');
   };
 
@@ -192,10 +208,12 @@ export function UserManagementPage() {
           bankAccountNo: fBankAccountNo,
           bankId: fBankId,
           businessType: fBusinessType,
+          maxUsersLimit: isSA && isCenter ? fMaxUsersLimit : undefined,
         }),
       });
       const r = await apiFetch('/auth/users');
       setUsers(r.data?.users || []);
+      window.dispatchEvent(new Event('user-mutation'));
       setModal(null); resetForm();
       toast.success(isCenter ? 'Đã tạo trung tâm mới!' : 'Đã thêm người dùng!');
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Lỗi không xác định'); }
@@ -242,6 +260,9 @@ export function UserManagementPage() {
       }
       if (isSA) {
         payload.centerId = editingUser.role === 'admin' ? editingUser.uid : fCenter;
+        if (editingUser.role === 'admin') {
+          payload.maxUsersLimit = fMaxUsersLimit;
+        }
       }
       await apiFetch(`/auth/users/${editingUser.uid}`, {
         method: 'PATCH',
@@ -249,6 +270,7 @@ export function UserManagementPage() {
       });
       const r = await apiFetch('/auth/users');
       setUsers(r.data?.users || []);
+      window.dispatchEvent(new Event('user-mutation'));
       setModal(null);
       resetForm();
       toast.success('Đã cập nhật thông tin người dùng!');
@@ -274,6 +296,7 @@ export function UserManagementPage() {
       });
       const r = await apiFetch('/auth/users');
       setUsers(r.data?.users || []);
+      window.dispatchEvent(new Event('user-mutation'));
       toast.success('Đã xóa người dùng thành công!');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Lỗi không xác định');
@@ -294,6 +317,7 @@ export function UserManagementPage() {
       });
       const r = await apiFetch('/auth/users');
       setUsers(r.data?.users || []);
+      window.dispatchEvent(new Event('user-mutation'));
       toast.success(newStatus ? 'Đã kích hoạt tài khoản!' : 'Đã khóa tài khoản thành công!');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Lỗi không xác định');
@@ -316,9 +340,9 @@ export function UserManagementPage() {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Quản lý người dùng</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">{isSA ? 'Quản lý người dùng' : 'Quản lý giảng viên'}</h1>
             <p className="mt-1 text-sm text-slate-500">
-              {isSA ? 'Quản lý tất cả trung tâm và người dùng trong hệ thống.' : 'Quản lý nhân viên trong trung tâm của bạn.'}
+              {isSA ? 'Quản lý tất cả trung tâm và người dùng trong hệ thống.' : 'Quản lý giảng viên trong trung tâm của bạn.'}
             </p>
           </div>
           <div className="flex gap-2">
@@ -330,7 +354,7 @@ export function UserManagementPage() {
             )}
             <button type="button" onClick={() => openModal('user')}
               className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-cyan-700">
-              <UserPlus className="h-4 w-4" /> Thêm người dùng
+              <UserPlus className="h-4 w-4" /> {isSA ? 'Thêm người dùng' : 'Thêm giảng viên'}
             </button>
           </div>
         </div>
@@ -341,7 +365,7 @@ export function UserManagementPage() {
             { label: 'Tổng cộng', value: stats.total, icon: Users, accent: 'text-slate-700' },
             ...(isSA ? [{ label: 'Superadmin', value: stats.superadmin, icon: ShieldCheck, accent: 'text-amber-600' }] : []),
             { label: 'Trung tâm', value: stats.admin, icon: Building2, accent: 'text-cyan-600' },
-            { label: 'Nhân viên', value: stats.user, icon: UserIcon, accent: 'text-violet-600' },
+            { label: isSA ? 'Nhân viên' : 'Giảng viên', value: stats.user, icon: UserIcon, accent: 'text-violet-600' },
           ] as { label: string; value: number; icon: React.ComponentType<{ className?: string }>; accent: string }[]).map(s => (
             <div key={s.label} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
               <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50', s.accent)}><s.icon className="h-4 w-4" /></div>
@@ -357,37 +381,69 @@ export function UserManagementPage() {
             <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm theo tên hoặc email..."
               className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/10" />
           </div>
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-            <select value={roleFilter} onChange={e => setRoleFilter(e.target.value as RoleFilter)}
-              className="h-10 appearance-none rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-sm font-medium text-slate-700 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/10">
-              <option value="all">Tất cả</option>
-              {isSA && <option value="superadmin">Superadmin</option>}
-              <option value="admin">Admin</option>
-              <option value="user">Nhân viên</option>
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <select value={roleFilter} onChange={e => setRoleFilter(e.target.value as RoleFilter)}
+                className="h-10 appearance-none rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-sm font-medium text-slate-700 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/10">
+                <option value="all">Tất cả</option>
+                {isSA && <option value="superadmin">Superadmin</option>}
+                <option value="admin">Admin</option>
+                <option value="user">{isSA ? 'Nhân viên' : 'Giảng viên'}</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            </div>
+
+            {/* View Mode Toggle Buttons */}
+            <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50/50 p-1 h-10">
+              <button
+                type="button"
+                onClick={() => toggleViewMode('list')}
+                title="Dạng danh sách"
+                className={cn(
+                  "p-1.5 rounded-lg transition-all cursor-pointer",
+                  viewMode === 'list'
+                    ? "bg-white text-cyan-600 shadow-sm"
+                    : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                <List className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleViewMode('grid')}
+                title="Dạng thẻ"
+                className={cn(
+                  "p-1.5 rounded-lg transition-all cursor-pointer",
+                  viewMode === 'grid'
+                    ? "bg-white text-cyan-600 shadow-sm"
+                    : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          {loading ? (
-            <div className="flex min-h-[300px] items-center justify-center text-sm text-slate-400">
-              <Loader2 className="mr-2 h-5 w-5 animate-spin text-cyan-600" /> Đang tải...
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
-              <Users className="mb-3 h-10 w-10 text-slate-300" />
-              <p className="font-semibold text-slate-500">{search || roleFilter !== 'all' ? 'Không tìm thấy' : 'Chưa có người dùng'}</p>
-              <p className="mt-1 text-sm text-slate-400">{search || roleFilter !== 'all' ? 'Thử đổi bộ lọc.' : 'Nhấn nút phía trên để thêm.'}</p>
-            </div>
-          ) : (
+        {/* Content Area (Table or Grid) */}
+        {loading ? (
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm flex min-h-[300px] items-center justify-center text-sm text-slate-400">
+            <Loader2 className="mr-2 h-5 w-5 animate-spin text-cyan-600" /> Đang tải...
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm flex min-h-[300px] flex-col items-center justify-center text-center">
+            <Users className="mb-3 h-10 w-10 text-slate-300" />
+            <p className="font-semibold text-slate-500">{search || roleFilter !== 'all' ? 'Không tìm thấy' : (isSA ? 'Chưa có người dùng' : 'Chưa có giảng viên')}</p>
+            <p className="mt-1 text-sm text-slate-400">{search || roleFilter !== 'all' ? 'Thử đổi bộ lọc.' : 'Nhấn nút phía trên để thêm.'}</p>
+          </div>
+        ) : viewMode === 'list' ? (
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/80">
-                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">Người dùng</th>
+                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">{isSA ? 'Người dùng' : 'Giảng viên'}</th>
                     <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">Vai trò</th>
                     <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">Trung tâm</th>
                     <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">Trạng thái</th>
@@ -416,9 +472,16 @@ export function UserManagementPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold', rc.bg, rc.border, rc.color)}>
-                            <RI className="h-3 w-3" />{rc.label}
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold w-fit', rc.bg, rc.border, rc.color)}>
+                              <RI className="h-3 w-3" />{item.role === 'user' ? (isSA ? 'Nhân viên' : 'Giảng viên') : rc.label}
+                            </span>
+                            {isSA && item.role === 'admin' && (
+                              <span className="text-[10px] text-slate-400 font-semibold leading-none">
+                                Giới hạn: {item.maxUsersLimit ?? 10} NV
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <span className="inline-flex items-center gap-1.5 text-sm text-slate-600">
@@ -488,13 +551,124 @@ export function UserManagementPage() {
                 </tbody>
               </table>
             </div>
-          )}
-          {!loading && filtered.length > 0 && (
             <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-2.5 text-xs font-medium text-slate-500">
-              Hiển thị {filtered.length} / {users.length} người dùng
+              Hiển thị {filtered.length} / {users.length} {isSA ? 'người dùng' : 'giảng viên'}
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          /* Grid/Card View */
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map(item => {
+                const rc = ROLE_CFG[item.role]; const RI = rc.icon;
+                const ca = centerMap.get(item.centerId)?.admin;
+                const cl = item.role === 'superadmin' ? 'Hệ thống' : item.role === 'admin' ? item.displayName : ca ? ca.displayName : (item.centerId ? item.centerId.slice(0, 8) + '…' : '—');
+                const isSelf = item.uid === user?.uid;
+                const canEditItem = canManage && (isSA || (user?.role === 'admin' && item.role === 'user' && item.centerId === user?.centerId));
+                
+                return (
+                  <div
+                    key={item.uid}
+                    className={cn(
+                      "group relative flex flex-col justify-between overflow-hidden rounded-[2.5rem] border border-slate-200/60 bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300",
+                      item.isActive === false && "opacity-75 bg-slate-50/50"
+                    )}
+                  >
+                    <div>
+                      {/* Top Info */}
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.25rem] bg-slate-100 text-sm font-bold text-slate-600 shadow-inner group-hover:scale-105 transition-transform duration-300">
+                          {item.displayName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="truncate text-sm font-bold text-slate-900 leading-snug">{item.displayName}</h3>
+                          <p className="truncate text-xs text-slate-500 font-medium">{item.email}</p>
+                          <div className="flex flex-wrap items-center gap-2 mt-2">
+                            <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold', rc.bg, rc.border, rc.color)}>
+                              <RI className="h-3 w-3" />{item.role === 'user' ? (isSA ? 'Nhân viên' : 'Giảng viên') : rc.label}
+                            </span>
+                            {isSA && item.role === 'admin' && (
+                              <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-bold text-slate-500">
+                                Giới hạn: {item.maxUsersLimit ?? 10}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Divider */}
+                      <div className="my-4 border-t border-slate-100" />
+
+                      {/* Details */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-slate-400">Trung tâm</span>
+                          <span className="font-bold text-slate-600 flex items-center gap-1">
+                            <Building2 className="h-3 w-3 text-slate-400" />{cl}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-slate-400">Trạng thái</span>
+                          {item.isActive === false ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[9px] font-bold text-rose-700 uppercase tracking-wide">
+                              <Lock className="h-2.5 w-2.5" /> Bị khoá
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700 uppercase tracking-wide">
+                              <Unlock className="h-2.5 w-2.5" /> Hoạt động
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    {canEditItem && (
+                      <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(item)}
+                          title="Chỉnh sửa"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all cursor-pointer"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
+                        {!isSelf && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleLock(item)}
+                              title={item.isActive === false ? "Mở khóa" : "Khóa tài khoản"}
+                              className={cn(
+                                "flex h-8 w-8 items-center justify-center rounded-lg border transition-all cursor-pointer",
+                                item.isActive === false
+                                  ? "border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+                                  : "border-amber-200 text-amber-600 hover:bg-amber-50"
+                              )}
+                            >
+                              {item.isActive === false ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUser(item)}
+                              title="Xóa tài khoản"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-all cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-xs font-medium text-slate-500">
+              Hiển thị {filtered.length} / {users.length} {isSA ? 'người dùng' : 'giảng viên'}
+            </div>
+          </div>
+        )}
 
       </div>
 
@@ -527,6 +701,22 @@ export function UserManagementPage() {
               </select>
             </div>
           </div>
+
+          {isSA && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={LABEL}>Giới hạn nhân viên</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={fMaxUsersLimit}
+                  onChange={e => setFMaxUsersLimit(Math.max(0, parseInt(e.target.value) || 0))}
+                  placeholder="Mặc định: 10"
+                  className={INPUT}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="border-t border-slate-100 pt-4 space-y-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Cấu hình đồng bộ & Thanh toán</h3>
@@ -570,7 +760,7 @@ export function UserManagementPage() {
 
       {/* ═══ Modal: Thêm người dùng ═══ */}
       <ModalShell open={modal === 'user'} onClose={() => !submitting && setModal(null)}
-        icon={UserPlus} title="Thêm người dùng" subtitle={isSA ? 'Thêm nhân viên vào một trung tâm' : 'Thêm nhân viên vào trung tâm của bạn'}>
+        icon={UserPlus} title={isSA ? "Thêm người dùng" : "Thêm giảng viên"} subtitle={isSA ? 'Thêm nhân viên vào một trung tâm' : 'Thêm giảng viên vào trung tâm của bạn'}>
         <div className="space-y-4 p-6">
           <div className="grid grid-cols-2 gap-4">
             <div><label className={LABEL}>Họ tên</label>
@@ -598,7 +788,7 @@ export function UserManagementPage() {
           </div>
           <div className="flex items-start gap-2.5 rounded-xl bg-slate-50 px-4 py-3 text-xs text-slate-500">
             <Shield className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-600" />
-            <span>{isSA ? 'Nhân viên cần được gán vào một trung tâm cụ thể.' : 'Nhân viên sẽ tự động thuộc trung tâm của bạn.'}</span>
+            <span>{isSA ? 'Nhân viên cần được gán vào một trung tâm cụ thể.' : 'Giảng viên sẽ tự động thuộc trung tâm của bạn.'}</span>
           </div>
         </div>
         <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
@@ -606,7 +796,7 @@ export function UserManagementPage() {
             className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50">Huỷ</button>
           <button type="button" onClick={handleSubmit} disabled={submitting}
             className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-cyan-700 disabled:opacity-60">
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Thêm người dùng
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} {isSA ? 'Thêm người dùng' : 'Thêm giảng viên'}
           </button>
         </div>
       </ModalShell>
@@ -640,6 +830,22 @@ export function UserManagementPage() {
               </select>
             </div>
           </div>
+
+          {isSA && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={LABEL}>Giới hạn nhân viên</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={fMaxUsersLimit}
+                  onChange={e => setFMaxUsersLimit(Math.max(0, parseInt(e.target.value) || 0))}
+                  placeholder="Mặc định: 10"
+                  className={INPUT}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="border-t border-slate-100 pt-4 space-y-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Cấu hình đồng bộ & Thanh toán</h3>
@@ -700,7 +906,7 @@ export function UserManagementPage() {
 
       {/* ═══ Modal: Sửa người dùng ═══ */}
       <ModalShell open={modal === 'edit-user'} onClose={() => !submitting && setModal(null)}
-        icon={UserPlus} title="Sửa thông tin người dùng" subtitle={isSA ? 'Chỉnh sửa thông tin nhân viên hoặc chuyển trung tâm' : 'Chỉnh sửa thông tin nhân viên'}>
+        icon={UserPlus} title={isSA ? "Sửa thông tin người dùng" : "Sửa thông tin giảng viên"} subtitle={isSA ? 'Chỉnh sửa thông tin nhân viên hoặc chuyển trung tâm' : 'Chỉnh sửa thông tin giảng viên'}>
         <div className="space-y-4 p-6">
           <div className="grid grid-cols-2 gap-4">
             <div><label className={LABEL}>Họ tên</label>
@@ -729,7 +935,7 @@ export function UserManagementPage() {
           <div className="flex items-center justify-between rounded-xl bg-slate-50 p-4 border border-slate-150">
             <div className="space-y-0.5">
               <span className="text-xs font-bold text-slate-700">Trạng thái hoạt động</span>
-              <p className="text-[10px] text-slate-400">Cho phép hoặc khóa tài khoản nhân viên này.</p>
+              <p className="text-[10px] text-slate-400">Cho phép hoặc khóa tài khoản {isSA ? 'nhân viên' : 'giảng viên'} này.</p>
             </div>
             <button
               type="button"

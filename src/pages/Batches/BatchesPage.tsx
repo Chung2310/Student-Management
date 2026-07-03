@@ -8,7 +8,7 @@ import { apiFetch } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import { useBatches } from '../../hooks/useBatches';
 import { useCourses } from '../../hooks/useCourses';
-import { useInstructors } from '../../hooks/useInstructors';
+import { useManagedUsers } from '../../hooks/useManagedUsers';
 import { useStudents } from '../../hooks/useStudents';
 import { Batch, BatchStatus } from '../../types';
 import {
@@ -71,7 +71,7 @@ const EMPTY_FORM: BatchForm = {
 const notifyBatchMutation = () => {
   window.dispatchEvent(new Event('batch-mutation'));
   window.dispatchEvent(new Event('course-mutation'));
-  window.dispatchEvent(new Event('instructor-mutation'));
+  window.dispatchEvent(new Event('user-mutation'));
 };
 
 export function BatchesPage() {
@@ -79,7 +79,8 @@ export function BatchesPage() {
   const { toast } = useToast();
   const { batches, loading } = useBatches();
   const { courses } = useCourses();
-  const { instructors } = useInstructors();
+  const { users } = useManagedUsers();
+  const instructors = users.filter(u => u.role === 'user');
   const { students } = useStudents();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -429,7 +430,7 @@ export function BatchesPage() {
                   >
                     <option value="">— Chưa gán giảng viên —</option>
                     {instructors.map((i) => (
-                      <option key={i.id} value={i.id}>{i.name} ({i.specializations.join(', ') || 'GV'})</option>
+                      <option key={i.uid} value={i.uid}>{i.displayName} (Nhân viên)</option>
                     ))}
                   </ErpSelect>
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400 z-10">

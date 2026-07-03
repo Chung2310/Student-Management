@@ -54,7 +54,6 @@ const FeesPage = lazyWithRetry(() => import('./pages/Fees/FeesPage').then(m => (
 const NotificationsPage = lazyWithRetry(() => import('./pages/Notifications/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
 const CoursesPage = lazyWithRetry(() => import('./pages/Courses/CoursesPage').then(m => ({ default: m.CoursesPage })));
 const BatchesPage = lazyWithRetry(() => import('./pages/Batches/BatchesPage').then(m => ({ default: m.BatchesPage })));
-const InstructorsPage = lazyWithRetry(() => import('./pages/Instructors/InstructorsPage').then(m => ({ default: m.InstructorsPage })));
 const ResourcesPage = lazyWithRetry(() => import('./pages/Resources/ResourcesPage').then(m => ({ default: m.ResourcesPage })));
 const UserManagementPage = lazyWithRetry(() => import('./pages/UserManagement/UserManagementPage').then(m => ({ default: m.UserManagementPage })));
 const SettingsPage = lazyWithRetry(() => import('./pages/Settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
@@ -71,14 +70,13 @@ const PageLoader = () => (
   </div>
 );
 
-export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'Courses' | 'Batches' | 'Instructors' | 'Resources' | 'UserManagement' | 'SettingsAdmin';
+export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'Courses' | 'Batches' | 'Resources' | 'UserManagement' | 'SettingsAdmin';
 
 // Map đường dẫn của bản demo ERP (đã gỡ) về route chính thức để bookmark cũ không chết
 const LEGACY_ERP_PATH_MAP: Record<string, string> = {
   learners: '/students',
   courses: '/courses',
   batches: '/batches',
-  instructors: '/instructors',
   resources: '/resources',
   exams: '/exams',
   fees: '/fees',
@@ -113,7 +111,6 @@ export default function App() {
     if (path.startsWith('/bot')) return 'Bot';
     if (path.startsWith('/courses')) return 'Courses';
     if (path.startsWith('/batches')) return 'Batches';
-    if (path.startsWith('/instructors')) return 'Instructors';
     if (path.startsWith('/resources')) return 'Resources';
     if (path.startsWith('/user-management')) return 'UserManagement';
     if (path.startsWith('/settings')) return 'SettingsAdmin';
@@ -148,7 +145,6 @@ export default function App() {
     else if (view === 'Bot') path = '/bot';
     else if (view === 'Courses') path = '/courses';
     else if (view === 'Batches') path = '/batches';
-    else if (view === 'Instructors') path = '/instructors';
     else if (view === 'Resources') path = '/resources';
     else if (view === 'UserManagement') path = '/user-management';
     else if (view === 'SettingsAdmin') path = '/settings';
@@ -321,8 +317,6 @@ export default function App() {
         return <CoursesPage />;
       case 'Batches':
         return <BatchesPage />;
-      case 'Instructors':
-        return <InstructorsPage />;
       case 'Resources':
         return <ResourcesPage />;
       case 'UserManagement':

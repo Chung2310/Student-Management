@@ -22,9 +22,8 @@ export function MainHeader({ currentView, onMenuClick }: MainHeaderProps) {
       Bot: 'BOT Thông báo',
       Courses: 'Khóa học',
       Batches: 'Lớp & Khai giảng',
-      Instructors: 'Giảng viên',
       Resources: 'Thiết bị',
-      UserManagement: 'Quản lý người dùng',
+      UserManagement: user?.role === 'superadmin' ? 'Quản lý người dùng' : 'Quản lý giảng viên',
       SettingsAdmin: 'Cài đặt & Quản trị',
     };
     return names[view];
