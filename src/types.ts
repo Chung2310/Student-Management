@@ -167,21 +167,20 @@ export interface Course {
   updatedAt?: Date | string;
 }
 
-export type InstructorStatus = 'Available' | 'On Leave' | 'Busy';
-
-export interface Instructor {
-  id: string;
-  name: string;
-  phone: string;
+export type ManagedUser = {
+  uid: string;
   email: string;
-  specializations: string[];
-  rating: number;
-  activeClasses: number;
-  status: InstructorStatus;
-  ownerId: string;
-  createdAt?: Date | string;
-  updatedAt?: Date | string;
-}
+  displayName: string;
+  role: 'superadmin' | 'admin' | 'user';
+  centerId: string;
+  createdBy?: string;
+  isActive?: boolean;
+  bankAccountNo?: string;
+  bankId?: string;
+  businessType?: 'driving' | 'language' | 'general';
+  maxUsersLimit?: number;
+  permissions?: string[];
+};
 
 export type BatchStatus = 'Sắp khai giảng' | 'Đang học' | 'Đã kết thúc';
 

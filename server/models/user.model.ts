@@ -102,6 +102,14 @@ const userSchema = new Schema<IUser>(
       default: "",
       trim: true,
     },
+    maxUsersLimit: {
+      type: Number,
+      default: 10,
+    },
+    permissions: {
+      type: [String],
+      default: [],
+    },
   },
   {
     timestamps: true,

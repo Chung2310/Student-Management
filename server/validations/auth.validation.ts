@@ -42,6 +42,8 @@ export const createManagedUserSchema = Joi.object({
   bankAccountNo: Joi.string().allow("").optional(),
   bankId: Joi.string().allow("").optional(),
   businessType: Joi.string().valid("driving", "language", "general").optional(),
+  maxUsersLimit: Joi.number().integer().min(0).optional(),
+  permissions: Joi.array().items(Joi.string()).optional(),
 });
 
 export const loginSchema = Joi.object({

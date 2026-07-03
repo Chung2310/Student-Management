@@ -26,6 +26,8 @@ interface ManagedUserCreateData extends RegisterData {
   bankAccountNo?: string;
   bankId?: string;
   businessType?: "driving" | "language" | "general";
+  maxUsersLimit?: number;
+  permissions?: string[];
 }
 
 export class AuthService {
@@ -49,6 +51,8 @@ export class AuthService {
       smtpSandboxEmail: user.smtpSandboxEmail,
       isActive: user.isActive !== false,
       businessType: user.businessType || "driving",
+      maxUsersLimit: user.maxUsersLimit,
+      permissions: user.permissions || [],
     };
   }
 
@@ -217,8 +221,17 @@ export class AuthService {
       throw new Error("Ban khong co quyen tao nguoi dung.");
     }
 
-    if (requester.role === "admin" && data.role !== "user") {
-      throw new Error("Admin chi duoc tao user trong trung tam cua minh.");
+    if (requester.role === "admin") {
+      if (data.role !== "user") {
+        throw new Error("Admin chi duoc tao user trong trung tam cua minh.");
+      }
+      const adminUser = await User.findById(requester.uid);
+      const limit = adminUser?.maxUsersLimit ?? 10;
+      const centerIdToCheck = requester.centerId || requester.uid;
+      const currentUserCount = await User.countDocuments({ centerId: centerIdToCheck, role: "user" });
+      if (currentUserCount >= limit) {
+        throw new Error(`Trung tâm của bạn đã đạt giới hạn tối đa ${limit} tài khoản nhân viên.`);
+      }
     }
 
     const existingUser = await User.findOne({ email: data.email });
@@ -237,7 +250,12 @@ export class AuthService {
       centerId: requester.role === "admin" ? (requester.centerId || requester.uid) : (data.centerId || ""),
       createdBy: requester.uid,
       businessType: data.businessType || "driving",
+      permissions: data.permissions || [],
     });
+
+    if (requester.role === "superadmin" && data.maxUsersLimit !== undefined) {
+      newUser.maxUsersLimit = data.maxUsersLimit;
+    }
 
     if (data.role === "admin") {
       newUser.centerId = newUser._id.toString();
@@ -262,6 +280,8 @@ export class AuthService {
       bankAccountNo?: string;
       bankId?: string;
       businessType?: "driving" | "language" | "general";
+      maxUsersLimit?: number;
+      permissions?: string[];
     }
   ) {
     if (requester.role === "user") {
@@ -307,12 +327,20 @@ export class AuthService {
     if (data.bankAccountNo !== undefined) updates.bankAccountNo = data.bankAccountNo;
     if (data.bankId !== undefined) updates.bankId = data.bankId;
     if (data.businessType !== undefined) updates.businessType = data.businessType;
+    if (data.permissions !== undefined) {
+      if (requester.role === "superadmin" || (requester.role === "admin" && userToEdit.role === "user")) {
+        updates.permissions = data.permissions;
+      }
+    }
 
-    // Superadmin is allowed to change role & center
+    // Superadmin is allowed to change role, center & user limit
     if (requester.role === "superadmin") {
       if (data.role !== undefined) updates.role = data.role;
       if (data.centerId !== undefined) {
         updates.centerId = data.role === "admin" ? userId : data.centerId;
+      }
+      if (data.maxUsersLimit !== undefined) {
+        updates.maxUsersLimit = data.maxUsersLimit;
       }
     }
 

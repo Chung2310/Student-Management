@@ -645,57 +645,6 @@ const swaggerDefinition = {
         responses: { 200: { description: "Xóa thành công" }, 404: { description: "Không tìm thấy khóa học" } }
       }
     },
-    "/instructors": {
-      get: {
-        summary: "Danh sách giảng viên",
-        tags: ["Instructors"],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          { name: "status", in: "query", schema: { type: "string", enum: ["Available", "On Leave", "Busy"] } },
-          { name: "search", in: "query", schema: { type: "string" } }
-        ],
-        responses: { 200: { description: "Danh sách giảng viên" }, 401: { description: "Chưa xác thực" } }
-      },
-      post: {
-        summary: "Tạo hồ sơ giảng viên",
-        tags: ["Instructors"],
-        security: [{ bearerAuth: [] }],
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                required: ["name", "phone", "email", "specializations"],
-                properties: {
-                  name: { type: "string", example: "Thầy Hoàng Xuân Cường" },
-                  phone: { type: "string", example: "0903111222" },
-                  email: { type: "string", example: "cuonghx@igen.vn" },
-                  specializations: { type: "array", items: { type: "string" }, example: ["Lý thuyết B2/C"] }
-                }
-              }
-            }
-          }
-        },
-        responses: { 201: { description: "Tạo giảng viên thành công" }, 400: { description: "Dữ liệu không hợp lệ" } }
-      }
-    },
-    "/instructors/{id}": {
-      patch: {
-        summary: "Cập nhật giảng viên (trạng thái, chuyên môn...)",
-        tags: ["Instructors"],
-        security: [{ bearerAuth: [] }],
-        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
-        responses: { 200: { description: "Cập nhật thành công" }, 404: { description: "Không tìm thấy giảng viên" } }
-      },
-      delete: {
-        summary: "Xóa giảng viên",
-        tags: ["Instructors"],
-        security: [{ bearerAuth: [] }],
-        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
-        responses: { 200: { description: "Xóa thành công" }, 404: { description: "Không tìm thấy giảng viên" } }
-      }
-    },
     "/resources": {
       get: {
         summary: "Danh sách tài nguyên (phòng học, xe tập lái, thiết bị)",
