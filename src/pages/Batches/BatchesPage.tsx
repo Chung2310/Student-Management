@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
-  School, Trash2, Pencil, Users, UserPlus, X, GraduationCap
+  School, Trash2, Pencil, Users, UserPlus, X, GraduationCap,
+  Tag, BookOpen, Clock, Calendar, CalendarRange, MapPin
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { apiFetch } from '../../lib/api';
@@ -12,7 +13,7 @@ import { useStudents } from '../../hooks/useStudents';
 import { Batch, BatchStatus } from '../../types';
 import {
   ErpPageHeader, ErpPrimaryButton, ErpSearchBar, ErpFilterTab,
-  ErpModal, ErpField, ErpInput, ErpSelect, ErpSubmitButton,
+  ErpModal, ErpField, ErpInput, ErpSelect,
   ErpEmptyState, ErpLoadingState, ErpCard, ErpConfirmModal, ErpTableHead
 } from '../../components/Erp/ErpUI';
 
@@ -30,7 +31,7 @@ const DAY_OPTIONS: { value: number; label: string }[] = [
 ];
 
 const formatDays = (days: number[]) =>
-  DAY_OPTIONS.filter(d => days.includes(d.value)).map(d => d.label).join(', ');
+  DAY_OPTIONS.filter(d => (days || []).includes(d.value)).map(d => d.label).join(', ');
 
 const formatDate = (d: string) => (d ? d.split('-').reverse().join('/') : '');
 
@@ -110,7 +111,7 @@ export function BatchesPage() {
       code: batch.code,
       courseId: batch.courseId,
       instructorId: batch.instructorId || '',
-      daysOfWeek: batch.daysOfWeek,
+      daysOfWeek: batch.daysOfWeek || [],
       startTime: batch.startTime,
       endTime: batch.endTime,
       location: batch.location || '',
@@ -219,9 +220,9 @@ export function BatchesPage() {
 
   const filteredBatches = batches.filter(b => {
     const term = searchTerm.toLowerCase();
-    const matchesSearch = b.code.toLowerCase().includes(term) ||
-                          b.courseTitle.toLowerCase().includes(term) ||
-                          b.instructorName.toLowerCase().includes(term);
+    const matchesSearch = (b.code || '').toLowerCase().includes(term) ||
+                          (b.courseTitle || '').toLowerCase().includes(term) ||
+                          (b.instructorName || '').toLowerCase().includes(term);
     const matchesStatus = statusFilter === 'all' || b.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -350,6 +351,16 @@ export function BatchesPage() {
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
+                        <button
+                          onClick={() => setManageLearnersId(b.id)}
+                          title="Quản lý học viên"
+                          className={cn(
+                            "p-1.5 rounded-lg transition-all border cursor-pointer",
+                            darkMode ? "bg-slate-800 hover:bg-brand-primary/20 text-slate-450 hover:text-brand-primary border-transparent" : "bg-slate-50 hover:bg-brand-primary/10 text-slate-450 hover:text-brand-primary border-slate-200/60"
+                          )}
+                        >
+                          <Users className="w-3 h-3" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -362,116 +373,204 @@ export function BatchesPage() {
 
       {/* Create / Edit Batch Modal */}
       {showFormModal && (
-        <ErpModal title={editingId ? 'Chỉnh sửa lớp học' : 'Mở lớp mới'} onClose={() => setShowFormModal(false)}>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <ErpField label="Mã lớp">
-                <ErpInput
-                  type="text"
-                  required
-                  placeholder="Ví dụ: K32"
-                  value={form.code}
-                  onChange={(e) => setForm({ ...form, code: e.target.value })}
-                />
-              </ErpField>
-              <ErpField label="Khóa học">
-                <ErpSelect
-                  required
-                  value={form.courseId}
-                  onChange={(e) => setForm({ ...form, courseId: e.target.value })}
-                >
-                  <option value="" disabled>-- Chọn khóa học --</option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>{c.code} — {c.title}</option>
-                  ))}
-                </ErpSelect>
-              </ErpField>
-            </div>
-
-            <ErpField label="Giảng viên phụ trách">
-              <ErpSelect
-                value={form.instructorId}
-                onChange={(e) => setForm({ ...form, instructorId: e.target.value })}
-              >
-                <option value="">— Chưa gán giảng viên —</option>
-                {instructors.map((i) => (
-                  <option key={i.id} value={i.id}>{i.name} ({i.specializations.join(', ') || 'GV'})</option>
-                ))}
-              </ErpSelect>
-            </ErpField>
-
-            <ErpField label="Ngày học trong tuần">
-              <div className="flex flex-wrap gap-2">
-                {DAY_OPTIONS.map((d) => (
-                  <button
-                    key={d.value}
-                    type="button"
-                    onClick={() => toggleDay(d.value)}
-                    className={cn(
-                      "px-3.5 py-2 rounded-xl text-[10px] font-black transition-all border cursor-pointer",
-                      form.daysOfWeek.includes(d.value)
-                        ? "bg-brand-primary text-white border-brand-primary"
-                        : darkMode
-                          ? "bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200"
-                          : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
-                    )}
-                  >
-                    {d.label}
-                  </button>
-                ))}
+        <ErpModal title={editingId ? 'Chỉnh sửa lớp học' : 'Mở lớp mới'} onClose={() => setShowFormModal(false)} maxWidth="max-w-lg">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Section 1: Thông tin lớp học */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="w-1.5 h-4 bg-brand-primary rounded-full"></div>
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <School className="w-4 h-4 text-brand-primary" />
+                  Thông tin lớp học
+                </h4>
               </div>
-            </ErpField>
+              <div className="grid grid-cols-2 gap-4">
+                <ErpField label="Mã lớp">
+                  <div className="relative">
+                    <ErpInput
+                      type="text"
+                      required
+                      placeholder="Ví dụ: K32"
+                      value={form.code}
+                      onChange={(e) => setForm({ ...form, code: e.target.value })}
+                      className="pl-10"
+                    />
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                      <Tag className="w-4 h-4" />
+                    </div>
+                  </div>
+                </ErpField>
+                <ErpField label="Khóa học">
+                  <div className="relative">
+                    <ErpSelect
+                      required
+                      value={form.courseId}
+                      onChange={(e) => setForm({ ...form, courseId: e.target.value })}
+                      className="pl-10"
+                    >
+                      <option value="" disabled>-- Chọn khóa học --</option>
+                      {courses.map((c) => (
+                        <option key={c.id} value={c.id}>{c.code} — {c.title}</option>
+                      ))}
+                    </ErpSelect>
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400 z-10">
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                  </div>
+                </ErpField>
+              </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <ErpField label="Giờ bắt đầu">
-                <ErpInput
-                  type="time"
-                  required
-                  value={form.startTime}
-                  onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-                />
-              </ErpField>
-              <ErpField label="Giờ kết thúc">
-                <ErpInput
-                  type="time"
-                  required
-                  value={form.endTime}
-                  onChange={(e) => setForm({ ...form, endTime: e.target.value })}
-                />
+              <ErpField label="Giảng viên phụ trách">
+                <div className="relative">
+                  <ErpSelect
+                    value={form.instructorId}
+                    onChange={(e) => setForm({ ...form, instructorId: e.target.value })}
+                    className="pl-10"
+                  >
+                    <option value="">— Chưa gán giảng viên —</option>
+                    {instructors.map((i) => (
+                      <option key={i.id} value={i.id}>{i.name} ({i.specializations.join(', ') || 'GV'})</option>
+                    ))}
+                  </ErpSelect>
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400 z-10">
+                    <GraduationCap className="w-4 h-4" />
+                  </div>
+                </div>
               </ErpField>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <ErpField label="Ngày khai giảng">
-                <ErpInput
-                  type="date"
-                  required
-                  value={form.startDate}
-                  onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                />
+            {/* Section 2: Lịch học & Khung giờ */}
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="w-1.5 h-4 bg-brand-primary rounded-full"></div>
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-brand-primary" />
+                  Lịch học & Khung giờ
+                </h4>
+              </div>
+
+              <ErpField label="Ngày học trong tuần">
+                <div className="grid grid-cols-7 gap-1.5 mt-1">
+                  {DAY_OPTIONS.map((d) => (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() => toggleDay(d.value)}
+                      className={cn(
+                        "py-3 rounded-xl text-[11px] font-black transition-all border cursor-pointer text-center",
+                        form.daysOfWeek.includes(d.value)
+                          ? "bg-brand-primary text-white border-brand-primary shadow-sm shadow-brand-primary/25 scale-[1.02]"
+                          : "bg-slate-50 text-slate-550 border-slate-200 hover:bg-slate-100 hover:border-slate-300 active:scale-95"
+                      )}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
               </ErpField>
-              <ErpField label="Ngày kết thúc">
-                <ErpInput
-                  type="date"
-                  required
-                  value={form.endDate}
-                  onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                />
+
+              <div className="grid grid-cols-2 gap-4">
+                <ErpField label="Giờ bắt đầu">
+                  <div className="relative">
+                    <ErpInput
+                      type="time"
+                      required
+                      value={form.startTime}
+                      onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+                      className="pl-10"
+                    />
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                  </div>
+                </ErpField>
+                <ErpField label="Giờ kết thúc">
+                  <div className="relative">
+                    <ErpInput
+                      type="time"
+                      required
+                      value={form.endTime}
+                      onChange={(e) => setForm({ ...form, endTime: e.target.value })}
+                      className="pl-10"
+                    />
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                  </div>
+                </ErpField>
+              </div>
+            </div>
+
+            {/* Section 3: Thời gian & Địa điểm */}
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="w-1.5 h-4 bg-brand-primary rounded-full"></div>
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <CalendarRange className="w-4 h-4 text-brand-primary" />
+                  Thời gian & Địa điểm
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <ErpField label="Ngày khai giảng">
+                  <div className="relative">
+                    <ErpInput
+                      type="date"
+                      required
+                      value={form.startDate}
+                      onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                      className="pl-10"
+                    />
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                  </div>
+                </ErpField>
+                <ErpField label="Ngày kết thúc">
+                  <div className="relative">
+                    <ErpInput
+                      type="date"
+                      required
+                      value={form.endDate}
+                      onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                      className="pl-10"
+                    />
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                  </div>
+                </ErpField>
+              </div>
+
+              <ErpField label="Địa điểm (tùy chọn)">
+                <div className="relative">
+                  <ErpInput
+                    type="text"
+                    placeholder="Ví dụ: Phòng 201 / Sân tập số 2"
+                    value={form.location}
+                    onChange={(e) => setForm({ ...form, location: e.target.value })}
+                    className="pl-10"
+                  />
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                </div>
               </ErpField>
             </div>
 
-            <ErpField label="Địa điểm (tùy chọn)">
-              <ErpInput
-                type="text"
-                placeholder="Ví dụ: Phòng 201 / Sân tập số 2"
-                value={form.location}
-                onChange={(e) => setForm({ ...form, location: e.target.value })}
-              />
-            </ErpField>
-
-            <ErpSubmitButton>
+            {/* Custom submit button */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-4 bg-gradient-to-r from-brand-primary to-sky-600 hover:from-brand-primary/95 hover:to-sky-700 text-white rounded-2xl text-xs font-black uppercase tracking-wider shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              ) : (
+                <School className="w-4.5 h-4.5" />
+              )}
               {isSubmitting ? 'Đang lưu...' : editingId ? 'Lưu thay đổi' : 'Khai giảng lớp'}
-            </ErpSubmitButton>
+            </button>
           </form>
         </ErpModal>
       )}

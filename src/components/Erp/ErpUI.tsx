@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React from 'react';
-import { Plus, Search, LucideIcon, Trash2 } from 'lucide-react';
+import { Plus, Search, LucideIcon, Trash2, ChevronDown } from 'lucide-react';
 import { cn } from '../../lib/utils';
 /**
  * Bộ UI primitives dùng chung cho các trang Khóa học / Lớp / Giảng viên / Tài nguyên.
@@ -163,7 +163,7 @@ export function ErpModal({ title, onClose, children, maxWidth = "max-w-md" }: {
 export function ErpField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{label}</label>
+      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{label}</div>
       {children}
     </div>
   );
@@ -179,20 +179,36 @@ export function ErpInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={cn(erpInputClass(darkMode), props.className)} />;
 }
 
-export function ErpSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+export function ErpSelect({ className, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   const { darkMode } = useErpTheme();
   return (
-    <select {...props} className={cn(erpInputClass(darkMode), "appearance-none", props.className)}>
-      {props.children}
-    </select>
+    <div className="relative w-full">
+      <select
+        {...props}
+        className={cn(
+          erpInputClass(darkMode),
+          "appearance-none pr-10 cursor-pointer",
+          className
+        )}
+      >
+        {children}
+      </select>
+      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400">
+        <ChevronDown className="w-4 h-4" />
+      </div>
+    </div>
   );
 }
 
-export function ErpSubmitButton({ children }: { children: React.ReactNode }) {
+export function ErpSubmitButton({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type="submit"
-      className="w-full py-3.5 bg-gradient-to-r from-brand-primary to-sky-600 hover:from-brand-primary/90 hover:to-sky-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-brand-primary/20 active:scale-95 transition-all mt-4"
+      {...props}
+      className={cn(
+        "w-full py-3.5 bg-gradient-to-r from-brand-primary to-sky-600 hover:from-brand-primary/90 hover:to-sky-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-brand-primary/20 active:scale-95 transition-all mt-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 disabled:from-slate-400 disabled:to-slate-500",
+        props.className
+      )}
     >
       {children}
     </button>

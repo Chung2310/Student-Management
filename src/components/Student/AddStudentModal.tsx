@@ -22,6 +22,8 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStu
   const { user, login } = useAuth();
   const { toast } = useToast();
   const { batches } = useBatches();
+  const businessType = user?.businessType || 'driving';
+  const usesCourseFeePolicy = businessType !== 'driving';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingField, setUploadingField] = useState<FileField | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -110,8 +112,6 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStu
     if (requiredFields.idCard && !formData.idCard) missingFields.push('CCCD/CMND');
     if (requiredFields.email && !formData.email) missingFields.push('Email');
 
-    const businessType = user?.businessType || 'driving';
-
     if (missingFields.length > 0) {
       const message = `Vui lòng điền đầy đủ các trường bắt buộc: ${missingFields.join(', ')}`;
       setErrorMsg(message);
@@ -146,6 +146,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStu
         method: 'POST',
         body: JSON.stringify({
           ...formData,
+          fee: businessType === 'driving' ? formData.fee : '',
           idCardFront: formData.idCardFrontFile?.url || '',
           idCardBack: formData.idCardBackFile?.url || '',
           status: businessType === 'driving' ? ['Chờ KSK'] : ['Đang học'],
@@ -256,7 +257,16 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStu
 
               <Input label="Ngày đăng ký" name="registrationDate" value={formData.registrationDate} onChange={handleInputChange} readOnly />
               <Input label="Ngày nhập học" name="enrollmentDate" value={formData.enrollmentDate} onChange={handleInputChange} placeholder="DD/MM/YYYY" />
-              <Input label="Học phí (VND)" name="fee" value={formData.fee} onChange={handleInputChange} placeholder="Nhập học phí..." />
+              {usesCourseFeePolicy ? (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Học phí đã chốt</label>
+                  <div className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-500">
+                    Sẽ lấy tự động từ khóa học khi xếp lớp.
+                  </div>
+                </div>
+              ) : (
+                <Input label="Học phí (VND)" name="fee" value={formData.fee} onChange={handleInputChange} placeholder="Nhập học phí..." />
+              )}
               <Input label="Địa chỉ" name="address" value={formData.address} onChange={handleInputChange} placeholder="Nhập địa chỉ..." className="sm:col-span-2" />
             </div>
 

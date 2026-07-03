@@ -67,6 +67,7 @@ export interface IStudent extends Document {
   idCard: string;
   /** Hạng bằng lái — thông tin riêng ngành lái xe, học viên ngành khác để trống */
   rank?: string;
+  courseId?: string;
   registrationDate: string;
   enrollmentDate?: string;
   fee: string;
