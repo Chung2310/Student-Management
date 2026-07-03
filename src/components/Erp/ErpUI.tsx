@@ -127,6 +127,16 @@ export const ErpFilterTab: React.FC<ErpFilterTabProps> = ({ active, onClick, chi
   );
 };
 
+export function ErpFilterRail({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn("w-full md:w-[26rem] lg:w-[28rem] overflow-x-auto no-scrollbar", className)}>
+      <div className="flex min-w-max items-center gap-2 pr-1">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function ErpModal({ title, onClose, children, maxWidth = "max-w-md" }: {
   title: string;
   onClose: () => void;

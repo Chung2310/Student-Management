@@ -22,6 +22,7 @@ export function ExamsTab({
   isUpdatingExams,
   handleUpdateExams
 }: ExamsTabProps) {
+  const [focusedInput, setFocusedInput] = React.useState<{ idx: number, field: 'theory' | 'simulation' | 'practice' } | null>(null);
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -177,12 +178,24 @@ export function ExamsTab({
                   <td className="px-4 py-4 text-center">
                     {isEditingExams ? (
                       <input 
-                        type="number"
-                        className="w-12 text-sm font-bold text-center bg-slate-50 border border-slate-200 rounded-lg px-1 py-1"
-                        value={exam.result?.theory || 0}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9-]*"
+                        className="w-12 text-sm font-bold text-center bg-slate-50 border border-slate-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 outline-none rounded-lg px-1 py-1 transition-all"
+                        value={
+                          focusedInput?.idx === idx && focusedInput?.field === 'theory' && exam.result?.theory === 0
+                            ? ''
+                            : exam.result?.theory ?? 0
+                        }
+                        onFocus={(e) => {
+                          setFocusedInput({ idx, field: 'theory' });
+                          e.target.select();
+                        }}
+                        onBlur={() => setFocusedInput(null)}
                         onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9-]/g, '');
                           const newExams = [...examData];
-                          newExams[idx].result.theory = parseInt(e.target.value) || 0;
+                          newExams[idx].result.theory = val === '' ? 0 : (parseInt(val) || 0);
                           setExamData(newExams);
                         }}
                       />
@@ -193,12 +206,24 @@ export function ExamsTab({
                   <td className="px-4 py-4 text-center">
                     {isEditingExams ? (
                       <input 
-                        type="number"
-                        className="w-12 text-sm font-bold text-center bg-slate-50 border border-slate-200 rounded-lg px-1 py-1"
-                        value={exam.result?.simulation || 0}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9-]*"
+                        className="w-12 text-sm font-bold text-center bg-slate-50 border border-slate-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 outline-none rounded-lg px-1 py-1 transition-all"
+                        value={
+                          focusedInput?.idx === idx && focusedInput?.field === 'simulation' && exam.result?.simulation === 0
+                            ? ''
+                            : exam.result?.simulation ?? 0
+                        }
+                        onFocus={(e) => {
+                          setFocusedInput({ idx, field: 'simulation' });
+                          e.target.select();
+                        }}
+                        onBlur={() => setFocusedInput(null)}
                         onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9-]/g, '');
                           const newExams = [...examData];
-                          newExams[idx].result.simulation = parseInt(e.target.value) || 0;
+                          newExams[idx].result.simulation = val === '' ? 0 : (parseInt(val) || 0);
                           setExamData(newExams);
                         }}
                       />
@@ -209,12 +234,24 @@ export function ExamsTab({
                   <td className="px-4 py-4 text-center">
                     {isEditingExams ? (
                       <input 
-                        type="number"
-                        className="w-12 text-sm font-bold text-center bg-slate-50 border border-slate-200 rounded-lg px-1 py-1"
-                        value={exam.result?.practice || 0}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9-]*"
+                        className="w-12 text-sm font-bold text-center bg-slate-50 border border-slate-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 outline-none rounded-lg px-1 py-1 transition-all"
+                        value={
+                          focusedInput?.idx === idx && focusedInput?.field === 'practice' && exam.result?.practice === 0
+                            ? ''
+                            : exam.result?.practice ?? 0
+                        }
+                        onFocus={(e) => {
+                          setFocusedInput({ idx, field: 'practice' });
+                          e.target.select();
+                        }}
+                        onBlur={() => setFocusedInput(null)}
                         onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9-]/g, '');
                           const newExams = [...examData];
-                          newExams[idx].result.practice = parseInt(e.target.value) || 0;
+                          newExams[idx].result.practice = val === '' ? 0 : (parseInt(val) || 0);
                           setExamData(newExams);
                         }}
                       />

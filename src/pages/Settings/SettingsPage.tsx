@@ -872,7 +872,6 @@ export function SettingsPage() {
                   <QrCode className="w-5 h-5 text-cyan-600" />
                   <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Cấu hình VietQR & Chuyển khoản</h3>
                 </div>
-                {isAdmin && (
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -888,7 +887,6 @@ export function SettingsPage() {
                       Lưu cấu hình
                     </button>
                   </div>
-                )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-4">
@@ -896,12 +894,10 @@ export function SettingsPage() {
                     <label className="text-xs font-bold text-slate-600">Trạng thái VietQR</label>
                     <button 
                       type="button"
-                      disabled={!isAdmin}
                       onClick={() => setVietqrEnabled(!vietqrEnabled)}
                       className={cn(
                         "font-bold text-xs flex items-center gap-1 transition-all",
-                        vietqrEnabled ? "text-emerald-500" : "text-slate-400",
-                        !isAdmin && "opacity-60 cursor-not-allowed"
+                        vietqrEnabled ? "text-emerald-500" : "text-slate-400"
                       )}
                     >
                       <CheckCircle2 size={14} /> {vietqrEnabled ? "Đang bật" : "Đang tắt"}
@@ -927,10 +923,9 @@ export function SettingsPage() {
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ngân hàng</label>
                       <select 
-                        disabled={!isAdmin}
                         value={vietqrBankId}
                         onChange={(e) => setVietqrBankId(e.target.value)}
-                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all"
                       >
                         <option value="mbbank">MBBank (MB)</option>
                         <option value="vietcombank">Vietcombank (VCB)</option>
@@ -961,7 +956,6 @@ export function SettingsPage() {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tên chủ tài khoản (Không dấu)</label>
                     <input 
                       type="text"
-                      disabled={!isAdmin}
                       placeholder="VD: NGUYEN VAN A"
                       value={vietqrAccountName}
                       onChange={(e) => setVietqrAccountName(e.target.value.toUpperCase())}
@@ -972,8 +966,7 @@ export function SettingsPage() {
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Nội dung chuyển khoản mặc định</label>
                     <textarea 
-                      disabled={!isAdmin}
-                      className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600"
                       rows={3}
                       placeholder="Mẫu nội dung (Ví dụ: [Mã HV] - [Họ tên] - Nộp học phí khóa {hang})..."
                       value={vietqrTemplate}
@@ -1001,7 +994,6 @@ export function SettingsPage() {
                   <Mail className="w-5 h-5 text-rose-500" />
                   <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Cấu hình máy chủ SMTP gửi Mail</h3>
                 </div>
-                {isAdmin && (
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -1030,7 +1022,6 @@ export function SettingsPage() {
                       Lưu cấu hình
                     </button>
                   </div>
-                )}
               </div>
 
               <div className="space-y-4">
@@ -1052,33 +1043,30 @@ export function SettingsPage() {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tài khoản SMTP (User)</label>
                     <input
                       type="text"
-                      disabled={!isAdmin}
                       placeholder="VD: account@gmail.com"
                       value={smtpUser}
                       onChange={(e) => setSmtpUser(e.target.value)}
-                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mật khẩu ứng dụng (Password)</label>
                     <input
                       type="password"
-                      disabled={!isAdmin}
                       placeholder="Nhập mật khẩu ứng dụng 16 ký tự..."
                       value={smtpPass}
                       onChange={(e) => setSmtpPass(e.target.value)}
-                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email gửi đi (From)</label>
                     <input
                       type="text"
-                      disabled={!isAdmin}
                       placeholder='VD: "Hệ thống" <account@gmail.com>'
                       value={smtpFrom}
                       onChange={(e) => setSmtpFrom(e.target.value)}
-                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
                     />
                   </div>
                 </div>

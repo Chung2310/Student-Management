@@ -32,7 +32,6 @@ export function LoginPage({ onNavigateToPath }: LoginPageProps) {
   const [birthday, setBirthday] = useState('');
   const [idCard, setIdCard] = useState('');
   const [rank, setRank] = useState('Không (ngành khác)');
-  const [area, setArea] = useState('Nội thành');
   const [address, setAddress] = useState('');
   const [enrollmentDate, setEnrollmentDate] = useState('');
   const [idCardFrontFile, setIdCardFrontFile] = useState<UploadedFile | undefined>();
@@ -101,7 +100,7 @@ export function LoginPage({ onNavigateToPath }: LoginPageProps) {
     setErrorMsg('');
     setIsRegistering(true);
 
-    if (!fullName || !phone || !emailReg || !birthday || !idCard || !area || !address || !enrollmentDate) {
+    if (!fullName || !phone || !emailReg || !birthday || !idCard || !address || !enrollmentDate) {
       setErrorMsg('Vui lòng điền đầy đủ tất cả các trường thông tin.');
       setIsRegistering(false);
       return;
@@ -122,7 +121,6 @@ export function LoginPage({ onNavigateToPath }: LoginPageProps) {
           birthday,
           idCard,
           rank: rank === 'Không (ngành khác)' ? '' : rank,
-          area,
           address,
           enrollmentDate,
           idCardFrontFile,
@@ -243,13 +241,12 @@ export function LoginPage({ onNavigateToPath }: LoginPageProps) {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <Select value={rank} onChange={setRank} label="Hạng bằng (lái xe)" options={['Không (ngành khác)', 'A1', 'A2', 'B1', 'B2', 'C']} />
-                    <Select value={area} onChange={setArea} label="Khu vực *" options={['Nội thành', 'Ngoại thành', 'Tỉnh lân cận']} />
+                    <Input icon={Calendar} value={enrollmentDate} onChange={(value) => setEnrollmentDate(formatDate(value))} placeholder="dd/mm/yyyy" label="Ngày nhập học *" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <Input value={idCard} onChange={setIdCard} placeholder="Số CCCD..." label="Số CCCD/CMND *" />
                     <Input type="email" value={emailReg} onChange={setEmailReg} placeholder="name@example.com" label="Email *" />
                   </div>
-                  <Input icon={Calendar} value={enrollmentDate} onChange={(value) => setEnrollmentDate(formatDate(value))} placeholder="dd/mm/yyyy" label="Ngày nhập học *" />
                   <Input icon={MapPin} value={address} onChange={setAddress} placeholder="Nhập địa chỉ của bạn..." label="Địa chỉ *" />
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <PublicUploadCard label="CCCD mặt trước *" file={idCardFrontFile} isUploading={uploadingField === 'idCardFrontFile'} onUpload={(file) => handleUploadFile('idCardFrontFile', file)} onRemove={() => setIdCardFrontFile(undefined)} />

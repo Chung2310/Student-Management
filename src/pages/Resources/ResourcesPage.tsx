@@ -7,9 +7,10 @@ import { useResources } from '../../hooks/useResources';
 import { useResourceCategories } from '../../hooks/useResourceCategories';
 import { ResourceItem } from '../../types';
 import {
-  ErpPageHeader, ErpPrimaryButton, ErpSearchBar, ErpFilterTab,
+  ErpPageHeader, ErpPrimaryButton, ErpSearchBar, ErpFilterTab, ErpFilterRail,
   ErpEmptyState, ErpLoadingState, ErpCard
 } from '../../components/Erp/ErpUI';
+import { Pagination } from '../../components/ui/Pagination';
 
 import { AddResourceModal } from './components/AddResourceModal';
 import { BookingModal } from './components/BookingModal';
@@ -32,6 +33,8 @@ export function ResourcesPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
     return (localStorage.getItem('erp_view_mode_resources') as 'list' | 'grid') || 'grid';
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = viewMode === 'grid' ? 6 : 8;
 
   // Tab lọc = phân loại đang quản lý + các phân loại cũ còn xuất hiện trong dữ liệu
   const typeOptions = useMemo(() => {
@@ -88,6 +91,15 @@ export function ResourcesPage() {
     const matchesType = typeFilter === 'all' || r.type === typeFilter;
     return matchesSearch && matchesType;
   });
+  const totalPages = Math.ceil(filteredResources.length / pageSize);
+  const paginatedResources = filteredResources.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [searchTerm, typeFilter, viewMode]);
 
   const refreshResources = () => {
     window.dispatchEvent(new Event('resource-mutation'));
@@ -126,7 +138,7 @@ export function ResourcesPage() {
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <ErpSearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Tìm tài nguyên bằng tên hoặc số nhận diện..." />
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2 overflow-x-auto">
+          <ErpFilterRail>
             <ErpFilterTab active={typeFilter === 'all'} onClick={() => setTypeFilter('all')}>
               Tất cả
             </ErpFilterTab>
@@ -135,7 +147,7 @@ export function ResourcesPage() {
                 {type}
               </ErpFilterTab>
             ))}
-          </div>
+          </ErpFilterRail>
 
           <div className={cn("flex items-center border p-1 rounded-xl gap-0.5 shrink-0", darkMode ? "border-slate-800 bg-slate-900/50" : "border-slate-200 bg-slate-50")}>
             <button
@@ -180,8 +192,9 @@ export function ResourcesPage() {
           />
         </ErpCard>
       ) : viewMode === 'grid' ? (
+        <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredResources.map((r) => (
+          {paginatedResources.map((r) => (
             <ResourceCard
               key={r.id}
               resource={r}
@@ -192,12 +205,33 @@ export function ResourcesPage() {
             />
           ))}
         </div>
+        <ErpCard className="overflow-hidden">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredResources.length}
+            pageSize={pageSize}
+            itemName="tài nguyên"
+          />
+        </ErpCard>
+        </div>
       ) : (
         <ResourceTable
-          resources={filteredResources}
+          resources={paginatedResources}
           onBook={setBookingResource}
           onToggleMaintenance={handleToggleMaintenance}
           onDelete={handleDelete}
+          footer={
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredResources.length}
+            pageSize={pageSize}
+            itemName="tài nguyên"
+          />
+          }
         />
       )}
 

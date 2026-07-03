@@ -10,10 +10,11 @@ import { useCourseCategories } from '../../hooks/useCourseCategories';
 import { useAuth } from '../../hooks/useAuth';
 import { Course, CourseCategory } from '../../types';
 import {
-  ErpPageHeader, ErpPrimaryButton, ErpSearchBar, ErpFilterTab,
+  ErpPageHeader, ErpPrimaryButton, ErpSearchBar, ErpFilterTab, ErpFilterRail,
   ErpModal, ErpField, ErpInput, ErpSelect, ErpSubmitButton,
   ErpEmptyState, ErpLoadingState, ErpCard, ErpConfirmModal, ErpTableHead
 } from '../../components/Erp/ErpUI';
+import { Pagination } from '../../components/ui/Pagination';
 
 export function CoursesPage() {
   const darkMode = false;
@@ -21,6 +22,12 @@ export function CoursesPage() {
   const businessType = user?.businessType || 'driving';
   const usesCourseFeePolicy = businessType !== 'driving';
   const courseFeeLabel = usesCourseFeePolicy ? 'Học phí niêm yết' : 'Học phí';
+    const courseCodePlaceholder = businessType === 'driving' ? 'Ví dụ: B2-CO-BAN' : 'Ví dụ: ENG-TOEIC';
+    const courseTitlePlaceholder = businessType === 'driving'
+    ? 'Ví dụ: Khoá học lái xe B2 cơ bản'
+    : 'Ví dụ: Luyện thi TOEIC 650+ Cam Kết chuẩn đầu Ra';
+  const courseDurationPlaceholder = businessType === 'driving' ? 'Ví dụ: 3 tháng / 12 buổi' : 'Ví dụ: 3 tháng / 8 tuần';
+  const drivingFeeHint = 'Không dùng cho trung tâm lái xe. Học phí lấy trực tiếp từ hồ sơ/import học viên.';
   const { toast } = useToast();
   const { courses, loading } = useCourses();
   const { categories, loading: categoriesLoading } = useCourseCategories();
@@ -35,6 +42,8 @@ export function CoursesPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
     return (localStorage.getItem('erp_view_mode_courses') as 'list' | 'grid') || 'grid';
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = viewMode === 'grid' ? 6 : 8;
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id: string; name: string }>({
     isOpen: false,
     id: '',
@@ -50,7 +59,7 @@ export function CoursesPage() {
     maxLearners: 20,
   });
 
-  // Đồng bộ hóa phân loại đầu tiên làm mặc định khi danh sách phân loại được tải
+  // Dong bo hoa phan loai dau tien lam mac dinh khi danh sach phan loai duoc tai
   useEffect(() => {
     if (categories.length > 0 && !newCourse.category) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -98,7 +107,7 @@ export function CoursesPage() {
   };
 
   const handleToggleStatus = async (course: Course) => {
-    const nextStatus = course.status === 'Hoạt động' ? 'Tạm dừng' : 'Hoạt động';
+    const nextStatus: Course['status'] = course.status === 'Hoạt động' ? 'Tạm dừng' : 'Hoạt động';
     try {
       await apiFetch(`/courses/${course.id}`, {
         method: 'PATCH',
@@ -187,6 +196,15 @@ export function CoursesPage() {
     const matchesCategory = categoryFilter === 'all' || c.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
+  const totalPages = Math.ceil(filteredCourses.length / pageSize);
+  const paginatedCourses = filteredCourses.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [searchTerm, categoryFilter, viewMode]);
 
   return (
     <div className="space-y-6 text-left">
@@ -217,7 +235,7 @@ export function CoursesPage() {
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <ErpSearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Tìm theo tên hoặc mã khóa học..." />
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2 overflow-x-auto">
+          <ErpFilterRail>
             <ErpFilterTab active={categoryFilter === 'all'} onClick={() => setCategoryFilter('all')}>
               Tất cả
             </ErpFilterTab>
@@ -226,7 +244,7 @@ export function CoursesPage() {
                 {cat.name}
               </ErpFilterTab>
             ))}
-          </div>
+          </ErpFilterRail>
 
           <div className={cn("flex items-center border p-1 rounded-xl gap-0.5 shrink-0", darkMode ? "border-slate-800 bg-slate-900/50" : "border-slate-200 bg-slate-50")}>
             <button
@@ -271,8 +289,9 @@ export function CoursesPage() {
           />
         </ErpCard>
       ) : viewMode === 'grid' ? (
+        <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredCourses.map((c) => (
+          {paginatedCourses.map((c) => (
             <div
               key={c.id}
               className={cn(
@@ -344,13 +363,24 @@ export function CoursesPage() {
             </div>
           ))}
         </div>
+        <ErpCard className="overflow-hidden">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredCourses.length}
+            pageSize={pageSize}
+            itemName="khóa học"
+          />
+        </ErpCard>
+        </div>
       ) : (
         <ErpCard className="rounded-[2.5rem] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
               <ErpTableHead columns={['Mã', 'Tên khóa học', 'Phân loại', 'Thời lượng', courseFeeLabel, 'Quy mô', 'Trạng thái', 'Thao tác']} />
               <tbody className={cn("divide-y", darkMode ? "divide-slate-800/30" : "divide-slate-100")}>
-                {filteredCourses.map((c) => (
+                {paginatedCourses.map((c) => (
                   <tr key={c.id} className={cn("transition-colors", darkMode ? "text-slate-350 hover:bg-slate-800/10" : "text-slate-600 hover:bg-slate-50/40")}>
                     <td className="py-4 px-6 font-black text-sm">{c.code}</td>
                     <td className="py-4 px-6 font-bold">{c.title}</td>
@@ -397,6 +427,14 @@ export function CoursesPage() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredCourses.length}
+            pageSize={pageSize}
+            itemName="khóa học"
+          />
         </ErpCard>
       )}
 
@@ -408,7 +446,7 @@ export function CoursesPage() {
               <ErpInput
                 type="text"
                 required
-                placeholder="Ví dụ: ENG-TOEIC"
+                placeholder={courseCodePlaceholder}
                 value={newCourse.code}
                 onChange={(e) => setNewCourse({ ...newCourse, code: e.target.value })}
               />
@@ -418,7 +456,7 @@ export function CoursesPage() {
               <ErpInput
                 type="text"
                 required
-                placeholder="Ví dụ: Luyện thi TOEIC 650+ Cam Kết Đầu Ra"
+                placeholder={courseTitlePlaceholder}
                 value={newCourse.title}
                 onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
               />
@@ -441,7 +479,7 @@ export function CoursesPage() {
                 <ErpInput
                   type="text"
                   required
-                  placeholder="Ví dụ: 3 tháng / 8 tuần"
+                  placeholder={courseDurationPlaceholder}
                   value={newCourse.duration}
                   onChange={(e) => setNewCourse({ ...newCourse, duration: e.target.value })}
                 />
@@ -460,7 +498,7 @@ export function CoursesPage() {
                   />
                 ) : (
                   <div className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-500">
-                    Không dùng cho trung tâm lái xe. Học phí lấy trực tiếp từ hồ sơ/import học viên.
+                    {drivingFeeHint}
                   </div>
                 )}
               </ErpField>
@@ -508,7 +546,7 @@ export function CoursesPage() {
               {categoriesLoading ? (
                 <p className="text-xs text-slate-400">Đang tải...</p>
               ) : categories.length === 0 ? (
-                <p className="text-xs text-slate-400">Chưa có phân loại nào.</p>
+                <p className="text-xs text-slate-400">Chua co phan loai nao.</p>
               ) : (
                 <div className={cn("border rounded-2xl p-2 max-h-60 overflow-y-auto divide-y", darkMode ? "border-slate-800 divide-slate-800/40" : "border-slate-100 divide-slate-100/60")}>
                   {categories.map((cat) => (
@@ -543,7 +581,7 @@ export function CoursesPage() {
       <ErpConfirmModal
         isOpen={deleteConfirm.isOpen}
         title="Xóa phân loại khóa học"
-        message={`Bạn có chắc chắn muốn xóa phân loại "${deleteConfirm.name}" không? Hành động này không thể hoàn tác.`}
+        message={`Ban co chac chan muon xoa phan loai "${deleteConfirm.name}" khong? Hanh dong nay khong the hoan tac.`}
         onConfirm={handleDeleteCategory}
         onCancel={() => setDeleteConfirm({ isOpen: false, id: '', name: '' })}
         confirmText="Xác nhận xóa"

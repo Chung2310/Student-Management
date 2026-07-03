@@ -10,6 +10,7 @@ interface ResourceTableProps {
   onBook: (r: ResourceItem) => void;
   onToggleMaintenance: (r: ResourceItem) => void;
   onDelete: (r: ResourceItem) => void;
+  footer?: React.ReactNode;
 }
 
 export function ResourceTable({
@@ -17,6 +18,7 @@ export function ResourceTable({
   onBook,
   onToggleMaintenance,
   onDelete,
+  footer,
 }: ResourceTableProps) {
   const darkMode = false;
 
@@ -38,6 +40,7 @@ export function ResourceTable({
           </tbody>
         </table>
       </div>
+      {footer}
     </ErpCard>
   );
 }
