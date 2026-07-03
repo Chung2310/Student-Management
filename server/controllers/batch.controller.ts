@@ -8,7 +8,7 @@ export class BatchController {
   static async create(req: AuthRequest, res: Response) {
     try {
       const ownerId = req.user!.uid;
-      const batch = await BatchService.createBatch(ownerId, req.body);
+      const batch = await BatchService.createBatch(ownerId, req.user!, req.body);
       res.status(201).json({ success: true, data: batch });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Lỗi không xác định.";
@@ -42,7 +42,7 @@ export class BatchController {
   static async update(req: AuthRequest, res: Response) {
     try {
       const ownerId = await getAllowedOwnerIds(req.user!);
-      const batch = await BatchService.updateBatch(ownerId, req.params.id, req.body);
+      const batch = await BatchService.updateBatch(ownerId, req.user!, req.params.id, req.body);
       if (!batch) {
         return res.status(404).json({ success: false, error: "Không tìm thấy lớp học để cập nhật." });
       }
