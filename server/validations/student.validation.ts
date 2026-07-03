@@ -34,6 +34,7 @@ export const createStudentSchema = Joi.object({
   birthday: Joi.string().allow("").optional(),
   idCard: Joi.string().allow("").optional(),
   rank: Joi.string().allow("").optional(),
+  courseId: objectIdSchema.allow("").optional(),
   registrationDate: Joi.string().required().messages({
     "any.required": "NgÃ y Ä‘Äƒng kÃ½ lÃ  báº¯t buá»™c.",
   }),
@@ -65,6 +66,7 @@ export const updateStudentSchema = Joi.object({
   birthday: Joi.string().allow("").optional(),
   idCard: Joi.string().allow("").optional(),
   rank: Joi.string().allow("").optional(),
+  courseId: objectIdSchema.allow("").optional(),
   registrationDate: Joi.string().optional(),
   enrollmentDate: Joi.string().allow("").optional(),
   fee: Joi.string().optional(),

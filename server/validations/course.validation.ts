@@ -13,9 +13,7 @@ export const createCourseSchema = Joi.object({
     "any.required": "Danh mục khóa học là bắt buộc.",
     "string.empty": "Danh mục khóa học không được để trống.",
   }),
-  fee: Joi.string().required().messages({
-    "any.required": "Học phí là bắt buộc.",
-  }),
+  fee: Joi.string().allow("").optional(),
   duration: Joi.string().required().messages({
     "any.required": "Thời lượng khóa học là bắt buộc.",
   }),
@@ -28,7 +26,7 @@ export const updateCourseSchema = Joi.object({
   code: Joi.string().optional(),
   title: Joi.string().optional(),
   category: Joi.string().optional(),
-  fee: Joi.string().optional(),
+  fee: Joi.string().allow("").optional(),
   duration: Joi.string().optional(),
   maxLearners: Joi.number().min(1).optional(),
   activeBatches: Joi.number().min(0).optional(),

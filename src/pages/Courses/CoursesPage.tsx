@@ -7,6 +7,7 @@ import { apiFetch } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import { useCourses } from '../../hooks/useCourses';
 import { useCourseCategories } from '../../hooks/useCourseCategories';
+import { useAuth } from '../../hooks/useAuth';
 import { Course, CourseCategory } from '../../types';
 import {
   ErpPageHeader, ErpPrimaryButton, ErpSearchBar, ErpFilterTab,
@@ -16,6 +17,10 @@ import {
 
 export function CoursesPage() {
   const darkMode = false;
+  const { user } = useAuth();
+  const businessType = user?.businessType || 'driving';
+  const usesCourseFeePolicy = businessType !== 'driving';
+  const courseFeeLabel = usesCourseFeePolicy ? 'Học phí niêm yết' : 'Học phí';
   const { toast } = useToast();
   const { courses, loading } = useCourses();
   const { categories, loading: categoriesLoading } = useCourseCategories();
@@ -55,14 +60,16 @@ export function CoursesPage() {
 
   const handleAddCourse = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCourse.code || !newCourse.title || !newCourse.fee || !newCourse.duration || !newCourse.category) {
+    if (!newCourse.code || !newCourse.title || !newCourse.duration || !newCourse.category || (usesCourseFeePolicy && !newCourse.fee)) {
       toast.error('Vui lòng nhập đầy đủ thông tin khóa học.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const formattedFee = newCourse.fee.endsWith('đ') ? newCourse.fee : `${newCourse.fee}đ`;
+      const formattedFee = newCourse.fee
+        ? (newCourse.fee.endsWith('đ') ? newCourse.fee : `${newCourse.fee}đ`)
+        : '0';
       await apiFetch('/courses', {
         method: 'POST',
         body: JSON.stringify({
@@ -290,7 +297,9 @@ export function CoursesPage() {
 
                 <div className={cn("grid grid-cols-2 gap-y-3 gap-x-2 pt-2 text-[10px] font-bold border-t", darkMode ? "text-slate-400 border-slate-800/30" : "text-slate-550 border-slate-100")}>
                   <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-slate-400" /> {c.duration}</div>
-                  <div className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-slate-400" /> {c.fee}</div>
+                  {usesCourseFeePolicy && (
+                    <div className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-slate-400" /> {c.fee}</div>
+                  )}
                   <div className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-slate-400" /> Max: {c.maxLearners} HV</div>
                   <div className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-slate-400" /> {c.activeBatches} lớp đang chạy</div>
                 </div>
@@ -339,7 +348,7 @@ export function CoursesPage() {
         <ErpCard className="rounded-[2.5rem] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
-              <ErpTableHead columns={['Mã', 'Tên khóa học', 'Phân loại', 'Thời lượng', 'Học phí', 'Quy mô', 'Trạng thái', 'Thao tác']} />
+              <ErpTableHead columns={['Mã', 'Tên khóa học', 'Phân loại', 'Thời lượng', courseFeeLabel, 'Quy mô', 'Trạng thái', 'Thao tác']} />
               <tbody className={cn("divide-y", darkMode ? "divide-slate-800/30" : "divide-slate-100")}>
                 {filteredCourses.map((c) => (
                   <tr key={c.id} className={cn("transition-colors", darkMode ? "text-slate-350 hover:bg-slate-800/10" : "text-slate-600 hover:bg-slate-50/40")}>
@@ -351,7 +360,7 @@ export function CoursesPage() {
                       </span>
                     </td>
                     <td className="py-4 px-6 font-bold">{c.duration}</td>
-                    <td className="py-4 px-6 font-bold">{c.fee}</td>
+                    <td className="py-4 px-6 font-bold">{usesCourseFeePolicy ? c.fee : 'Không áp dụng'}</td>
                     <td className="py-4 px-6 font-bold">{c.maxLearners} HV ({c.activeBatches} lớp)</td>
                     <td className="py-4 px-6">
                       <span className={cn(
@@ -440,14 +449,20 @@ export function CoursesPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <ErpField label="Học phí cơ bản (VND)">
-                <ErpInput
-                  type="text"
-                  required
-                  placeholder="Ví dụ: 5.500.000"
-                  value={newCourse.fee}
-                  onChange={(e) => setNewCourse({ ...newCourse, fee: e.target.value })}
-                />
+              <ErpField label={usesCourseFeePolicy ? 'Học phí niêm yết (VND)' : 'Học phí khóa học'}>
+                {usesCourseFeePolicy ? (
+                  <ErpInput
+                    type="text"
+                    required
+                    placeholder="Ví dụ: 5.500.000"
+                    value={newCourse.fee}
+                    onChange={(e) => setNewCourse({ ...newCourse, fee: e.target.value })}
+                  />
+                ) : (
+                  <div className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-500">
+                    Không dùng cho trung tâm lái xe. Học phí lấy trực tiếp từ hồ sơ/import học viên.
+                  </div>
+                )}
               </ErpField>
               <ErpField label="Tối đa học viên/Lớp">
                 <ErpInput

@@ -2,6 +2,7 @@ import { Response, NextFunction } from "express";
 import { BatchService } from "../services/batch.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { getAllowedOwnerIds } from "../utils/auth.util";
+import { AuthService } from "../services/auth.service";
 
 export class BatchController {
   static async create(req: AuthRequest, res: Response) {
@@ -68,7 +69,9 @@ export class BatchController {
   static async addLearner(req: AuthRequest, res: Response) {
     try {
       const ownerId = await getAllowedOwnerIds(req.user!);
-      const batch = await BatchService.addLearner(ownerId, req.params.id, req.body.studentId);
+      const currentUser = await AuthService.getUserProfile(req.user!.uid);
+      const businessType = currentUser?.businessType || "driving";
+      const batch = await BatchService.addLearner(ownerId, req.params.id, req.body.studentId, businessType);
       res.json({ success: true, data: batch });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Lỗi không xác định.";

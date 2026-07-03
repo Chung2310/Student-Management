@@ -33,6 +33,11 @@ function normalizePhone(phone: string): string {
   return String(phone || "").replace(/\D/g, "");
 }
 
+function normalizeFee(fee: unknown): string {
+  const raw = String(fee || "").trim();
+  return raw || "0";
+}
+
 function buildOwnerScopeQuery(ownerId: string | string[]) {
   if (ownerId === "ALL") {
     return {};
@@ -96,6 +101,8 @@ export class StudentService {
       email: typeof data.email === "string" ? normalizeEmail(data.email) : data.email,
       phone: normalizePhone(data.phone),
       idCard: typeof data.idCard === "string" ? normalizeIdCard(data.idCard) : data.idCard,
+      fee: normalizeFee(data.fee),
+      courseId: typeof data.courseId === "string" ? data.courseId.trim() : data.courseId,
     };
 
     await ensureUniqueFieldsInScope(ownerScope, normalizedPayload);
@@ -176,6 +183,12 @@ export class StudentService {
     }
     if (typeof data.phone === "string") {
       data.phone = normalizePhone(data.phone);
+    }
+    if (typeof data.fee !== "undefined") {
+      data.fee = normalizeFee(data.fee);
+    }
+    if (typeof data.courseId === "string") {
+      data.courseId = data.courseId.trim();
     }
 
     await ensureUniqueFieldsInScope(ownerScope, data, id);

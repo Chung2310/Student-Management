@@ -24,6 +24,7 @@ export interface DrivingStudent {
   idCardBack?: string;
   /** Hạng bằng lái — thông tin riêng ngành lái xe, học viên ngành khác để trống */
   rank?: string;
+  courseId?: string;
   registrationDate: string;
   enrollmentDate?: string;
   fee: string; // This is the TOTAL fee string (e.g. "12,000,000")

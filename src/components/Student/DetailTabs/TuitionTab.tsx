@@ -18,6 +18,7 @@ export function TuitionTab({
   handleDeletePaymentClick
 }: TuitionTabProps) {
   const { user } = useAuth();
+  const feeLabel = (user?.businessType || 'driving') === 'driving' ? 'Tổng học phí' : 'Học phí đã chốt';
   const totalFee = parseInt(parseVND(student.fee)) || 0;
   const paid = student.paidAmount || 0;
   const remaining = totalFee - paid;
@@ -99,7 +100,7 @@ export function TuitionTab({
       {/* Fee Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <FeeCard 
-          label="Tổng học phí" 
+          label={feeLabel} 
           amount={totalFee} 
           icon={CreditCard}
           color="text-slate-800"

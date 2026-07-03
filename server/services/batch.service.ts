@@ -35,6 +35,11 @@ function buildOwnerQuery(ownerId: string | string[]): Record<string, unknown> {
   return { ownerId: Array.isArray(ownerId) ? { $in: ownerId } : ownerId };
 }
 
+function hasLockedStudentFee(fee: string | undefined): boolean {
+  const feeNum = parseInt(String(fee || "").replace(/\D/g, ""), 10) || 0;
+  return feeNum > 0;
+}
+
 /** Kiểm tra tính hợp lệ chung của lịch/ngày lớp học */
 function assertScheduleValid(data: BatchData) {
   if (data.startTime && data.endTime && String(data.startTime) >= String(data.endTime)) {
@@ -169,7 +174,12 @@ export class BatchService {
   }
 
   /** Gắn học viên vào lớp (kiểm tra sĩ số tối đa của khóa học) */
-  static async addLearner(ownerId: string | string[], id: string, studentId: string): Promise<EnrichedBatch> {
+  static async addLearner(
+    ownerId: string | string[],
+    id: string,
+    studentId: string,
+    businessType: "driving" | "language" | "general" = "driving"
+  ): Promise<EnrichedBatch> {
     const batch = await Batch.findOne({ _id: id, ...buildOwnerQuery(ownerId) });
     if (!batch) {
       throw new Error("Không tìm thấy lớp học.");
@@ -184,6 +194,24 @@ export class BatchService {
     const course = await Course.findOne({ _id: batch.courseId });
     if (course && course.maxLearners > 0 && batch.learnerIds.length >= course.maxLearners) {
       throw new Error(`Lớp đã đạt sĩ số tối đa (${course.maxLearners} học viên).`);
+    }
+
+    if (businessType !== "driving" && course) {
+      let shouldSaveStudent = false;
+
+      if (!student.courseId) {
+        student.courseId = batch.courseId;
+        shouldSaveStudent = true;
+      }
+
+      if (!hasLockedStudentFee(student.fee)) {
+        student.fee = course.fee;
+        shouldSaveStudent = true;
+      }
+
+      if (shouldSaveStudent) {
+        await student.save();
+      }
     }
 
     batch.learnerIds.push(studentId);

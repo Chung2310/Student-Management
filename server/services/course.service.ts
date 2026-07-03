@@ -15,6 +15,11 @@ interface CourseData {
   [key: string]: unknown;
 }
 
+function normalizeCourseFee(fee: unknown): string {
+  const raw = String(fee || "").trim();
+  return raw || "0";
+}
+
 function buildOwnerQuery(ownerId: string | string[]): Record<string, unknown> {
   if (ownerId === "ALL") return {};
   return { ownerId: Array.isArray(ownerId) ? { $in: ownerId } : ownerId };
@@ -27,7 +32,7 @@ export class CourseService {
     if (existing) {
       throw new Error(`Mã khóa học "${data.code}" đã tồn tại.`);
     }
-    const course = new Course({ ...data, ownerId });
+    const course = new Course({ ...data, fee: normalizeCourseFee(data.fee), ownerId });
     const saved = await course.save();
     logger.info(`[Course] Course created: id=${saved._id}, code=${saved.code}`);
     return saved;
@@ -73,9 +78,13 @@ export class CourseService {
 
   static async updateCourse(ownerId: string | string[], id: string, data: CourseData): Promise<ICourse | null> {
     logger.info(`[Course] Updating course: id=${id}`);
+    const normalizedData = {
+      ...data,
+      ...(Object.prototype.hasOwnProperty.call(data, "fee") ? { fee: normalizeCourseFee(data.fee) } : {}),
+    };
     return await Course.findOneAndUpdate(
       { _id: id, ...buildOwnerQuery(ownerId) },
-      { $set: data },
+      { $set: normalizedData },
       { new: true, runValidators: true }
     );
   }

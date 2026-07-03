@@ -185,7 +185,13 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
 
               <Input label="Ngày đăng ký" name="registrationDate" value={formData.registrationDate} onChange={handleInputChange} placeholder="DD/MM/YYYY" readOnly />
               <Input label="Ngày nhập học" name="enrollmentDate" value={formData.enrollmentDate} onChange={handleInputChange} placeholder="DD/MM/YYYY" />
-              <Input label="Học phí (VND)" name="fee" value={formData.fee} onChange={handleInputChange} placeholder="Nhập học phí..." />
+              <Input
+                label={(user?.businessType || 'driving') === 'driving' ? 'Học phí (VND)' : 'Học phí đã chốt (VND)'}
+                name="fee"
+                value={formData.fee}
+                onChange={handleInputChange}
+                placeholder={(user?.businessType || 'driving') === 'driving' ? 'Nhập học phí...' : 'Nhập học phí đã chốt...'}
+              />
               <Input label="Địa chỉ" name="address" value={formData.address} onChange={handleInputChange} placeholder="Nhập địa chỉ..." className="sm:col-span-2" />
               <div className="sm:col-span-2 space-y-1">
                 <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Trạng thái (Chọn nhiều)</label>

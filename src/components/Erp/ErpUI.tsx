@@ -200,11 +200,15 @@ export function ErpSelect({ className, children, ...props }: React.SelectHTMLAtt
   );
 }
 
-export function ErpSubmitButton({ children }: { children: React.ReactNode }) {
+export function ErpSubmitButton({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type="submit"
-      className="w-full py-3.5 bg-gradient-to-r from-brand-primary to-sky-600 hover:from-brand-primary/90 hover:to-sky-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-brand-primary/20 active:scale-95 transition-all mt-4"
+      {...props}
+      className={cn(
+        "w-full py-3.5 bg-gradient-to-r from-brand-primary to-sky-600 hover:from-brand-primary/90 hover:to-sky-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-brand-primary/20 active:scale-95 transition-all mt-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 disabled:from-slate-400 disabled:to-slate-500",
+        props.className
+      )}
     >
       {children}
     </button>
