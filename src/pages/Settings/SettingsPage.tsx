@@ -40,8 +40,7 @@ export function SettingsPage() {
     return {
       fullName: true,
       phone: true,
-      rank: true,
-      area: true,
+      rank: false, // Hạng bằng lái xe — tùy chọn, ngành khác để trống
       birthday: false,
       idCard: false,
       email: false
@@ -51,8 +50,7 @@ export function SettingsPage() {
   const fieldMapping = [
     { label: 'Họ và tên', key: 'fullName' },
     { label: 'Số điện thoại', key: 'phone' },
-    { label: 'Hạng bằng', key: 'rank' },
-    { label: 'Khu vực', key: 'area' },
+    { label: 'Hạng bằng (lái xe — tùy chọn)', key: 'rank' },
     { label: 'Ngày sinh', key: 'birthday' },
     { label: 'CCCD/CMND', key: 'idCard' },
     { label: 'Email', key: 'email' }
@@ -69,6 +67,8 @@ export function SettingsPage() {
   };
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+
+
 
   const [vietqrEnabled, setVietqrEnabled] = useState(true);
   const [vietqrBankId, setVietqrBankId] = useState('mbbank');
@@ -499,7 +499,6 @@ export function SettingsPage() {
             birthday: cleanData.birthday || "",
             idCard: cleanData.idCard || "",
             rank: cleanData.rank,
-            area: cleanData.area,
             registrationDate: cleanData.registrationDate,
             fee: cleanData.fee,
             address: cleanData.address || "",
@@ -699,7 +698,6 @@ export function SettingsPage() {
               birthday: cleanData.birthday || "",
               idCard: cleanData.idCard || "",
               rank: cleanData.rank,
-              area: cleanData.area,
               registrationDate: cleanData.registrationDate,
               fee: cleanData.fee,
               address: cleanData.address || "",
@@ -843,6 +841,8 @@ export function SettingsPage() {
               </div>
             </div>
 
+            {/* Business Type Settings (Hidden: configured via User Management) */}
+
             {/* Tuition Stages */}
             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 p-6 space-y-6">
               <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
@@ -975,6 +975,7 @@ export function SettingsPage() {
                       disabled={!isAdmin}
                       className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 disabled:opacity-60 disabled:cursor-not-allowed"
                       rows={3}
+                      placeholder="Mẫu nội dung (Ví dụ: [Mã HV] - [Họ tên] - Nộp học phí khóa {hang})..."
                       value={vietqrTemplate}
                       onChange={(e) => setVietqrTemplate(e.target.value)}
                     />

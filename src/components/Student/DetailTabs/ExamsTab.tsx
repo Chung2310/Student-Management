@@ -131,6 +131,7 @@ export function ExamsTab({
                         <input 
                           className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1"
                           value={exam.name}
+                          placeholder="Tên kỳ thi..."
                           onChange={(e) => {
                             const newExams = [...examData];
                             newExams[idx].name = e.target.value;
@@ -140,6 +141,7 @@ export function ExamsTab({
                         <input 
                           className="w-full text-[10px] bg-slate-50 border border-slate-200 rounded-lg px-2 py-1"
                           value={exam.date}
+                          placeholder="Ngày thi..."
                           onChange={(e) => {
                             const newExams = [...examData];
                             newExams[idx].date = e.target.value;

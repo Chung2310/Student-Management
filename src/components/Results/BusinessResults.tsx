@@ -17,7 +17,6 @@ export function BusinessResults() {
   
   const [reportPeriod, setReportPeriod] = useState('Tháng này');
   const [sourceFilter, setSourceFilter] = useState('Mọi nguồn');
-  const [areaFilter, setAreaFilter] = useState('Mọi khu vực');
   const [rankFilter, setRankFilter] = useState('Mọi hạng');
 
   // Fetch all payments for this owner
@@ -70,10 +69,8 @@ export function BusinessResults() {
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
-    // 1. Filter Students (for Enrolment KPI)
     let filteredStudents = students;
     if (sourceFilter !== 'Mọi nguồn') filteredStudents = filteredStudents.filter(s => s.referral === sourceFilter);
-    if (areaFilter !== 'Mọi khu vực') filteredStudents = filteredStudents.filter(s => s.area === areaFilter);
     if (rankFilter !== 'Mọi hạng') filteredStudents = filteredStudents.filter(s => s.rank === rankFilter);
 
     if (reportPeriod === 'Tháng này') {
@@ -127,7 +124,7 @@ export function BusinessResults() {
       avgFee,
       debtRate
     };
-  }, [students, payments, reportPeriod, sourceFilter, areaFilter, rankFilter]);
+  }, [students, payments, reportPeriod, sourceFilter, rankFilter]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
@@ -168,9 +165,8 @@ export function BusinessResults() {
         />
       </div>
 
-      {/* Filters Section */}
       <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/40 p-8 space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <FilterSelect 
             label="Kỳ báo cáo" 
             value={reportPeriod} 
@@ -182,12 +178,6 @@ export function BusinessResults() {
             value={sourceFilter} 
             onChange={setSourceFilter}
             options={['Mọi nguồn', 'Facebook', 'Website', 'Zalo', 'Giới thiệu']}
-          />
-          <FilterSelect 
-            label="Khu vực" 
-            value={areaFilter} 
-            onChange={setAreaFilter}
-            options={['Mọi khu vực', 'Nội thành', 'Ngoại thành', 'Tỉnh lân cận']}
           />
           <FilterSelect 
             label="Hạng bằng" 
@@ -210,7 +200,6 @@ export function BusinessResults() {
             onClick={() => {
               setReportPeriod('Tháng này');
               setSourceFilter('Mọi nguồn');
-              setAreaFilter('Mọi khu vực');
               setRankFilter('Mọi hạng');
             }}
             className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"

@@ -19,25 +19,33 @@ export function StatsGrid() {
     { label: 'Còn nợ học phí', value: 15, icon: Wallet, color: 'text-amber-600', bg: 'bg-amber-50' },
   ];
 
+  // Trạng thái riêng quy trình lái xe — ẩn thẻ khi không có học viên nào mang trạng thái đó
+  const DRIVING_STATS = ['Chờ KSK', 'Đã KSK', 'Đã nộp HS'];
+
   const getRealStats = () => {
     if (!user) return mockStats;
 
+    const hasStatus = (s: (typeof students)[number], st: string) =>
+      Array.isArray(s.status) ? s.status.includes(st as (typeof s.status)[number]) : s.status === st;
+
     const statsMap = {
       'Tổng học viên': students.length,
-      'Chờ KSK': students.filter(s => s.status === 'Chờ KSK').length,
-      'Đã KSK': students.filter(s => s.status === 'Đã KSK').length,
-      'Đã nộp HS': students.filter(s => s.status === 'Đã nộp HS').length,
-      'Đang học': students.filter(s => s.status === 'Đang học').length,
-      'Đang thi': students.filter(s => s.status === 'Đang thi').length,
-      'Đã đậu': students.filter(s => s.status === 'Đã đậu').length,
-      'Thi lại': students.filter(s => s.status === 'Thi lại').length,
-      'Còn nợ học phí': students.filter(s => s.status === 'Nợ học phí').length,
+      'Chờ KSK': students.filter(s => hasStatus(s, 'Chờ KSK')).length,
+      'Đã KSK': students.filter(s => hasStatus(s, 'Đã KSK')).length,
+      'Đã nộp HS': students.filter(s => hasStatus(s, 'Đã nộp HS')).length,
+      'Đang học': students.filter(s => hasStatus(s, 'Đang học')).length,
+      'Đang thi': students.filter(s => hasStatus(s, 'Đang thi')).length,
+      'Đã đậu': students.filter(s => hasStatus(s, 'Đã đậu')).length,
+      'Thi lại': students.filter(s => hasStatus(s, 'Thi lại')).length,
+      'Còn nợ học phí': students.filter(s => hasStatus(s, 'Nợ học phí')).length,
     };
 
-    return mockStats.map(stat => ({
-      ...stat,
-      value: statsMap[stat.label as keyof typeof statsMap] ?? 0
-    }));
+    return mockStats
+      .map(stat => ({
+        ...stat,
+        value: statsMap[stat.label as keyof typeof statsMap] ?? 0
+      }))
+      .filter(stat => !(DRIVING_STATS.includes(stat.label) && stat.value === 0));
   };
 
   const displayStats = getRealStats();

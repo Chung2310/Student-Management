@@ -10,6 +10,10 @@ import uploadRoutes from "./upload.routes";
 import aiRoutes from "./ai.routes";
 import chatbotRoutes from "./chatbot.routes";
 import webhookRoutes from "./webhook.routes";
+import courseRoutes from "./course.routes";
+import resourceRoutes from "./resource.routes";
+import batchRoutes from "./batch.routes";
+import scheduleRoutes from "./schedule.routes";
 import { logger } from "../config/logger";
 
 const router = Router();
@@ -23,6 +27,10 @@ router.use("/upload", uploadRoutes);
 router.use("/ai", aiRoutes);
 router.use("/chatbot", chatbotRoutes);
 router.use("/webhook", webhookRoutes);
+router.use("/courses", courseRoutes);
+router.use("/resources", resourceRoutes);
+router.use("/batches", batchRoutes);
+router.use("/schedule", scheduleRoutes);
 
 import { authMiddleware, AuthRequest } from "../middlewares/auth.middleware";
 import { EmailService } from "../services/email.service";

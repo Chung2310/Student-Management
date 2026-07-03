@@ -10,8 +10,10 @@ import { apiFetch } from '../../lib/api';
 import { cn } from '../../lib/utils';
 import { analyzeStudentPerformance } from '../../services/geminiService';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
 
 import { ProfileTab } from './DetailTabs/ProfileTab';
+
 import { KskTab } from './DetailTabs/KskTab';
 import { ProgressTab } from './DetailTabs/ProgressTab';
 import { ExamsTab } from './DetailTabs/ExamsTab';
@@ -28,6 +30,7 @@ interface StudentDetailModalProps {
 type TabType = 'Hồ sơ' | 'KSK' | 'Tiến độ học' | 'Lịch thi & KQ' | 'Học phí' | 'Lịch sử' | 'Trợ lý AI';
 
 export function StudentDetailModal({ student: initialStudent, onClose, initialTab = 'Hồ sơ' }: StudentDetailModalProps) {
+  const { user } = useAuth();
   const [student, setStudent] = React.useState<Student | null>(initialStudent);
   const [activeTab, setActiveTab] = React.useState<TabType>(initialTab);
   const [analysis, setAnalysis] = React.useState<string | null>(null);
@@ -39,9 +42,10 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
   const [isEditingExams, setIsEditingExams] = React.useState(false);
   const [isUpdatingExams, setIsUpdatingExams] = React.useState(false);
   const [isUploadingFile, setIsUploadingFile] = React.useState(false);
+
   
   const [kskData, setKskData] = React.useState({
-    status: student?.status === 'Chờ KSK' ? 'Pending' : 'Completed',
+    status: (Array.isArray(student?.status) ? student.status.includes('Chờ KSK') : student?.status === 'Chờ KSK') ? 'Pending' : 'Completed',
     date: student?.healthCheckDate || '',
     notes: student?.healthCheckNotes || '',
     files: student?.healthCheckFiles || []
@@ -112,7 +116,7 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
       const timer = setTimeout(() => {
         if (!isUpdatingKSK) {
           setKskData({
-            status: student.status === 'Chờ KSK' ? 'Pending' : 'Completed',
+            status: (Array.isArray(student.status) ? student.status.includes('Chờ KSK') : student.status === 'Chờ KSK') ? 'Pending' : 'Completed',
             date: student.healthCheckDate || '',
             notes: student.healthCheckNotes || '',
             files: student.healthCheckFiles || []
@@ -135,7 +139,25 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
     }
   }, [student, isUpdatingKSK, isEditingProgress, isUpdatingProgress, isEditingExams, isUpdatingExams]);
 
-  const tabs: TabType[] = ['Hồ sơ', 'KSK', 'Tiến độ học', 'Lịch thi & KQ', 'Học phí', 'Lịch sử', 'Trợ lý AI'];
+  const businessType = user?.businessType || 'driving';
+
+  const tabs = React.useMemo<TabType[]>(() => {
+    if (businessType === 'driving') {
+      return ['Hồ sơ', 'KSK', 'Tiến độ học', 'Lịch thi & KQ', 'Học phí', 'Lịch sử', 'Trợ lý AI'];
+    } else if (businessType === 'language') {
+      return ['Hồ sơ', 'Lịch thi & KQ', 'Học phí', 'Lịch sử', 'Trợ lý AI'];
+    } else {
+      return ['Hồ sơ', 'Học phí', 'Lịch sử', 'Trợ lý AI'];
+    }
+  }, [businessType]);
+
+  // Nếu tab đang mở không còn khả dụng (ví dụ mở từ deep-link) thì quay về Hồ sơ
+  React.useEffect(() => {
+    if (!tabs.includes(activeTab)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveTab('Hồ sơ');
+    }
+  }, [tabs, activeTab]);
 
   const handleUpdateExams = async () => {
     if (!student) return;
@@ -409,23 +431,30 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
                   <div className="min-w-0">
                     <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight truncate">{student.fullName}</h2>
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1 sm:mt-2">
-                      <span className="px-2 py-0.5 bg-cyan-50 text-cyan-700 rounded text-[10px] sm:text-xs font-bold border border-cyan-100">
-                        {student.rank}
-                      </span>
-                      <span className="text-slate-400 text-[10px] sm:text-xs font-medium">{student.area}</span>
-                      <span className="text-slate-300 hidden sm:block">•</span>
+                      {student.rank && businessType !== 'general' && (
+                        <span className="px-2 py-0.5 bg-cyan-50 text-cyan-700 rounded text-[10px] sm:text-xs font-bold border border-cyan-100">
+                          {student.rank}
+                        </span>
+                      )}
                       <span className="text-slate-500 text-[10px] sm:text-xs font-medium">{student.phone}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 sm:gap-4 self-end sm:self-center">
-                  <span className={cn(
-                    "px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold border shadow-sm",
-                    getStatusColor(student.status)
-                  )}>
-                    {student.status}
-                  </span>
+                  <div className="flex flex-wrap gap-1.5 justify-end">
+                    {(Array.isArray(student.status) ? student.status : [student.status]).map((st) => (
+                      <span
+                        key={st}
+                        className={cn(
+                          "px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold border shadow-sm whitespace-nowrap",
+                          getStatusColor(st)
+                        )}
+                      >
+                        {st}
+                      </span>
+                    ))}
+                  </div>
                   <div className="flex items-center gap-2">
                     <button 
                       title="In thông tin"

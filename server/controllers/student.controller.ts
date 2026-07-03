@@ -2,13 +2,14 @@ import { Request, Response, NextFunction } from "express";
 import { StudentService } from "../services/student.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { AuthService } from "../services/auth.service";
-import { getAllowedOwnerIds } from "../utils/auth.util";
+import { getAllowedOwnerIds, getCenterOwnerIds } from "../utils/auth.util";
 
 export class StudentController {
   static async create(req: AuthRequest, res: Response) {
     try {
       const ownerId = req.user!.uid;
-      const student = await StudentService.createStudent(ownerId, req.body);
+      const centerOwnerIds = await getCenterOwnerIds(req.user!);
+      const student = await StudentService.createStudent(ownerId, centerOwnerIds, req.body);
       res.status(201).json({ success: true, data: student });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Lỗi không xác định.";
@@ -42,7 +43,8 @@ export class StudentController {
   static async update(req: AuthRequest, res: Response) {
     try {
       const ownerId = await getAllowedOwnerIds(req.user!);
-      const student = await StudentService.updateStudent(ownerId, req.params.id, req.body);
+      const centerOwnerIds = await getCenterOwnerIds(req.user!);
+      const student = await StudentService.updateStudent(ownerId, centerOwnerIds, req.params.id, req.body);
       if (!student) {
         return res.status(404).json({ success: false, error: "Không tìm thấy học viên để cập nhật." });
       }
@@ -69,7 +71,7 @@ export class StudentController {
   static async bulkCreate(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const creatorId = req.user!.uid;
-      const ownerId = await getAllowedOwnerIds(req.user!);
+      const ownerId = await getCenterOwnerIds(req.user!);
       const students = req.body.students;
       if (!Array.isArray(students)) {
         return res.status(400).json({ success: false, error: "Dữ liệu học viên không hợp lệ (phải là danh sách)." });
@@ -100,7 +102,10 @@ export class StudentController {
         status: "Chờ KSK",
       };
 
-      const student = await StudentService.createStudent(teacherId, payload);
+      const teacherScope = teacher.centerId === "superadmin"
+        ? "ALL"
+        : await getCenterOwnerIds({ uid: teacherId, role: teacher.role, centerId: teacher.centerId });
+      const student = await StudentService.createStudent(teacherId, teacherScope, payload);
       res.status(201).json({ success: true, data: student });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Lỗi không xác định.";
@@ -127,6 +132,25 @@ export class StudentController {
         return res.status(400).json({ success: false, error: result.error });
       }
       res.json({ success: true, message: `Đã đánh dấu đã thu đợt ${installmentNo}.` });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Lỗi không xác định.";
+      res.status(400).json({ success: false, error: msg });
+    }
+  }
+
+  static async publicLookup(req: Request, res: Response) {
+    try {
+      const { idCard } = req.query;
+      if (!idCard || typeof idCard !== "string") {
+        return res.status(400).json({ success: false, error: "Vui lòng nhập số CCCD." });
+      }
+
+      const student = await StudentService.getStudentByIdCard(idCard.trim());
+      if (!student) {
+        return res.status(404).json({ success: false, error: "Không tìm thấy thông tin học viên với số CCCD này." });
+      }
+
+      res.json({ success: true, data: student });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Lỗi không xác định.";
       res.status(400).json({ success: false, error: msg });

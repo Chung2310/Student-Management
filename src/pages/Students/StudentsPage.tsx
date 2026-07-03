@@ -1,20 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
   Search, Download, Printer, Plus,
-  Eye, ChevronRight, Trash2, Pencil,
+  Eye, Trash2, Pencil,
   X, Calendar as CalendarIcon, ChevronDown,
-  Users, Bike, Car, Upload
+  Users, Car, Upload, Languages, Lightbulb, BookOpen, UserX
 } from 'lucide-react';
 import { cn, formatVND, formatDisplayDate } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
+import { useBatches } from '../../hooks/useBatches';
+import { useCourses } from '../../hooks/useCourses';
+import { useCourseCategories } from '../../hooks/useCourseCategories';
 import { useToast } from '../../hooks/useToast';
 import { Student } from '../../types';
 import { apiFetch } from '../../lib/api';
-import { StatusTransitionModal } from '../../components/Student/StatusTransitionModal';
 import { EditStudentModal } from '../../components/Student/EditStudentModal';
 import { ImportStudentModal } from '../../components/Student/ImportStudentModal';
 import { Pagination } from '../../components/ui/Pagination';
+import { useAuth } from '../../hooks/useAuth';
 import * as XLSX from 'xlsx';
 
 interface StudentsPageProps {
@@ -22,27 +25,49 @@ interface StudentsPageProps {
   onAddStudent: () => void;
 }
 
-type CategoryFilter = 'Tất cả' | 'Xe máy' | 'Ô tô';
 type StatusFilter = 'Tất cả' | 'KSK' | 'Đã KSK' | 'Nộp HS' | 'Đang học' | 'Đang thi' | 'Đã đậu' | 'Thi lại' | 'Nghỉ học';
 
+// Tab phân loại ảo, luôn có bên cạnh các phân loại khóa học động
+const TAB_ALL = 'Tất cả';
+const TAB_UNASSIGNED = 'Chưa xếp lớp';
+
+// Icon gợi ý theo tên phân loại; phân loại mới chưa nhận diện được thì dùng icon chung
+function categoryIcon(name: string): React.ComponentType<{ className?: string }> {
+  const n = name.toLowerCase();
+  if (n.includes('lái xe') || n.includes('lai xe')) return Car;
+  if (n.includes('ngoại ngữ') || n.includes('ngoai ngu') || n.includes('tiếng')) return Languages;
+  if (n.includes('kỹ năng') || n.includes('ky nang')) return Lightbulb;
+  return BookOpen;
+}
+
 export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProps) {
+  const { user } = useAuth();
   const { students, loading } = useStudents();
+  const { batches } = useBatches();
+  const { courses } = useCourses();
+  const { categories } = useCourseCategories();
   const { toast } = useToast();
-  const [category, setCategory] = useState<CategoryFilter>('Tất cả');
-  const [status, setStatus] = useState<StatusFilter>('Tất cả');
+  const [category, setCategory] = useState<string>(TAB_ALL);
+  const [selectedStatuses, setSelectedStatuses] = useState<StatusFilter[]>(['Tất cả']);
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [rankFilter, setRankFilter] = useState('Tất cả hạng');
-  const [areaFilter, setAreaFilter] = useState('Tất cả khu vực');
   const [feeStatusFilter, setFeeStatusFilter] = useState('Tất cả học phí');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [transitioningStudent, setTransitioningStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
+
+  // Nếu phân loại đang chọn bị xóa khỏi danh mục thì quay về "Tất cả"
+  React.useEffect(() => {
+    if (category !== TAB_ALL && category !== TAB_UNASSIGNED && categories.length > 0 && !categories.some(c => c.name === category)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCategory(TAB_ALL);
+    }
+  }, [categories, category]);
 
   // Reset to first page when filtering
   React.useEffect(() => {
@@ -50,7 +75,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
       setCurrentPage(1);
     }, 0);
     return () => clearTimeout(timer);
-  }, [category, status, searchQuery, startDate, endDate, rankFilter, areaFilter, feeStatusFilter]);
+  }, [category, selectedStatuses, searchQuery, startDate, endDate, rankFilter, feeStatusFilter]);
 
   // Helper to parse DD/MM/YYYY to Date object
   const parseDate = (dateStr: string) => {
@@ -58,28 +83,56 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
     return new Date(year, month - 1, day);
   };
 
+  // Học viên thuộc phân loại nào = phân loại của các khóa học mà lớp (batch) của họ đang mở
+  const studentCategories = useMemo(() => {
+    const categoryByCourseId = new Map<string, string>(courses.map(c => [c.id, c.category]));
+    const map = new Map<string, Set<string>>();
+    for (const b of batches) {
+      const cat = categoryByCourseId.get(b.courseId);
+      if (!cat) continue;
+      for (const sid of b.learnerIds) {
+        const set = map.get(sid) || new Set<string>();
+        set.add(cat);
+        map.set(sid, set);
+      }
+    }
+    return map;
+  }, [batches, courses]);
+
+  // Hạng bằng là dữ liệu riêng ngành lái xe — chỉ hiện filter/cột khi còn học viên có hạng
+  const hasRankData = useMemo(() => students.some(s => s.rank), [students]);
+  const rankOptions = useMemo(() => {
+    const ranks = [...new Set(students.map(s => s.rank).filter(Boolean))] as string[];
+    return ['Tất cả hạng', ...ranks.sort()];
+  }, [students]);
+
   const filteredStudents = students.filter(student => {
-    // 1. Category Filter
-    if (category === 'Xe máy' && !['A1', 'A2'].includes(student.rank)) return false;
-    if (category === 'Ô tô' && ['A1', 'A2'].includes(student.rank)) return false;
+    // 1. Category Filter (theo phân loại khóa học của lớp học viên đang tham gia)
+    if (category !== TAB_ALL) {
+      const cats = studentCategories.get(student.id);
+      if (category === TAB_UNASSIGNED) {
+        if (cats && cats.size > 0) return false;
+      } else if (!cats || !cats.has(category)) {
+        return false;
+      }
+    }
 
     // 2. Status Filter
-    if (status !== 'Tất cả') {
+    if (!selectedStatuses.includes('Tất cả') && selectedStatuses.length > 0) {
       const statusMap: Record<string, string> = {
         'Nộp HS': 'Đã nộp HS',
         'KSK': 'Chờ KSK'
       };
-      const normalizedStatus = statusMap[status] || status;
-      if (student.status !== normalizedStatus) return false;
+      const dbStatuses = selectedStatuses.map(s => statusMap[s] || s);
+      const studentStatuses = Array.isArray(student.status) ? student.status : [student.status];
+      const hasMatch = studentStatuses.some(s => dbStatuses.includes(s));
+      if (!hasMatch) return false;
     }
 
-    // 3. Rank Filter
-    if (rankFilter !== 'Tất cả hạng' && student.rank !== rankFilter) return false;
+    // 3. Rank Filter (chỉ áp dụng với dữ liệu ngành lái xe)
+    if (hasRankData && rankFilter !== 'Tất cả hạng' && student.rank !== rankFilter) return false;
 
-    // 4. Area Filter
-    if (areaFilter !== 'Tất cả khu vực' && student.area !== areaFilter) return false;
-
-    // 5. Date Range Filter
+    // 4. Date Range Filter
     if (startDate || endDate) {
       const regDate = parseDate(student.registrationDate);
       if (startDate) {
@@ -125,17 +178,25 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
     currentPage * pageSize
   );
 
-  const statusTabs: { label: StatusFilter; count?: number }[] = [
+  const businessType = user?.businessType || 'driving';
+
+  // Nhóm trạng thái riêng quy trình lái xe — ẩn tab khi không có học viên nào mang trạng thái đó
+  const DRIVING_STATUS_TABS: StatusFilter[] = ['KSK', 'Đã KSK', 'Nộp HS'];
+
+  const allStatusTabs: { label: StatusFilter; count?: number }[] = [
     { label: 'Tất cả', count: students.length },
-    { label: 'KSK', count: students.filter(s => s.status === 'Chờ KSK').length },
-    { label: 'Đã KSK', count: students.filter(s => s.status === 'Đã KSK').length },
-    { label: 'Nộp HS', count: students.filter(s => s.status === 'Đã nộp HS').length },
-    { label: 'Đang học', count: students.filter(s => s.status === 'Đang học').length },
-    { label: 'Đang thi', count: students.filter(s => s.status === 'Đang thi').length },
-    { label: 'Đã đậu', count: students.filter(s => s.status === 'Đã đậu').length },
-    { label: 'Thi lại', count: students.filter(s => s.status === 'Thi lại').length },
-    { label: 'Nghỉ học', count: students.filter(s => s.status === 'Nghỉ học').length },
+    ...(businessType === 'driving' ? [
+      { label: 'KSK' as StatusFilter, count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Chờ KSK') : s.status === 'Chờ KSK').length },
+      { label: 'Đã KSK' as StatusFilter, count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đã KSK') : s.status === 'Đã KSK').length },
+      { label: 'Nộp HS' as StatusFilter, count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đã nộp HS') : s.status === 'Đã nộp HS').length },
+    ] : []),
+    { label: 'Đang học', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đang học') : s.status === 'Đang học').length },
+    { label: 'Đang thi', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đang thi') : s.status === 'Đang thi').length },
+    { label: 'Đã đậu', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đã đậu') : s.status === 'Đã đậu').length },
+    { label: 'Thi lại', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Thi lại') : s.status === 'Thi lại').length },
+    { label: 'Nghỉ học', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Nghỉ học') : s.status === 'Nghỉ học').length },
   ];
+  const statusTabs = allStatusTabs.filter(tab => !(DRIVING_STATUS_TABS.includes(tab.label) && tab.count === 0));
 
   const getStatusBadgeClass = (status: string) => {
     const map: Record<string, string> = {
@@ -172,12 +233,18 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
       return;
     }
 
-    const headers = [
-      'Họ và tên', 'Số điện thoại', 'Hạng bằng', 'Khu vực', 'Ngày đăng ký',
-      'Học phí', 'Đã đóng', 'Còn nợ', 'Trạng thái học phí', 'Trạng thái học tập'
+    let headers: string[];
+    let getRowData: (student: Student) => (string | number)[];
+    let cols: { wch: number }[];
+
+    const commonHeadersAfter = [
+      'Học phí', 'Đã đóng', 'Còn nợ',
+      'Ngày đăng ký', 'Trạng thái học phí', 'Trạng thái học tập',
+      'Ngày sinh', 'CCCD / CMND', 'Email', 'Người giới thiệu', 'Địa chỉ', 'Ngày nhập học',
+      'Ảnh CCCD mặt trước', 'Ảnh CCCD mặt sau', 'Ảnh chân dung'
     ];
 
-    const data = filteredStudents.map(student => {
+    const getCommonRowDataAfter = (student: Student) => {
       const totalFeeNum = parseInt(String(student.fee).replace(/\D/g, ''), 10) || 0;
       const paidSoFar = student.paidAmount || 0;
       const remaining = totalFeeNum - paidSoFar;
@@ -190,35 +257,80 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
       }
 
       return [
-        student.fullName,
-        student.phone,
-        student.rank,
-        student.area,
-        student.registrationDate,
         totalFeeNum.toLocaleString('vi-VN'),
         paidSoFar.toLocaleString('vi-VN'),
         remaining.toLocaleString('vi-VN'),
+        student.registrationDate,
         feeStatusStr,
-        student.status
+        Array.isArray(student.status) ? student.status.join(', ') : student.status,
+        student.birthday || '',
+        student.idCard || '',
+        student.email || '',
+        student.referral || '',
+        student.address || '',
+        student.enrollmentDate || '',
+        student.idCardFrontFile?.url || '',
+        student.idCardBackFile?.url || '',
+        student.portraitFile?.url || ''
       ];
-    });
+    };
+
+    if (businessType === 'driving') {
+      headers = ['Họ và tên', 'Số điện thoại', 'Ngành / Hạng', ...commonHeadersAfter];
+      getRowData = (student: Student) => {
+        const cats = Array.from(studentCategories.get(student.id) || []);
+        return [
+          student.fullName,
+          student.phone,
+          cats.length > 0 ? cats.join(', ') : (student.rank || ''),
+          ...getCommonRowDataAfter(student)
+        ];
+      };
+      cols = [
+        { wch: 20 }, { wch: 15 }, { wch: 15 },
+        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 18 },
+        { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 35 }, { wch: 16 },
+        { wch: 30 }, { wch: 30 }, { wch: 30 }
+      ];
+    } else if (businessType === 'language') {
+      headers = ['Họ và tên', 'Số điện thoại', 'Khóa học', ...commonHeadersAfter];
+      getRowData = (student: Student) => {
+        const cats = Array.from(studentCategories.get(student.id) || []);
+        return [
+          student.fullName,
+          student.phone,
+          cats.length > 0 ? cats.join(', ') : (student.rank || ''),
+          ...getCommonRowDataAfter(student)
+        ];
+      };
+      cols = [
+        { wch: 20 }, { wch: 15 }, { wch: 20 },
+        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 18 },
+        { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 35 }, { wch: 16 },
+        { wch: 30 }, { wch: 30 }, { wch: 30 }
+      ];
+    } else {
+      headers = ['Họ và tên', 'Số điện thoại', ...commonHeadersAfter];
+      getRowData = (student: Student) => {
+        return [
+          student.fullName,
+          student.phone,
+          ...getCommonRowDataAfter(student)
+        ];
+      };
+      cols = [
+        { wch: 20 }, { wch: 15 },
+        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 18 },
+        { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 35 }, { wch: 16 },
+        { wch: 30 }, { wch: 30 }, { wch: 30 }
+      ];
+    }
+
+    const data = filteredStudents.map(getRowData);
 
     try {
       const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-      
-      // Set column widths for better readability
-      ws['!cols'] = [
-        { wch: 20 }, // Họ và tên
-        { wch: 15 }, // Số điện thoại
-        { wch: 10 }, // Hạng bằng
-        { wch: 15 }, // Khu vực
-        { wch: 15 }, // Ngày đăng ký
-        { wch: 15 }, // Học phí
-        { wch: 15 }, // Đã đóng
-        { wch: 15 }, // Còn nợ
-        { wch: 18 }, // Trạng thái học phí
-        { wch: 18 }  // Trạng thái học tập
-      ];
+      ws['!cols'] = cols;
 
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Danh sách học viên");
@@ -244,16 +356,18 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
       return;
     }
 
-    const rowsHtml = filteredStudents.map(student => `
+    const rowsHtml = filteredStudents.map(student => {
+      const cats = Array.from(studentCategories.get(student.id) || []);
+      return `
       <tr>
         <td style="padding: 10px; border: 1px solid #ddd;">${student.fullName}</td>
         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${student.phone}</td>
-        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${student.rank}</td>
-        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${student.area}</td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${cats.length > 0 ? cats.join(', ') : (student.rank || '')}</td>
         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${student.registrationDate}</td>
-        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${student.status}</td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${Array.isArray(student.status) ? student.status.join(', ') : student.status}</td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
     const printContent = `
       <html>
@@ -277,8 +391,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
               <tr>
                 <th>Họ và tên</th>
                 <th>Số điện thoại</th>
-                <th>Hạng</th>
-                <th>Khu vực</th>
+                <th>Ngành / Hạng</th>
                 <th>Ngày đăng ký</th>
                 <th>Trạng thái</th>
               </tr>
@@ -288,7 +401,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
             </tbody>
           </table>
           <div class="footer">
-            Xuất bởi Hệ thống Quản lý Học viên Lái xe
+            Xuất bởi Hệ thống Quản lý Đào tạo & Học viên iGen
           </div>
           <script>
             window.onload = function() {
@@ -340,16 +453,16 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         </div>
       </div>
 
-      {/* Primary Tabs */}
+      {/* Primary Tabs — sinh động từ phân loại khóa học */}
       <div className="flex items-center gap-2 sm:gap-6 border-b border-slate-200 overflow-x-auto no-scrollbar">
         {[
-          { id: 'Tất cả', icon: Users },
-          { id: 'Xe máy', icon: Bike },
-          { id: 'Ô tô', icon: Car }
+          { id: TAB_ALL, icon: Users },
+          ...categories.map((cat) => ({ id: cat.name, icon: categoryIcon(cat.name) })),
+          { id: TAB_UNASSIGNED, icon: UserX },
         ].map((item) => (
           <button
             key={item.id}
-            onClick={() => setCategory(item.id as CategoryFilter)}
+            onClick={() => setCategory(item.id)}
             className={cn(
               "flex items-center gap-2 px-3 sm:px-4 py-3 text-base sm:text-lg font-bold transition-all relative whitespace-nowrap",
               category === item.id ? "text-cyan-600" : "text-slate-400 hover:text-slate-600"
@@ -366,38 +479,53 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
 
       {/* Sub-Tabs (Status Workflow) */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 status-tabs">
-        {statusTabs.map((tab) => (
-          <button
-            key={tab.label}
-            onClick={() => setStatus(tab.label)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all whitespace-nowrap",
-              status === tab.label
-                ? "bg-slate-900 border-slate-900 text-white shadow-lg"
-                : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-            )}
-          >
-            {tab.label}
-            {tab.count !== undefined && (
-              <span className={cn(
-                "px-2 py-0.5 rounded-full text-[10px]",
-                status === tab.label ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"
-              )}>
-                {tab.count}
-              </span>
-            )}
-          </button>
-        ))}
+        {statusTabs.map((tab) => {
+          const isSelected = selectedStatuses.includes(tab.label);
+          return (
+            <button
+              key={tab.label}
+              onClick={() => {
+                setSelectedStatuses((prev) => {
+                  if (tab.label === 'Tất cả') {
+                    return ['Tất cả'];
+                  }
+                  const withoutAll = prev.filter(x => x !== 'Tất cả');
+                  const next = withoutAll.includes(tab.label)
+                    ? withoutAll.filter(x => x !== tab.label)
+                    : [...withoutAll, tab.label];
+                  return next.length === 0 ? ['Tất cả'] : next;
+                });
+              }}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all whitespace-nowrap",
+                isSelected
+                  ? "bg-slate-900 border-slate-900 text-white shadow-lg"
+                  : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+              )}
+            >
+              {tab.label}
+              {tab.count !== undefined && (
+                <span className={cn(
+                  "px-2 py-0.5 rounded-full text-[10px]",
+                  isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"
+                )}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Filters Bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm filters-bar">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm filters-bar">
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Từ ngày</label>
           <div className="relative">
             <input
               type="date"
               value={startDate}
+              placeholder="Từ ngày..."
               onChange={(e) => setStartDate(e.target.value)}
               className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-cyan-600 transition-all"
             />
@@ -410,47 +538,30 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
             <input
               type="date"
               value={endDate}
+              placeholder="Đến ngày..."
               onChange={(e) => setEndDate(e.target.value)}
               className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-cyan-600 transition-all"
             />
             <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Hạng bằng</label>
-          <div className="relative">
-            <select
-              value={rankFilter}
-              onChange={(e) => setRankFilter(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-cyan-600"
-            >
-              <option>Tất cả hạng</option>
-              <option>A1</option>
-              <option>A2</option>
-              <option>B1</option>
-              <option>B2</option>
-              <option>C</option>
-              <option>D</option>
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        {hasRankData && businessType !== 'general' && (
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              {businessType === 'language' ? 'Khóa học' : 'Hạng bằng (lái xe)'}
+            </label>
+            <div className="relative">
+              <select
+                value={rankFilter}
+                onChange={(e) => setRankFilter(e.target.value)}
+                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-cyan-600"
+              >
+                {rankOptions.map(opt => <option key={opt}>{opt}</option>)}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
           </div>
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Khu vực</label>
-          <div className="relative">
-            <select
-              value={areaFilter}
-              onChange={(e) => setAreaFilter(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-cyan-600"
-            >
-              <option>Tất cả khu vực</option>
-              <option>Nội thành</option>
-              <option>Ngoại thành</option>
-              <option>Tỉnh lân cận</option>
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-          </div>
-        </div>
+        )}
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Học phí</label>
           <div className="relative">
@@ -500,10 +611,15 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
                   <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-600" />
                 </th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Họ và tên</th>
-                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Hạng</th>
-                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Khu vực</th>
+                {businessType === 'language' ? (
+                  <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Khóa học</th>
+                ) : businessType === 'driving' ? (
+                  <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Ngành / Hạng</th>
+                ) : null}
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Ngày ĐK</th>
-                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Tiến độ</th>
+                {businessType === 'driving' && (
+                  <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Tiến độ</th>
+                )}
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Học phí</th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Trạng thái</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right no-print">Thao tác</th>
@@ -511,44 +627,78 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td colSpan={9} className="px-6 py-20 text-center text-slate-400 text-sm italic">Đang nạp dữ liệu...</td></tr>
+                <tr><td colSpan={8} className="px-6 py-20 text-center text-slate-400 text-sm italic">Đang nạp dữ liệu...</td></tr>
               ) : paginatedStudents.length === 0 ? (
-                <tr><td colSpan={9} className="px-6 py-20 text-center text-slate-400 text-sm italic">Không tìm thấy học viên nào phù hợp với bộ lọc.</td></tr>
+                <tr><td colSpan={8} className="px-6 py-20 text-center text-slate-400 text-sm italic">Không tìm thấy học viên nào phù hợp với bộ lọc.</td></tr>
               ) : paginatedStudents.map((student) => (
                 <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4 no-print">
                     <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-600" />
                   </td>
                   <td className="px-4 py-4">
-                    <div className="flex flex-col">
-                      <span className="text-base font-bold text-slate-800">{student.fullName}</span>
-                      <span className="text-xs font-medium text-slate-400">{student.phone}</span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-base font-bold text-slate-800 capitalize">{student.fullName}</span>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium text-slate-400">
+                        <span>{student.phone}</span>
+                        {student.idCard && (
+                          <>
+                            <span className="text-slate-200">•</span>
+                            <span className="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] text-slate-600 font-semibold">CCCD: {student.idCard}</span>
+                          </>
+                        )}
+                        {student.birthday && (
+                          <>
+                            <span className="text-slate-200">•</span>
+                            <span>NS: {student.birthday}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-center">
-                    <span className="px-3 py-1 bg-cyan-50 text-cyan-700 rounded text-xs font-bold border border-cyan-100">
-                      {student.rank}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-center text-sm font-medium text-slate-500">
-                    {student.area}
-                  </td>
+                  {businessType !== 'general' && (
+                    <td className="px-4 py-4 text-center">
+                      {(() => {
+                        const cats = Array.from(studentCategories.get(student.id) || []);
+                        if (cats.length > 0) {
+                          return (
+                            <div className="flex flex-wrap justify-center gap-1">
+                              {cats.map(c => (
+                                <span key={c} className="px-2 py-1 bg-cyan-50 text-cyan-700 rounded text-xs font-bold border border-cyan-100 whitespace-nowrap">
+                                  {c}
+                                </span>
+                              ))}
+                            </div>
+                          );
+                        }
+                        if (student.rank) {
+                          return (
+                            <span className="px-3 py-1 bg-cyan-50 text-cyan-700 rounded text-xs font-bold border border-cyan-100">
+                              {student.rank}
+                            </span>
+                          );
+                        }
+                        return <span className="text-xs text-slate-300 font-medium italic">Chưa xếp lớp</span>;
+                      })()}
+                    </td>
+                  )}
                   <td className="px-4 py-4 text-center text-sm font-medium text-slate-500">
                     {formatDisplayDate(student.registrationDate)}
                   </td>
-                  <td className="px-4 py-4 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      {[1, 2, 3, 4, 5].map((dot) => (
-                        <div
-                          key={dot}
-                          className={cn(
-                            "w-2 h-2 rounded-full",
-                            dot <= 3 ? "bg-emerald-500" : "bg-slate-200"
-                          )}
-                        />
-                      ))}
-                    </div>
-                  </td>
+                  {businessType === 'driving' && (
+                    <td className="px-4 py-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        {[1, 2, 3, 4, 5].map((dot) => (
+                          <div
+                            key={dot}
+                            className={cn(
+                              "w-2 h-2 rounded-full",
+                              dot <= 3 ? "bg-emerald-500" : "bg-slate-200"
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </td>
+                  )}
                   <td className="px-4 py-4">
                     <div className="flex flex-col gap-1 w-28">
                       <div className="flex items-center text-xs font-bold">
@@ -583,22 +733,22 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
                     </div>
                   </td>
                   <td className="px-4 py-4 text-center">
-                    <span className={cn(
-                      "px-4 py-1.5 rounded-full text-xs font-bold border shadow-sm whitespace-nowrap",
-                      getStatusBadgeClass(student.status)
-                    )}>
-                      {student.status}
-                    </span>
+                    <div className="flex flex-wrap justify-center gap-1">
+                      {(Array.isArray(student.status) ? student.status : [student.status]).map((st) => (
+                        <span
+                          key={st}
+                          className={cn(
+                            "px-2 py-0.5 rounded-md text-[10px] font-bold border shadow-none whitespace-nowrap",
+                            getStatusBadgeClass(st)
+                          )}
+                        >
+                          {st}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                   <td className="px-6 py-4 no-print">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => setTransitioningStudent(student)}
-                        title="Chuyển trạng thái"
-                        className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
                       <button
                         onClick={() => setEditingStudent(student)}
                         title="Sửa thông tin"
@@ -676,12 +826,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         />
       </div>
 
-      {/* Status Transition Modal */}
-      <StatusTransitionModal
-        student={transitioningStudent}
-        isOpen={!!transitioningStudent}
-        onClose={() => setTransitioningStudent(null)}
-      />
+
 
       {/* Edit Student Modal */}
       <EditStudentModal
@@ -689,6 +834,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
         isOpen={!!editingStudent}
         onClose={() => setEditingStudent(null)}
         onSuccess={() => setEditingStudent(null)}
+        students={students}
       />
 
       {/* Import Student Modal */}

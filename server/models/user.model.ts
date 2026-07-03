@@ -91,10 +91,24 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: true,
     },
+    businessType: {
+      type: String,
+      enum: ["driving", "language", "general"],
+      default: "driving",
+      required: true,
+    },
     smtpSandboxEmail: {
       type: String,
       default: "",
       trim: true,
+    },
+    maxUsersLimit: {
+      type: Number,
+      default: 10,
+    },
+    permissions: {
+      type: [String],
+      default: [],
     },
   },
   {

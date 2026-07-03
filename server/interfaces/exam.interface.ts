@@ -5,7 +5,8 @@ export type ExamStatus = 'Sắp diễn ra' | 'Đã xác nhận' | 'Đã hoàn th
 export interface IExam extends Document {
   name: string;
   status: ExamStatus;
-  rank: 'A1' | 'A2' | 'B1' | 'B2' | 'C';
+  /** Hạng bằng lái — riêng ngành lái xe, kỳ thi ngành khác để trống */
+  rank?: string;
   area: string;
   tentativeDate: string;
   officialDate?: string;

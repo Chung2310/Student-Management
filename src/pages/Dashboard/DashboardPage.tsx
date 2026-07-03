@@ -1,5 +1,6 @@
 import React from 'react';
 import { StatsGrid } from '../../components/Dashboard/StatsGrid';
+import { ScheduleCalendar } from '../../components/Dashboard/ScheduleCalendar';
 import { DrivingDashboardTables } from '../../components/Dashboard/DrivingDashboardTables';
 import { LuxuryButton } from '../../components/ui/LuxuryButton';
 import { Plus } from 'lucide-react';
@@ -28,6 +29,7 @@ export function DashboardPage({ formattedDate, onAddStudent, onSelectStudent, on
         </LuxuryButton>
       </section>
       <section><StatsGrid /></section>
+      <section><ScheduleCalendar /></section>
       <section><DrivingDashboardTables onSelectStudent={onSelectStudent} onNavigate={onNavigate} /></section>
     </>
   );

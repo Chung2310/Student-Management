@@ -1,23 +1,33 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Save, ChevronDown, Loader2 } from 'lucide-react';
+import { X, Save, ChevronDown, Loader2, Upload, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
+import { useBatches } from '../../hooks/useBatches';
 import { formatVND } from '../../lib/utils';
-import { DrivingStudent } from '../../types';
+import { DrivingStudent, Student, UploadedFile } from '../../types';
+import { findDuplicateStudentField } from '../../lib/studentUniqueness';
 
 interface AddStudentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (student: DrivingStudent) => void;
+  students: Student[];
 }
 
-export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalProps) {
+type FileField = 'idCardFrontFile' | 'idCardBackFile' | 'portraitFile';
+
+export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStudentModalProps) {
   const { user, login } = useAuth();
   const { toast } = useToast();
+  const { batches } = useBatches();
+  const businessType = user?.businessType || 'driving';
+  const usesCourseFeePolicy = businessType !== 'driving';
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadingField, setUploadingField] = useState<FileField | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [batchId, setBatchId] = useState('');
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -25,11 +35,14 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
     birthday: '',
     idCard: '',
     rank: '',
-    area: '',
     registrationDate: new Date().toLocaleDateString('vi-VN'),
+    enrollmentDate: '',
     fee: '',
     address: '',
     email: '',
+    idCardFrontFile: undefined as UploadedFile | undefined,
+    idCardBackFile: undefined as UploadedFile | undefined,
+    portraitFile: undefined as UploadedFile | undefined,
   });
 
   const getRequiredFieldsConfig = () => {
@@ -38,14 +51,13 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
       try {
         return JSON.parse(saved);
       } catch (e) {
-        console.error("Error parsing requiredFieldsConfig", e);
+        console.error('Error parsing requiredFieldsConfig', e);
       }
     }
     return {
       fullName: true,
       phone: true,
-      rank: true,
-      area: true,
+      rank: false, // Hạng bằng chỉ dành cho ngành lái xe — mặc định không bắt buộc
       birthday: false,
       idCard: false,
       email: false
@@ -56,50 +68,114 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
 
   const requiredFields = getRequiredFieldsConfig();
 
+  const handleUploadFile = async (field: FileField, file?: File) => {
+    if (!file) return;
+    setUploadingField(field);
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await apiFetch('/upload', { method: 'POST', body });
+      if (res.success && res.data) {
+        setFormData(prev => ({
+          ...prev,
+          [field]: {
+            name: res.data.name,
+            url: res.data.url,
+            type: res.data.type,
+            uploadedAt: res.data.uploadedAt || new Date().toISOString(),
+          }
+        }));
+        toast.success('Tải ảnh thành công!');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error(error instanceof Error ? error.message : 'Không thể tải ảnh lên.');
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     if (!user) {
-      setErrorMsg("Vui lòng đăng nhập để lưu hồ sơ học viên.");
+      setErrorMsg('Vui lòng đăng nhập để lưu hồ sơ học viên.');
       await login();
       return;
     }
 
     const missingFields: string[] = [];
-    if (requiredFields.fullName && !formData.fullName) missingFields.push("Họ và tên");
-    if (requiredFields.phone && !formData.phone) missingFields.push("Số điện thoại");
-    if (requiredFields.rank && !formData.rank) missingFields.push("Hạng bằng");
-    if (requiredFields.area && !formData.area) missingFields.push("Khu vực");
-    if (requiredFields.birthday && !formData.birthday) missingFields.push("Ngày sinh");
-    if (requiredFields.idCard && !formData.idCard) missingFields.push("CCCD/CMND");
-    if (requiredFields.email && !formData.email) missingFields.push("Email");
+    if (requiredFields.fullName && !formData.fullName) missingFields.push('Họ và tên');
+    if (requiredFields.phone && !formData.phone) missingFields.push('Số điện thoại');
+    if (requiredFields.rank && !formData.rank) missingFields.push('Hạng bằng');
+    if (requiredFields.birthday && !formData.birthday) missingFields.push('Ngày sinh');
+    if (requiredFields.idCard && !formData.idCard) missingFields.push('CCCD/CMND');
+    if (requiredFields.email && !formData.email) missingFields.push('Email');
 
     if (missingFields.length > 0) {
-      setErrorMsg(`Vui lòng điền đầy đủ các trường bắt buộc: ${missingFields.join(", ")}`);
+      const message = `Vui lòng điền đầy đủ các trường bắt buộc: ${missingFields.join(', ')}`;
+      setErrorMsg(message);
+      toast.error(message);
+      return;
+    }
+
+    if (businessType === 'driving') {
+      if (!formData.idCardFrontFile || !formData.idCardBackFile) {
+        const message = "Vui lòng tải lên cả ảnh mặt trước và mặt sau của CCCD.";
+        setErrorMsg(message);
+        toast.error(message);
+        return;
+      }
+    }
+
+    const duplicateField = findDuplicateStudentField(students, {
+      email: formData.email,
+      phone: formData.phone,
+      idCard: formData.idCard,
+    });
+    if (duplicateField) {
+      const message = `${duplicateField.label} đã tồn tại trong hệ thống, không được trùng.`;
+      setErrorMsg(message);
+      toast.error(message);
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const res = await apiFetch("/students", {
-        method: "POST",
+      const res = await apiFetch('/students', {
+        method: 'POST',
         body: JSON.stringify({
           ...formData,
-          status: 'Chờ KSK',
+          fee: businessType === 'driving' ? formData.fee : '',
+          idCardFront: formData.idCardFrontFile?.url || '',
+          idCardBack: formData.idCardBackFile?.url || '',
+          status: businessType === 'driving' ? ['Chờ KSK'] : ['Đang học'],
           registrationDate: new Date().toLocaleDateString('vi-VN'),
         }),
       });
 
       if (res.success && res.data) {
         const studentWithId = { id: res.data._id, ...res.data };
-        
-        // Dispatch global mutation event to refresh lists
-        window.dispatchEvent(new Event("student-mutation"));
-        
+
+        // Xếp học viên vào lớp đã chọn (không chặn luồng tạo nếu lỗi)
+        if (batchId) {
+          try {
+            await apiFetch(`/batches/${batchId}/learners`, {
+              method: 'POST',
+              body: JSON.stringify({ studentId: res.data._id }),
+            });
+            window.dispatchEvent(new Event('batch-mutation'));
+          } catch (batchError: unknown) {
+            const msg = batchError instanceof Error ? batchError.message : 'Không thể xếp lớp.';
+            toast.warning(`Đã tạo học viên nhưng chưa xếp được vào lớp: ${msg}`);
+          }
+        }
+
+        window.dispatchEvent(new Event('student-mutation'));
         toast.success('Đã lưu hồ sơ học viên thành công!');
         onClose();
         onSuccess(studentWithId);
-        
+
         // Reset form
         setFormData({
           fullName: '',
@@ -108,17 +184,22 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
           birthday: '',
           idCard: '',
           rank: '',
-          area: '',
           registrationDate: new Date().toLocaleDateString('vi-VN'),
+          enrollmentDate: '',
           fee: '',
           address: '',
           email: '',
+          idCardFrontFile: undefined,
+          idCardBackFile: undefined,
+          portraitFile: undefined,
         });
+        setBatchId('');
       }
     } catch (error: unknown) {
-      console.error("Error saving student:", error);
-      const msg = error instanceof Error ? error.message : "Lỗi lưu hồ sơ học viên.";
-      setErrorMsg(msg);
+      console.error('Error saving student:', error);
+      const message = error instanceof Error ? error.message : 'Lỗi lưu hồ sơ học viên.';
+      setErrorMsg(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -126,263 +207,81 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
-    if (name === 'fee') {
-      const formatted = formatVND(value);
-      setFormData(prev => ({ ...prev, [name]: formatted }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    setFormData(prev => ({ ...prev, [name]: name === 'fee' ? formatVND(value) : value }));
   };
 
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]"
-        />
-        
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 30 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 30 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[95vh] flex flex-col"
-        >
-          {/* Header */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]" />
+        <motion.div initial={{ opacity: 0, scale: 0.95, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 30 }} transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }} className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
             <h2 className="text-base font-bold text-slate-800">Thêm học viên mới</h2>
-            <button 
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="p-1.5 rounded-full hover:bg-slate-100 transition-colors disabled:opacity-50"
-            >
+            <button onClick={onClose} disabled={isSubmitting} className="p-1.5 rounded-full hover:bg-slate-100 transition-colors disabled:opacity-50">
               <X className="w-4 h-4 text-slate-400" />
             </button>
           </div>
 
-          {/* Form Content - Scrollable */}
           <form className="p-6 overflow-y-auto space-y-4" onSubmit={handleSubmit}>
-            {errorMsg && (
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-3 mb-2 bg-rose-50 border border-rose-100 rounded-xl flex items-center justify-between"
-              >
-                <div className="flex items-center gap-2 text-rose-600">
-                  <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm border border-rose-100/50">
-                    <span className="text-rose-500 font-bold text-sm">!</span>
-                  </div>
-                  <span className="text-sm font-bold">{errorMsg}</span>
-                </div>
-                <button 
-                  type="button" 
-                  onClick={() => setErrorMsg(null)}
-                  className="p-1 rounded-md hover:bg-rose-100/50 text-rose-400 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </motion.div>
-            )}
-            
+            {errorMsg && <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-sm font-bold text-rose-600">{errorMsg}</div>}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-              {/* Row 1 */}
+              <Input label="Họ và tên" name="fullName" value={formData.fullName} onChange={handleInputChange} required={requiredFields.fullName} placeholder="Nhập họ và tên..." />
+              <Input label="Số điện thoại" name="phone" value={formData.phone} onChange={handleInputChange} required={requiredFields.phone} placeholder="Nhập số điện thoại..." />
+              <Input label="Email học viên" name="email" value={formData.email} onChange={handleInputChange} required={requiredFields.email} placeholder="Nhập địa chỉ email..." className="sm:col-span-2" />
+              <Input label="Người giới thiệu" name="referral" value={formData.referral} onChange={handleInputChange} placeholder="Nhập tên người giới thiệu..." className="sm:col-span-2" />
+              <Input label="Ngày sinh" name="birthday" value={formData.birthday} onChange={handleInputChange} required={requiredFields.birthday} placeholder="DD/MM/YYYY" />
+              <Input label="CCCD / CMND" name="idCard" value={formData.idCard} onChange={handleInputChange} required={requiredFields.idCard} placeholder="Nhập số CCCD (12 số)..." />
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                  Họ và tên {requiredFields.fullName && <span className="text-rose-500">*</span>}
-                </label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  placeholder="Nguyễn Văn A"
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                  Số điện thoại {requiredFields.phone && <span className="text-rose-500">*</span>}
-                </label>
-                <input
-                  type="text"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder="09xxxxxxxx"
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-                />
-              </div>
-
-              {/* Email - New Field */}
-              <div className="sm:col-span-2 space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                  Email học viên {requiredFields.email && <span className="text-rose-500">*</span>}
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="example@gmail.com"
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-                />
-              </div>
-
-              {/* Row 2 - Full Width */}
-              <div className="sm:col-span-2 space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Người giới thiệu</label>
-                <input
-                  type="text"
-                  name="referral"
-                  value={formData.referral}
-                  onChange={handleInputChange}
-                  placeholder="Tên người giới thiệu"
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-                />
-              </div>
-
-              {/* Row 3 */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                  Ngày sinh {requiredFields.birthday && <span className="text-rose-500">*</span>}
-                </label>
-                <input
-                  type="text"
-                  name="birthday"
-                  value={formData.birthday}
-                  onChange={(e) => {
-                    let val = e.target.value.replace(/\D/g, '');
-                    if (val.length > 8) val = val.substring(0, 8);
-                    if (val.length > 4) {
-                      val = val.substring(0, 2) + '/' + val.substring(2, 4) + '/' + val.substring(4);
-                    } else if (val.length > 2) {
-                      val = val.substring(0, 2) + '/' + val.substring(2);
-                    }
-                    setFormData(prev => ({ ...prev, birthday: val }));
-                  }}
-                  placeholder="DD/MM/YYYY"
-                  maxLength={10}
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                  CCCD / CMND {requiredFields.idCard && <span className="text-rose-500">*</span>}
-                </label>
-                <input
-                  type="text"
-                  name="idCard"
-                  value={formData.idCard}
-                  onChange={handleInputChange}
-                  placeholder="Số định danh"
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-                />
-              </div>
-
-              {/* Row 4 */}
-              <div className="space-y-1 relative">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                  Hạng bằng {requiredFields.rank && <span className="text-rose-500">*</span>}
-                </label>
+                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Xếp vào lớp (tùy chọn)</label>
                 <div className="relative">
-                  <select 
-                    name="rank"
-                    value={formData.rank}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
+                  <select
+                    value={batchId}
+                    onChange={(e) => setBatchId(e.target.value)}
+                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all cursor-pointer"
                   >
-                    <option value="">-- Chọn hạng --</option>
-                    <option value="A1">A1</option>
-                    <option value="A2">A2</option>
-                    <option value="B1">B1</option>
-                    <option value="B2">B2</option>
-                    <option value="C">C</option>
+                    <option value="">-- Chưa xếp lớp --</option>
+                    {batches.filter(b => b.status !== 'Đã kết thúc').map(b => (
+                      <option key={b.id} value={b.id}>{b.code} — {b.courseTitle}</option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
                 </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                  Khu vực {requiredFields.area && <span className="text-rose-500">*</span>}
-                </label>
-                <div className="relative">
-                  <select 
-                    name="area"
-                    value={formData.area}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-                  >
-                    <option value="">-- Chọn khu vực --</option>
-                    <option value="Nội thành">Nội thành</option>
-                    <option value="Ngoại thành">Ngoại thành</option>
-                    <option value="Tỉnh lân cận">Tỉnh lân cận</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+              
+              {user?.businessType === 'language' ? (
+                <Input label="Khóa học đăng ký" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} placeholder="Ví dụ: IELTS, TOEIC, Giao tiếp..." />
+              ) : (user?.businessType || 'driving') === 'driving' ? (
+                <Input label="Hạng bằng (lái xe — tùy chọn)" name="rank" value={formData.rank} onChange={handleInputChange} required={requiredFields.rank} placeholder="Ví dụ: A1, B2, C... hoặc để trống" />
+              ) : null}
+
+              <Input label="Ngày đăng ký" name="registrationDate" value={formData.registrationDate} onChange={handleInputChange} readOnly />
+              <Input label="Ngày nhập học" name="enrollmentDate" value={formData.enrollmentDate} onChange={handleInputChange} placeholder="DD/MM/YYYY" />
+              {usesCourseFeePolicy ? (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Học phí đã chốt</label>
+                  <div className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-500">
+                    Sẽ lấy tự động từ khóa học khi xếp lớp.
+                  </div>
                 </div>
-              </div>
-
-              {/* Row 5 */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Ngày đăng ký</label>
-                <input
-                  type="text"
-                  name="registrationDate"
-                  value={formData.registrationDate}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 focus:outline-none cursor-default"
-                  readOnly
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Học phí (VND)</label>
-                <input
-                  type="text"
-                  name="fee"
-                  value={formData.fee}
-                  onChange={handleInputChange}
-                  placeholder="Ví dụ: 4.000.000"
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-                />
-              </div>
-
-              {/* Row 6 - Full Width */}
-              <div className="sm:col-span-2 space-y-1">
-                <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">Địa chỉ</label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  placeholder="Địa chỉ thường trú"
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all"
-                />
-              </div>
+              ) : (
+                <Input label="Học phí (VND)" name="fee" value={formData.fee} onChange={handleInputChange} placeholder="Nhập học phí..." />
+              )}
+              <Input label="Địa chỉ" name="address" value={formData.address} onChange={handleInputChange} placeholder="Nhập địa chỉ..." className="sm:col-span-2" />
             </div>
 
-            {/* Footer Buttons */}
+            {(user?.businessType || 'driving') === 'driving' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <UploadCard label="CCCD mặt trước" file={formData.idCardFrontFile} isUploading={uploadingField === 'idCardFrontFile'} onFileChange={(file) => handleUploadFile('idCardFrontFile', file)} onRemove={() => setFormData(prev => ({ ...prev, idCardFrontFile: undefined }))} />
+                <UploadCard label="CCCD mặt sau" file={formData.idCardBackFile} isUploading={uploadingField === 'idCardBackFile'} onFileChange={(file) => handleUploadFile('idCardBackFile', file)} onRemove={() => setFormData(prev => ({ ...prev, idCardBackFile: undefined }))} />
+                <UploadCard label="Ảnh chân dung" file={formData.portraitFile} isUploading={uploadingField === 'portraitFile'} onFileChange={(file) => handleUploadFile('portraitFile', file)} onRemove={() => setFormData(prev => ({ ...prev, portraitFile: undefined }))} />
+              </div>
+            )}
+
             <div className="flex items-center justify-end gap-4 pt-4 mt-2 border-t border-slate-50 flex-shrink-0">
-              <button 
-                type="button"
-                onClick={onClose}
-                disabled={isSubmitting}
-                className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors disabled:opacity-50"
-              >
-                Hủy
-              </button>
-              <button 
-                type="submit"
-                disabled={isSubmitting}
-                className="flex items-center gap-2 px-6 py-2.5 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-xs font-bold shadow-lg shadow-cyan-100 transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-70 disabled:hover:translate-y-0"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Save className="w-3.5 h-3.5" />
-                )}
+              <button type="button" onClick={onClose} disabled={isSubmitting} className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors disabled:opacity-50">Hủy</button>
+              <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-6 py-2.5 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-xs font-bold shadow-lg shadow-cyan-100 transition-all disabled:opacity-70">
+                {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                 {isSubmitting ? 'Đang lưu...' : 'Lưu & Mở hồ sơ'}
               </button>
             </div>
@@ -390,5 +289,39 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
         </motion.div>
       </div>
     </AnimatePresence>
+  );
+}
+
+function Input({ label, name, value, onChange, required = false, readOnly = false, placeholder = '', className = '' }: { label: string; name: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; required?: boolean; readOnly?: boolean; placeholder?: string; className?: string; }) {
+  return (
+    <div className={`space-y-1 ${className}`}>
+      <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">{label} {required && <span className="text-rose-500">*</span>}</label>
+      <input type="text" name={name} value={value} onChange={onChange} readOnly={readOnly} placeholder={placeholder} className={`w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all ${readOnly ? 'bg-slate-50 text-slate-600 cursor-default' : ''}`} />
+    </div>
+  );
+}
+
+function UploadCard({ label, file, isUploading, onFileChange, onRemove }: { label: string; file?: UploadedFile; isUploading: boolean; onFileChange: (file?: File) => void; onRemove: () => void; }) {
+  return (
+    <div className="border border-slate-200 rounded-2xl p-4 space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-bold text-slate-700">{label}</p>
+        {file && <button type="button" onClick={onRemove} className="text-rose-500"><Trash2 className="w-4 h-4" /></button>}
+      </div>
+      {file ? (
+        <a href={file.url} target="_blank" rel="noreferrer" className="block">
+          <div className="rounded-xl overflow-hidden bg-slate-50 border border-slate-100 h-28 flex items-center justify-center">
+            {file.type.includes('image') ? <img src={file.url} alt={file.name} className="w-full h-full object-cover" /> : <ImageIcon className="w-8 h-8 text-slate-400" />}
+          </div>
+          <p className="text-[11px] text-slate-500 mt-2 truncate">{file.name}</p>
+        </a>
+      ) : (
+        <label className="flex flex-col items-center justify-center h-28 rounded-xl border-2 border-dashed border-slate-200 cursor-pointer hover:bg-slate-50">
+          {isUploading ? <Loader2 className="w-5 h-5 text-cyan-500 animate-spin" /> : <Upload className="w-5 h-5 text-cyan-500" />}
+          <span className="text-[11px] text-slate-500 mt-2">Tải ảnh lên</span>
+          <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => onFileChange(e.target.files?.[0])} />
+        </label>
+      )}
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 import { Schema, model } from "mongoose";
 import { IStudent } from "../interfaces/student.interface";
 
-const healthCheckFileSchema = new Schema({
+const uploadedFileSchema = new Schema({
   name: { type: String, required: true },
   url: { type: String, required: true },
   type: { type: String, required: true },
@@ -79,22 +79,28 @@ const studentSchema = new Schema<IStudent>(
     referral: { type: String, default: "" },
     birthday: { type: String, default: "" },
     idCard: { type: String, default: "" },
-    rank: { type: String, enum: ["A1", "A2", "B1", "B2", "C"], required: true, index: true },
-    area: { type: String, enum: ["Nội thành", "Ngoại thành", "Tỉnh lân cận"], required: true, index: true },
+    // Hạng bằng lái — riêng ngành lái xe, ngành khác để trống
+    rank: { type: String, default: "", trim: true, index: true },
+    courseId: { type: String, default: "", trim: true, index: true },
     registrationDate: { type: String, required: true },
+    enrollmentDate: { type: String, default: "" },
     fee: { type: String, required: true },
     paidAmount: { type: Number, default: 0 },
     address: { type: String, default: "" },
     status: {
-      type: String,
+      type: [String],
       enum: ["Chờ KSK", "Đã KSK", "Đã nộp HS", "Đang học", "Đang thi", "Đã đậu", "Thi lại", "Nghỉ học", "Nợ học phí"],
+      default: ["Chờ KSK"],
       required: true,
       index: true,
     },
     ownerId: { type: String, required: true, index: true },
     healthCheckDate: { type: String, default: "" },
     healthCheckNotes: { type: String, default: "" },
-    healthCheckFiles: [healthCheckFileSchema],
+    healthCheckFiles: [uploadedFileSchema],
+    idCardFrontFile: { type: uploadedFileSchema, default: undefined },
+    idCardBackFile: { type: uploadedFileSchema, default: undefined },
+    portraitFile: { type: uploadedFileSchema, default: undefined },
     progress: { type: progressSchema, default: () => ({}) },
     exams: [studentExamSchema],
     paymentHistory: [studentPaymentSchema],
@@ -102,6 +108,8 @@ const studentSchema = new Schema<IStudent>(
     examId: { type: String, default: "" },
     examName: { type: String, default: "" },
     examDate: { type: String, default: "" },
+    idCardFront: { type: String, default: "" },
+    idCardBack: { type: String, default: "" },
   },
   {
     timestamps: true,

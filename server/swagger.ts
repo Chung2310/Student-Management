@@ -36,10 +36,9 @@ const swaggerDefinition = {
         properties: {
           id: { type: "string" },
           fullName: { type: "string" },
-          email: { type: "string" },
           phone: { type: "string" },
+          email: { type: "string" },
           rank: { type: "string", enum: ["A1", "A2", "B1", "B2", "C"] },
-          area: { type: "string", enum: ["Nội thành", "Ngoại thành", "Tỉnh lân cận"] },
           registrationDate: { type: "string" },
           fee: { type: "string" },
           paidAmount: { type: "number" },
@@ -180,7 +179,6 @@ const swaggerDefinition = {
           { name: "limit", in: "query", schema: { type: "integer" } },
           { name: "status", in: "query", schema: { type: "string" } },
           { name: "rank", in: "query", schema: { type: "string" } },
-          { name: "area", in: "query", schema: { type: "string" } },
           { name: "search", in: "query", schema: { type: "string" }, description: "Tìm theo tên hoặc số điện thoại" },
         ],
         responses: {
@@ -197,13 +195,12 @@ const swaggerDefinition = {
             "application/json": {
               schema: {
                 type: "object",
-                required: ["fullName", "phone", "rank", "area", "registrationDate", "fee"],
+                required: ["fullName", "phone", "rank", "registrationDate", "fee"],
                 properties: {
                   fullName: { type: "string", example: "Nguyễn Văn Học Viên" },
                   phone: { type: "string", example: "0987654321" },
                   email: { type: "string", example: "hocvien@gmail.com" },
                   rank: { type: "string", enum: ["A1", "A2", "B1", "B2", "C"] },
-                  area: { type: "string", enum: ["Nội thành", "Ngoại thành", "Tỉnh lân cận"] },
                   registrationDate: { type: "string", example: "12/06/2026" },
                   fee: { type: "string", example: "12.000.000" },
                   address: { type: "string", example: "Hà Nội" },
@@ -460,12 +457,11 @@ const swaggerDefinition = {
             "application/json": {
               schema: {
                 type: "object",
-                required: ["fullName", "phone", "rank", "area", "registrationDate", "fee", "status"],
+                required: ["fullName", "phone", "rank", "registrationDate", "fee", "status"],
                 properties: {
                   fullName: { type: "string", example: "Nguyễn Văn Học Viên" },
                   phone: { type: "string", example: "0987654321" },
                   rank: { type: "string", enum: ["A1", "A2", "B1", "B2", "C"] },
-                  area: { type: "string", enum: ["Nội thành", "Ngoại thành", "Tỉnh lân cận"] },
                   registrationDate: { type: "string", example: "12/06/2026" },
                   fee: { type: "string", example: "12.000.000" },
                   status: { type: "string", example: "Chờ KSK" },
@@ -593,6 +589,301 @@ const swaggerDefinition = {
           200: { description: "Thiết lập kết nối SSE thành công" },
           401: { description: "Token không hợp lệ hoặc đã hết hạn" }
         }
+      }
+    },
+    "/courses": {
+      get: {
+        summary: "Danh sách khóa học",
+        tags: ["Courses"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "category", in: "query", schema: { type: "string" }, description: "Tên phân loại (quản lý động qua /courses/categories)" },
+          { name: "status", in: "query", schema: { type: "string", enum: ["Hoạt động", "Tạm dừng"] } },
+          { name: "search", in: "query", schema: { type: "string" } }
+        ],
+        responses: { 200: { description: "Danh sách khóa học" }, 401: { description: "Chưa xác thực" } }
+      },
+      post: {
+        summary: "Tạo khóa học mới",
+        tags: ["Courses"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["code", "title", "category", "fee", "duration"],
+                properties: {
+                  code: { type: "string", example: "DRV-B2" },
+                  title: { type: "string", example: "Học lái xe Ô tô hạng B2" },
+                  category: { type: "string", example: "Lái xe" },
+                  fee: { type: "string", example: "15.500.000đ" },
+                  duration: { type: "string", example: "3.5 tháng" },
+                  maxLearners: { type: "number", example: 25 }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: "Tạo khóa học thành công" }, 400: { description: "Dữ liệu không hợp lệ hoặc trùng mã" } }
+      }
+    },
+    "/courses/{id}": {
+      patch: {
+        summary: "Cập nhật khóa học",
+        tags: ["Courses"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { 200: { description: "Cập nhật thành công" }, 404: { description: "Không tìm thấy khóa học" } }
+      },
+      delete: {
+        summary: "Xóa khóa học",
+        tags: ["Courses"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { 200: { description: "Xóa thành công" }, 404: { description: "Không tìm thấy khóa học" } }
+      }
+    },
+    "/resources": {
+      get: {
+        summary: "Danh sách tài nguyên (phòng học, xe tập lái, thiết bị)",
+        tags: ["Resources"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "type", in: "query", schema: { type: "string" }, description: "Tên phân loại (quản lý động qua /resources/categories)" },
+          { name: "status", in: "query", schema: { type: "string", enum: ["AVAILABLE", "OCCUPIED", "MAINTENANCE"] } }
+        ],
+        responses: { 200: { description: "Danh sách tài nguyên" }, 401: { description: "Chưa xác thực" } }
+      },
+      post: {
+        summary: "Khai báo tài nguyên mới",
+        tags: ["Resources"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["name", "type", "identifier", "capacity"],
+                properties: {
+                  name: { type: "string", example: "Xe Toyota Vios tập lái số 08" },
+                  type: { type: "string", example: "Phương tiện / Xe tập lái" },
+                  identifier: { type: "string", example: "30E-666.88" },
+                  capacity: { type: "string", example: "1 học viên + 1 GV" }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: "Khai báo thành công" }, 400: { description: "Dữ liệu không hợp lệ" } }
+      }
+    },
+    "/resources/categories": {
+      get: {
+        summary: "Danh sách phân loại tài nguyên",
+        tags: ["Resources"],
+        security: [{ bearerAuth: [] }],
+        responses: { 200: { description: "Danh sách phân loại" }, 401: { description: "Chưa xác thực" } }
+      },
+      post: {
+        summary: "Tạo phân loại tài nguyên mới",
+        tags: ["Resources"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["name"],
+                properties: {
+                  name: { type: "string", example: "Phòng mô phỏng lái xe" }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: "Tạo phân loại thành công" }, 400: { description: "Trùng tên phân loại" } }
+      }
+    },
+    "/resources/categories/{id}": {
+      delete: {
+        summary: "Xóa phân loại tài nguyên (chặn nếu đang có tài nguyên sử dụng)",
+        tags: ["Resources"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { 200: { description: "Xóa thành công" }, 400: { description: "Phân loại đang được sử dụng" }, 404: { description: "Không tìm thấy phân loại" } }
+      }
+    },
+    "/courses/categories": {
+      get: {
+        summary: "Danh sách phân loại khóa học",
+        tags: ["Courses"],
+        security: [{ bearerAuth: [] }],
+        responses: { 200: { description: "Danh sách phân loại" }, 401: { description: "Chưa xác thực" } }
+      },
+      post: {
+        summary: "Tạo phân loại khóa học mới",
+        tags: ["Courses"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["name"],
+                properties: {
+                  name: { type: "string", example: "Nâng hạng B2-C" }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: "Tạo phân loại thành công" }, 400: { description: "Trùng tên phân loại" } }
+      }
+    },
+    "/courses/categories/{id}": {
+      delete: {
+        summary: "Xóa phân loại khóa học (chặn nếu đang có khóa học sử dụng)",
+        tags: ["Courses"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { 200: { description: "Xóa thành công" }, 400: { description: "Phân loại đang được sử dụng" }, 404: { description: "Không tìm thấy phân loại" } }
+      }
+    },
+    "/resources/{id}/bookings": {
+      post: {
+        summary: "Đặt lịch sử dụng tài nguyên (có kiểm tra trùng khung giờ)",
+        tags: ["Resources"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["purpose", "by", "date", "startTime", "endTime"],
+                properties: {
+                  purpose: { type: "string", example: "Thực hành sa hình B2 (Khóa K32)" },
+                  by: { type: "string", example: "Thầy Cường" },
+                  date: { type: "string", example: "2026-07-10" },
+                  startTime: { type: "string", example: "08:00" },
+                  endTime: { type: "string", example: "11:30" }
+                }
+              }
+            }
+          }
+        },
+        responses: { 200: { description: "Đặt lịch thành công" }, 400: { description: "Trùng lịch hoặc dữ liệu không hợp lệ" } }
+      }
+    },
+    "/batches": {
+      get: {
+        summary: "Danh sách lớp mở (batch) theo khóa học",
+        tags: ["Batches"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "courseId", in: "query", schema: { type: "string" } },
+          { name: "instructorId", in: "query", schema: { type: "string" } },
+          { name: "status", in: "query", schema: { type: "string", enum: ["Sắp khai giảng", "Đang học", "Đã kết thúc"] } },
+          { name: "search", in: "query", schema: { type: "string" } }
+        ],
+        responses: { 200: { description: "Danh sách lớp (kèm thông tin khóa học, giảng viên)" }, 401: { description: "Chưa xác thực" } }
+      },
+      post: {
+        summary: "Mở lớp mới cho một khóa học",
+        tags: ["Batches"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["code", "courseId", "daysOfWeek", "startTime", "endTime", "startDate", "endDate"],
+                properties: {
+                  code: { type: "string", example: "K32" },
+                  courseId: { type: "string", example: "665f1a2b3c4d5e6f70819202" },
+                  instructorId: { type: "string", example: "665f1a2b3c4d5e6f70819203" },
+                  daysOfWeek: { type: "array", items: { type: "number" }, example: [1, 3, 5], description: "0 = Chủ nhật ... 6 = Thứ 7" },
+                  startTime: { type: "string", example: "18:00" },
+                  endTime: { type: "string", example: "20:00" },
+                  location: { type: "string", example: "Phòng 201" },
+                  startDate: { type: "string", example: "2026-07-15" },
+                  endDate: { type: "string", example: "2026-10-15" }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: "Mở lớp thành công" }, 400: { description: "Dữ liệu không hợp lệ hoặc trùng mã lớp" } }
+      }
+    },
+    "/batches/{id}": {
+      patch: {
+        summary: "Cập nhật lớp (trạng thái, lịch học, gán giảng viên...)",
+        tags: ["Batches"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { 200: { description: "Cập nhật thành công" }, 404: { description: "Không tìm thấy lớp" } }
+      },
+      delete: {
+        summary: "Xóa lớp",
+        tags: ["Batches"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: { 200: { description: "Xóa thành công" }, 404: { description: "Không tìm thấy lớp" } }
+      }
+    },
+    "/batches/{id}/learners": {
+      post: {
+        summary: "Gắn học viên vào lớp (kiểm tra sĩ số tối đa của khóa học)",
+        tags: ["Batches"],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["studentId"],
+                properties: {
+                  studentId: { type: "string", example: "665f1a2b3c4d5e6f70819204" }
+                }
+              }
+            }
+          }
+        },
+        responses: { 200: { description: "Gắn học viên thành công" }, 400: { description: "Học viên đã trong lớp hoặc lớp đầy" } }
+      }
+    },
+    "/batches/{id}/learners/{studentId}": {
+      delete: {
+        summary: "Bỏ học viên khỏi lớp",
+        tags: ["Batches"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } },
+          { name: "studentId", in: "path", required: true, schema: { type: "string" } }
+        ],
+        responses: { 200: { description: "Bỏ học viên thành công" }, 400: { description: "Học viên không có trong lớp" } }
+      }
+    },
+    "/schedule": {
+      get: {
+        summary: "Lịch tổng hợp: lớp học định kỳ + kỳ thi + booking tài nguyên trong khoảng ngày",
+        tags: ["Schedule"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "from", in: "query", schema: { type: "string", example: "2026-07-01" } },
+          { name: "to", in: "query", schema: { type: "string", example: "2026-07-31" } }
+        ],
+        responses: { 200: { description: "Danh sách sự kiện đã gộp, sắp xếp theo ngày" }, 401: { description: "Chưa xác thực" } }
       }
     },
   },

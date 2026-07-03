@@ -2,6 +2,13 @@
  * Student Types
  */
 
+export interface UploadedFile {
+  name: string;
+  url: string;
+  type: string;
+  uploadedAt: string;
+}
+
 export type StudentStatus = 'Chờ KSK' | 'Đã KSK' | 'Đã nộp HS' | 'Đang học' | 'Đang thi' | 'Đã đậu' | 'Thi lại' | 'Nghỉ học' | 'Nợ học phí';
 
 export interface DrivingStudent {
@@ -13,17 +20,24 @@ export interface DrivingStudent {
   referral?: string;
   birthday: string;
   idCard: string;
-  rank: 'A1' | 'A2' | 'B1' | 'B2' | 'C';
-  area: 'Nội thành' | 'Ngoại thành' | 'Tỉnh lân cận';
+  idCardFront?: string;
+  idCardBack?: string;
+  /** Hạng bằng lái — thông tin riêng ngành lái xe, học viên ngành khác để trống */
+  rank?: string;
+  courseId?: string;
   registrationDate: string;
+  enrollmentDate?: string;
   fee: string; // This is the TOTAL fee string (e.g. "12,000,000")
   paidAmount?: number; // Total amount paid so far
   address: string;
-  status: StudentStatus;
+  status: StudentStatus[];
   ownerId: string;
   healthCheckDate?: string;
   healthCheckNotes?: string;
-  healthCheckFiles?: { name: string; url: string; type: string; uploadedAt: string }[];
+  healthCheckFiles?: UploadedFile[];
+  idCardFrontFile?: UploadedFile;
+  idCardBackFile?: UploadedFile;
+  portraitFile?: UploadedFile;
   
   // Progress tracking
   progress?: {
@@ -120,7 +134,8 @@ export interface ExamSession {
   id: string;
   name: string;
   status: ExamStatus;
-  rank: 'A1' | 'A2' | 'B1' | 'B2' | 'C';
+  /** Hạng bằng lái — riêng ngành lái xe, kỳ thi ngành khác để trống */
+  rank?: string;
   area: string;
   tentativeDate: string;
   officialDate?: string;
@@ -130,6 +145,102 @@ export interface ExamSession {
   failCount: number;
   createdAt?: Date | string;
   updatedAt?: Date | string;
+}
+
+// ==== ERP: Khóa học / Giảng viên / Tài nguyên / Lịch tổng hợp ====
+
+export type CourseCategory = string;
+export type CourseStatus = 'Hoạt động' | 'Tạm dừng';
+
+export interface Course {
+  id: string;
+  code: string;
+  title: string;
+  category: CourseCategory;
+  fee: string;
+  duration: string;
+  maxLearners: number;
+  activeBatches: number;
+  status: CourseStatus;
+  ownerId: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
+export type ManagedUser = {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: 'superadmin' | 'admin' | 'user';
+  centerId: string;
+  createdBy?: string;
+  isActive?: boolean;
+  bankAccountNo?: string;
+  bankId?: string;
+  businessType?: 'driving' | 'language' | 'general';
+  maxUsersLimit?: number;
+  permissions?: string[];
+};
+
+export type BatchStatus = 'Sắp khai giảng' | 'Đang học' | 'Đã kết thúc';
+
+export interface Batch {
+  id: string;
+  code: string;
+  courseId: string;
+  instructorId?: string;
+  learnerIds: string[];
+  daysOfWeek: number[]; // 0 = Chủ nhật ... 6 = Thứ 7
+  startTime: string;    // HH:mm
+  endTime: string;      // HH:mm
+  location?: string;
+  startDate: string;    // YYYY-MM-DD
+  endDate: string;      // YYYY-MM-DD
+  status: BatchStatus;
+  ownerId: string;
+  // Thông tin server gắn kèm để hiển thị
+  courseCode: string;
+  courseTitle: string;
+  maxLearners: number;
+  instructorName: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
+// Phân loại tài nguyên là chuỗi động (quản lý qua /resources/categories);
+// các giá trị cũ 'ROOM' | 'VEHICLE' | 'EQUIPMENT' vẫn hợp lệ với dữ liệu đã có.
+export type ResourceType = string;
+export type ResourceStatus = 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE';
+
+export interface ResourceBooking {
+  id?: string;
+  purpose: string;
+  by: string;
+  date: string;      // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string;   // HH:mm
+}
+
+export interface ResourceItem {
+  id: string;
+  name: string;
+  type: ResourceType;
+  identifier: string;
+  capacity: string;
+  status: ResourceStatus;
+  bookings: ResourceBooking[];
+  ownerId: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
+export interface ScheduleEvent {
+  id: string;
+  title: string;
+  type: 'class' | 'exam' | 'resource';
+  date: string; // YYYY-MM-DD
+  time: string;
+  details: string;
 }
 
 export interface StudentStats {

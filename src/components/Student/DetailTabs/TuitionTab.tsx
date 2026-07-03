@@ -18,6 +18,7 @@ export function TuitionTab({
   handleDeletePaymentClick
 }: TuitionTabProps) {
   const { user } = useAuth();
+  const feeLabel = (user?.businessType || 'driving') === 'driving' ? 'Tổng học phí' : 'Học phí đã chốt';
   const totalFee = parseInt(parseVND(student.fee)) || 0;
   const paid = student.paidAmount || 0;
   const remaining = totalFee - paid;
@@ -99,7 +100,7 @@ export function TuitionTab({
       {/* Fee Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <FeeCard 
-          label="Tổng học phí" 
+          label={feeLabel} 
           amount={totalFee} 
           icon={CreditCard}
           color="text-slate-800"
@@ -214,6 +215,7 @@ export function TuitionTab({
                     type="text"
                     value={paymentAmountInput}
                     onChange={(e) => handleAmountInputChange(e.target.value)}
+                    placeholder="Nhập số tiền..."
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:border-cyan-500 transition-colors"
                   />
                   <div className="flex justify-between text-[9px] text-slate-400 font-medium">
