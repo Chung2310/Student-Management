@@ -13,6 +13,7 @@ import { CenterModal } from './components/CenterModal';
 import { UserModal } from './components/UserModal';
 import { EditCenterModal } from './components/EditCenterModal';
 import { EditUserModal } from './components/EditUserModal';
+import { Pagination } from '../../components/ui/Pagination';
 
 type ManagedUser = {
   uid: string; email: string; displayName: string;
@@ -38,12 +39,14 @@ export function UserManagementPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [showPass, setShowPass] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('erp_view_mode_users') as 'list' | 'grid') || 'list';
     }
     return 'list';
   });
+  const pageSize = viewMode === 'grid' ? 6 : 8;
 
   const toggleViewMode = (mode: 'list' | 'grid') => {
     setViewMode(mode);
@@ -129,6 +132,15 @@ export function UserManagementPage() {
     if (search.trim()) { const q = search.toLowerCase(); l = l.filter(u => u.displayName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)); }
     return l;
   }, [users, roleFilter, search]);
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paginatedUsers = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [search, roleFilter, viewMode]);
 
   // Submit handler
   const handleSubmit = async () => {
@@ -354,7 +366,7 @@ export function UserManagementPage() {
           </div>
         ) : viewMode === 'list' ? (
           <UserListView
-            filtered={filtered}
+            filtered={paginatedUsers}
             users={users}
             user={user}
             centerMap={centerMap}
@@ -366,7 +378,7 @@ export function UserManagementPage() {
           />
         ) : (
           <UserGridView
-            filtered={filtered}
+            filtered={paginatedUsers}
             users={users}
             user={user}
             centerMap={centerMap}
@@ -377,6 +389,17 @@ export function UserManagementPage() {
             handleDeleteUser={handleDeleteUser}
           />
         )}
+
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filtered.length}
+            pageSize={pageSize}
+            itemName={isSA ? 'người dùng' : 'giảng viên'}
+          />
+        </div>
       </div>
 
       {/* Center Modal */}

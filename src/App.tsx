@@ -292,8 +292,8 @@ export default function App() {
   const hasPermission = (view: ViewType): boolean => {
     if (!user) return false;
     if (user.role === 'superadmin' || user.role === 'admin') return true;
-    if (view === 'Dashboard') return true;
-    if (view === 'SettingsAdmin' || view === 'UserManagement') return false;
+    if (view === 'Dashboard' || view === 'SettingsAdmin') return true;
+    if (view === 'UserManagement') return false;
     if (user.permissions && Array.isArray(user.permissions)) {
       return user.permissions.includes(view);
     }

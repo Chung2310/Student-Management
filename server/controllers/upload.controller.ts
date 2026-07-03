@@ -10,7 +10,8 @@ export class UploadController {
 
       // Multer-storage-cloudinary populates req.file.path with the secure Cloudinary HTTPS URL
       const fileUrl = req.file.path;
-      const fileName = req.file.originalname;
+      // Fix UTF-8 encoding issue for filenames from Multer (ISO-8859-1 to UTF-8)
+      const fileName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
       const fileType = req.file.mimetype;
 
       res.status(200).json({
