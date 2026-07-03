@@ -66,8 +66,13 @@ function ResourceTableRow({
 
   const upcomingBookings = useMemo(() => {
     const today = todayStr();
+    const hhmm = new Date().toTimeString().slice(0, 5);
     return resource.bookings
-      .filter(b => b.date >= today)
+      .filter(b => {
+        if (b.date < today) return false;
+        if (b.date === today && b.startTime <= hhmm && b.endTime > hhmm) return false;
+        return true;
+      })
       .sort((a, b) => (a.date === b.date ? a.startTime.localeCompare(b.startTime) : a.date.localeCompare(b.date)))
       .slice(0, 2);
   }, [resource.bookings]);

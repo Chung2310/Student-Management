@@ -18,7 +18,12 @@ interface BatchData {
   [key: string]: unknown;
 }
 
-/** Batch đã gắn thêm thông tin khóa học / giảng viên để hiển thị */
+interface BatchActor {
+  uid: string;
+  role: "superadmin" | "admin" | "user";
+  centerId: string;
+}
+
 export interface EnrichedBatch {
   [key: string]: unknown;
   courseCode: string;
@@ -27,7 +32,6 @@ export interface EnrichedBatch {
   instructorName: string;
 }
 
-// Lớp còn hoạt động = chưa kết thúc (sắp khai giảng hoặc đang học)
 const ACTIVE_STATUSES = ["Sắp khai giảng", "Đang học"];
 
 function buildOwnerQuery(ownerId: string | string[]): Record<string, unknown> {
@@ -40,7 +44,24 @@ function hasLockedStudentFee(fee: string | undefined): boolean {
   return feeNum > 0;
 }
 
-/** Kiểm tra tính hợp lệ chung của lịch/ngày lớp học */
+async function assertInstructorAssignable(actor: BatchActor, instructorId: unknown) {
+  if (!instructorId) return;
+
+  const query: Record<string, unknown> = {
+    _id: instructorId,
+    role: "user",
+  };
+
+  if (actor.role !== "superadmin") {
+    query.centerId = actor.centerId;
+  }
+
+  const instructor = await User.findOne(query);
+  if (!instructor) {
+    throw new Error("Không tìm thấy giảng viên được gán.");
+  }
+}
+
 function assertScheduleValid(data: BatchData) {
   if (data.startTime && data.endTime && String(data.startTime) >= String(data.endTime)) {
     throw new Error("Giờ bắt đầu phải trước giờ kết thúc.");
@@ -50,7 +71,6 @@ function assertScheduleValid(data: BatchData) {
   }
 }
 
-/** Gắn thông tin khóa học + giảng viên vào danh sách batch */
 async function enrichBatches(batches: IBatch[]): Promise<EnrichedBatch[]> {
   const courseIds = [...new Set(batches.map(b => b.courseId).filter(Boolean))];
   const instructorIds = [...new Set(batches.map(b => b.instructorId).filter(Boolean))];
@@ -77,7 +97,7 @@ async function enrichBatches(batches: IBatch[]): Promise<EnrichedBatch[]> {
 }
 
 export class BatchService {
-  static async createBatch(ownerId: string, data: BatchData): Promise<EnrichedBatch> {
+  static async createBatch(ownerId: string, actor: BatchActor, data: BatchData): Promise<EnrichedBatch> {
     logger.info(`[Batch] Creating batch for ownerId=${ownerId}, code=${data.code}`);
     const existing = await Batch.findOne({ ownerId, code: String(data.code || "").toUpperCase() });
     if (existing) {
@@ -89,12 +109,8 @@ export class BatchService {
     if (!course) {
       throw new Error("Không tìm thấy khóa học của lớp.");
     }
-    if (data.instructorId) {
-      const instructor = await User.findOne({ _id: data.instructorId, centerId: ownerId });
-      if (!instructor) {
-        throw new Error("Không tìm thấy giảng viên được gán.");
-      }
-    }
+
+    await assertInstructorAssignable(actor, data.instructorId);
 
     const batch = new Batch({ ...data, ownerId });
     const saved = await batch.save();
@@ -133,7 +149,12 @@ export class BatchService {
     return (await enrichBatches([batch]))[0];
   }
 
-  static async updateBatch(ownerId: string | string[], id: string, data: BatchData): Promise<EnrichedBatch | null> {
+  static async updateBatch(
+    ownerId: string | string[],
+    actor: BatchActor,
+    id: string,
+    data: BatchData
+  ): Promise<EnrichedBatch | null> {
     logger.info(`[Batch] Updating batch: id=${id}`);
     const batch = await Batch.findOne({ _id: id, ...buildOwnerQuery(ownerId) });
     if (!batch) return null;
@@ -144,23 +165,23 @@ export class BatchService {
         throw new Error(`Mã lớp "${data.code}" đã tồn tại.`);
       }
     }
+
     assertScheduleValid({
       startTime: data.startTime ?? batch.startTime,
       endTime: data.endTime ?? batch.endTime,
       startDate: data.startDate ?? batch.startDate,
       endDate: data.endDate ?? batch.endDate,
     });
+
     if (data.courseId && data.courseId !== batch.courseId) {
       const course = await Course.findOne({ _id: data.courseId, ownerId: batch.ownerId });
       if (!course) {
         throw new Error("Không tìm thấy khóa học của lớp.");
       }
     }
+
     if (data.instructorId && data.instructorId !== batch.instructorId) {
-      const instructor = await User.findOne({ _id: data.instructorId, centerId: batch.ownerId });
-      if (!instructor) {
-        throw new Error("Không tìm thấy giảng viên được gán.");
-      }
+      await assertInstructorAssignable(actor, data.instructorId);
     }
 
     batch.set(data);
@@ -173,7 +194,6 @@ export class BatchService {
     return await Batch.findOneAndDelete({ _id: id, ...buildOwnerQuery(ownerId) });
   }
 
-  /** Gắn học viên vào lớp (kiểm tra sĩ số tối đa của khóa học) */
   static async addLearner(
     ownerId: string | string[],
     id: string,
@@ -220,7 +240,6 @@ export class BatchService {
     return (await enrichBatches([saved]))[0];
   }
 
-  /** Bỏ học viên khỏi lớp */
   static async removeLearner(ownerId: string | string[], id: string, studentId: string): Promise<EnrichedBatch> {
     const batch = await Batch.findOne({ _id: id, ...buildOwnerQuery(ownerId) });
     if (!batch) {
@@ -236,7 +255,6 @@ export class BatchService {
     return (await enrichBatches([saved]))[0];
   }
 
-  /** Đếm số lớp còn hoạt động theo từng khóa học */
   static async countActiveByCourse(courseIds: string[]): Promise<Map<string, number>> {
     if (courseIds.length === 0) return new Map();
     const rows = await Batch.aggregate([
@@ -246,7 +264,6 @@ export class BatchService {
     return new Map(rows.map((r: { _id: string; count: number }) => [r._id, r.count]));
   }
 
-  /** Đếm số lớp còn hoạt động theo từng giảng viên */
   static async countActiveByInstructor(instructorIds: string[]): Promise<Map<string, number>> {
     if (instructorIds.length === 0) return new Map();
     const rows = await Batch.aggregate([
@@ -256,7 +273,6 @@ export class BatchService {
     return new Map(rows.map((r: { _id: string; count: number }) => [r._id, r.count]));
   }
 
-  /** Mở rộng lịch học định kỳ của các lớp thành sự kiện theo ngày (phục vụ lịch tổng hợp) */
   static async getClassEventsInRange(ownerId: string | string[], from?: string, to?: string) {
     const batches = await Batch.find(buildOwnerQuery(ownerId));
     const enriched = await enrichBatches(batches);
@@ -277,7 +293,6 @@ export class BatchService {
       ];
       if (b.location) detailParts.push(String(b.location));
 
-      // Duyệt từng ngày trong khoảng, tối đa 400 ngày để tránh phình sự kiện
       const cursor = new Date(`${lower}T00:00:00Z`);
       const end = new Date(`${upper}T00:00:00Z`);
       for (let i = 0; cursor <= end && i < 400; i++, cursor.setUTCDate(cursor.getUTCDate() + 1)) {
