@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard, Users, Calendar, Wallet, MessageSquare, Settings,
-  Shield, LogOut, LogIn, RefreshCcw, X, BookOpen, Warehouse, School
+  Shield, LogOut, LogIn, RefreshCcw, X, BookOpen, Warehouse, School, LucideIcon
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
@@ -17,12 +17,19 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
+interface MenuItem {
+  icon: LucideIcon;
+  label: string;
+  view: ViewType;
+  count?: number;
+}
+
 export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarProps) {
   const { user, login, logout, isLoggingIn } = useAuth();
   const { students } = useStudents();
   const { exams } = useExams();
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     { icon: LayoutDashboard, label: 'Tổng quan', view: 'Dashboard' },
     { icon: Users, label: 'Học viên', view: 'Students', count: user ? students.length : 0 },
     { icon: Calendar, label: 'Lịch thi', view: 'Exams', count: user ? exams.length : 0 },
