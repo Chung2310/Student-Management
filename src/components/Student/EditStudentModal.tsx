@@ -4,7 +4,7 @@ import { X, Save, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import { Student, UploadedFile } from '../../types';
-import { cn, toInputDate, toDisplayDate } from '../../lib/utils';
+import { cn, toInputDate, toDisplayDate, compressImage } from '../../lib/utils';
 import { findDuplicateStudentField } from '../../lib/studentUniqueness';
 import { useAuth } from '../../hooks/useAuth';
 import { FormInput, UploadCard } from './components/StudentFormFields';
@@ -83,8 +83,9 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
     if (!file) return;
     setUploadingField(field);
     try {
+      const compressedFile = await compressImage(file);
       const body = new FormData();
-      body.append('file', file);
+      body.append('file', compressedFile);
       const res = await apiFetch('/upload', { method: 'POST', body });
       if (res.success && res.data) {
         setFormData(prev => ({

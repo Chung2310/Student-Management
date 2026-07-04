@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { Student } from '../../types';
 import { apiFetch } from '../../lib/api';
-import { cn, toDisplayDate } from '../../lib/utils';
+import { cn, toDisplayDate, compressImage } from '../../lib/utils';
 import { analyzeStudentPerformance } from '../../services/geminiService';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
@@ -263,8 +263,9 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
     try {
       const newFiles = [];
       for (const file of Array.from(uploadedFiles) as File[]) {
+        const compressedFile = await compressImage(file);
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", compressedFile);
 
         const res = await apiFetch("/upload", {
           method: "POST",

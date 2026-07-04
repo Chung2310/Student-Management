@@ -5,7 +5,7 @@ import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { useBatches } from '../../hooks/useBatches';
-import { formatVND, toInputDate, toDisplayDate } from '../../lib/utils';
+import { formatVND, toInputDate, toDisplayDate, compressImage } from '../../lib/utils';
 import { DrivingStudent, Student, UploadedFile } from '../../types';
 import { findDuplicateStudentField } from '../../lib/studentUniqueness';
 import { FormInput, UploadCard } from './components/StudentFormFields';
@@ -71,8 +71,9 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStu
     if (!file) return;
     setUploadingField(field);
     try {
+      const compressedFile = await compressImage(file);
       const body = new FormData();
-      body.append('file', file);
+      body.append('file', compressedFile);
       const res = await apiFetch('/upload', { method: 'POST', body });
       if (res.success && res.data) {
         setFormData(prev => ({

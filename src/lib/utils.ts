@@ -109,3 +109,81 @@ export function getVietQRBankCode(bankId: string | undefined): string {
   };
   return map[bankId.toLowerCase()] || bankId.toUpperCase();
 }
+
+/**
+ * Compresses an image file on the client side using HTML5 Canvas.
+ * Returns the original file if the browser doesn't support canvas/images or if it's not an image (e.g. PDF).
+ */
+export async function compressImage(
+  file: File,
+  options: { maxWidth?: number; maxHeight?: number; quality?: number } = {}
+): Promise<File> {
+  const { maxWidth = 1200, maxHeight = 1200, quality = 0.8 } = options;
+
+  // If not an image, return original file (like pdf)
+  if (!file.type.startsWith('image/')) {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Calculate new dimensions
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        // Draw to canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(file); // fallback
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert canvas back to Blob, then to File
+        const outputType = 'image/jpeg';
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              // Create a new file with the same name (adjusting extension to .jpg)
+              let name = file.name;
+              const lastDot = name.lastIndexOf('.');
+              if (lastDot !== -1) {
+                name = name.substring(0, lastDot) + '.jpg';
+              } else {
+                name = name + '.jpg';
+              }
+              const compressedFile = new File([blob], name, {
+                type: outputType,
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              resolve(file);
+            }
+          },
+          outputType,
+          quality
+        );
+      };
+      img.onerror = () => resolve(file);
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
+
