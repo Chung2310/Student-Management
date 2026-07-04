@@ -136,7 +136,7 @@ export interface ExamSession {
   status: ExamStatus;
   /** Hạng bằng lái — riêng ngành lái xe, kỳ thi ngành khác để trống */
   rank?: string;
-  area: string;
+  area?: string;
   tentativeDate: string;
   officialDate?: string;
   location: string;

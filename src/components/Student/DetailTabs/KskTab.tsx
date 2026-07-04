@@ -3,7 +3,7 @@ import {
   AlertCircle, Check, Clock, Loader2, Save, FileText, Upload, Bookmark, File, Trash2 
 } from 'lucide-react';
 import { Student } from '../../../types';
-import { cn } from '../../../lib/utils';
+import { cn, toInputDate } from '../../../lib/utils';
 
 type HealthCheckFile = NonNullable<Student['healthCheckFiles']>[number];
 
@@ -97,20 +97,11 @@ export function KskTab({
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ngày khám thực tế</label>
               <input 
-                type="text"
-                placeholder="DD/MM/YYYY"
-                maxLength={10}
+                type="date"
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:ring-4 focus:ring-cyan-500/5 focus:border-cyan-500 transition-all"
-                value={kskData.date}
+                value={toInputDate(kskData.date)}
                 onChange={(e) => {
-                  let val = e.target.value.replace(/\D/g, '');
-                  if (val.length > 8) val = val.substring(0, 8);
-                  if (val.length > 4) {
-                    val = val.substring(0, 2) + '/' + val.substring(2, 4) + '/' + val.substring(4);
-                  } else if (val.length > 2) {
-                    val = val.substring(0, 2) + '/' + val.substring(2);
-                  }
-                  setKskData(prev => ({ ...prev, date: val }));
+                  setKskData(prev => ({ ...prev, date: e.target.value }));
                 }}
               />
             </div>

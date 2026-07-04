@@ -16,7 +16,7 @@ const storage = new CloudinaryStorage({
   params: async () => {
     return {
       folder: "student_management",
-      allowed_formats: ["jpg", "png", "pdf", "jpeg"],
+      allowed_formats: ["jpg", "png", "pdf", "jpeg", "webp"],
       resource_type: "auto", // supports pdf and images
     };
   },

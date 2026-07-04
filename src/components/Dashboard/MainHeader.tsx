@@ -29,7 +29,7 @@ export function MainHeader({ currentView, onMenuClick }: MainHeaderProps) {
     return names[view];
   };
 
-  const registrationUrl = user ? `${window.location.origin}/login?teacherId=${user.uid}` : '';
+  const registrationUrl = user ? `${window.location.origin}/register?teacherId=${user.uid}` : '';
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(registrationUrl)}`;
 
   const handleCopy = () => {

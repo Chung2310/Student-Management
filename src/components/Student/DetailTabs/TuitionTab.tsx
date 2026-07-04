@@ -192,7 +192,11 @@ export function TuitionTab({
               )}
             </div>
 
-            {remaining <= 0 ? (
+            {totalFee === 0 ? (
+              <div className="w-full py-8 text-center text-rose-500/80 text-xs font-bold italic">
+                Chưa đóng học phí (Chưa cấu hình học phí)
+              </div>
+            ) : remaining <= 0 ? (
               <div className="w-full py-8 text-center text-slate-400 text-xs italic">
                 Học viên đã hoàn tất đóng học phí.
               </div>

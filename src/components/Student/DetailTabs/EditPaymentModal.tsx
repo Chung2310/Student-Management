@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Calendar } from 'lucide-react';
+import { X } from 'lucide-react';
+import { toInputDate } from '../../../lib/utils';
 
 interface EditingPaymentData {
   index: number;
@@ -73,24 +74,14 @@ export function EditPaymentModal({
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Ngày đóng</label>
                   <div className="relative">
                     <input
-                      type="text"
-                      placeholder="DD/MM/YYYY"
-                      maxLength={10}
+                      type="date"
                       required
-                      value={editingPayment.date}
+                      value={toInputDate(editingPayment.date)}
                       onChange={(e) => {
-                        let val = e.target.value.replace(/\D/g, '');
-                        if (val.length > 8) val = val.substring(0, 8);
-                        if (val.length > 4) {
-                          val = val.substring(0, 2) + '/' + val.substring(2, 4) + '/' + val.substring(4);
-                        } else if (val.length > 2) {
-                          val = val.substring(0, 2) + '/' + val.substring(2);
-                        }
-                        setEditingPayment((prev) => prev ? { ...prev, date: val } : null);
+                        setEditingPayment((prev) => prev ? { ...prev, date: e.target.value } : null);
                       }}
                       className="w-full h-14 bg-slate-50 px-5 rounded-2xl border border-slate-200 text-base font-bold text-slate-800 outline-none focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/5 transition-all"
                     />
-                    <Calendar className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                   </div>
                 </div>
 

@@ -43,6 +43,7 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
 
 // Lazy load pages
 const LoginPage = lazyWithRetry(() => import('./pages/Auth/LoginPage').then(m => ({ default: m.LoginPage })));
+const RegisterPage = lazyWithRetry(() => import('./pages/Auth/RegisterPage').then(m => ({ default: m.RegisterPage })));
 const LandingPage = lazyWithRetry(() => import('./pages/Landing/LandingPage').then(m => ({ default: m.LandingPage })));
 const LookupPage = lazyWithRetry(() => import('./pages/Lookup/LookupPage').then(m => ({ default: m.LookupPage })));
 const PrivacyPolicyPage = lazyWithRetry(() => import('./pages/Legal/PrivacyPolicyPage').then(m => ({ default: m.PrivacyPolicyPage })));
@@ -239,6 +240,7 @@ export default function App() {
   const isPrivacyPath = currentPath.startsWith('/privacy');
   const isTermsPath = currentPath.startsWith('/terms');
   const isLookupPath = currentPath.startsWith('/lookup');
+  const isRegisterPath = currentPath.startsWith('/register');
 
   const handleBack = () => {
     if (typeof window !== 'undefined' && window.history.length > 1) {
@@ -248,7 +250,7 @@ export default function App() {
     }
   };
 
-  if (isPrivacyPath || isTermsPath || isLookupPath) {
+  if (isPrivacyPath || isTermsPath || isLookupPath || isRegisterPath) {
     return (
       <Suspense fallback={
         <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
@@ -260,6 +262,8 @@ export default function App() {
           <PrivacyPolicyPage onBack={handleBack} />
         ) : isTermsPath ? (
           <TermsOfServicePage onBack={handleBack} />
+        ) : isRegisterPath ? (
+          <RegisterPage onNavigateToPath={navigateTo} />
         ) : (
           <LookupPage onBack={handleBack} />
         )}

@@ -32,6 +32,7 @@ interface LookupResult {
   fullName: string;
   idCard: string;
   birthday?: string;
+  referral?: string;
   rank?: string;
   status?: string | string[];
   progress?: {
@@ -123,7 +124,10 @@ export function StudentLookup() {
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Học viên</p>
               <h4 className="text-xl font-black text-slate-900 tracking-tight">{lookupResult.fullName}</h4>
-              <p className="text-xs text-slate-500 font-semibold mt-1">CCCD: {lookupResult.idCard} | Ngày sinh: {lookupResult.birthday || 'Chưa cập nhật'}</p>
+              <p className="text-xs text-slate-500 font-semibold mt-1">
+                CCCD: {lookupResult.idCard} | Ngày sinh: {lookupResult.birthday || 'Chưa cập nhật'}
+                {lookupResult.referral && ` | Người giới thiệu: ${lookupResult.referral}`}
+              </p>
             </div>
             <div className="flex flex-wrap gap-2 md:text-right">
               <span className="px-3 py-1.5 rounded-xl bg-cyan-50 text-cyan-600 font-bold border border-cyan-100 text-xs uppercase tracking-wider h-fit">

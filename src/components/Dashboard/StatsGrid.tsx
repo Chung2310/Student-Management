@@ -1,4 +1,4 @@
-import { Users, Stethoscope, CheckCircle2, FolderIcon, BookOpen, GraduationCap, Trophy, RotateCcw, Wallet } from 'lucide-react';
+import { Users, Stethoscope, CheckCircle2, FolderIcon, BookOpen, GraduationCap, Trophy, RotateCcw, Wallet, UserX } from 'lucide-react';
 import { LuxuryCard } from '../ui/LuxuryCard';
 import { useStudents } from '../../hooks/useStudents';
 import { useAuth } from '../../hooks/useAuth';
@@ -16,10 +16,11 @@ export function StatsGrid() {
     { label: 'Đang thi', value: 2, icon: GraduationCap, color: 'text-teal-500', bg: 'bg-teal-50' },
     { label: 'Đã đậu', value: 1, icon: Trophy, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: 'Thi lại', value: 1, icon: RotateCcw, color: 'text-rose-500', bg: 'bg-rose-50' },
+    { label: 'Nghỉ học', value: 0, icon: UserX, color: 'text-slate-500', bg: 'bg-slate-100' },
     { label: 'Còn nợ học phí', value: 15, icon: Wallet, color: 'text-amber-600', bg: 'bg-amber-50' },
   ];
 
-  // Trạng thái riêng quy trình lái xe — ẩn thẻ khi không có học viên nào mang trạng thái đó
+  // Trạng thái riêng quy trình lái xe
   const DRIVING_STATS = ['Chờ KSK', 'Đã KSK', 'Đã nộp HS'];
 
   const getRealStats = () => {
@@ -37,31 +38,79 @@ export function StatsGrid() {
       'Đang thi': students.filter(s => hasStatus(s, 'Đang thi')).length,
       'Đã đậu': students.filter(s => hasStatus(s, 'Đã đậu')).length,
       'Thi lại': students.filter(s => hasStatus(s, 'Thi lại')).length,
+      'Nghỉ học': students.filter(s => hasStatus(s, 'Nghỉ học')).length,
       'Còn nợ học phí': students.filter(s => hasStatus(s, 'Nợ học phí')).length,
     };
+
+    const isDriving = user.businessType === 'driving' || !user.businessType;
 
     return mockStats
       .map(stat => ({
         ...stat,
         value: statsMap[stat.label as keyof typeof statsMap] ?? 0
       }))
-      .filter(stat => !(DRIVING_STATS.includes(stat.label) && stat.value === 0));
+      .filter(stat => {
+        // Chỉ hiển thị các trạng thái lái xe khi cơ sở là đào tạo lái xe
+        if (DRIVING_STATS.includes(stat.label)) {
+          return isDriving;
+        }
+        return true;
+      });
   };
 
   const displayStats = getRealStats();
+  const count = displayStats.length;
+
+  const getLayoutConfig = () => {
+    switch (count) {
+      case 7:
+        return {
+          gridClass: "grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4",
+          getItemClass: (idx: number) => idx === 6 ? "col-span-2 md:col-span-1" : ""
+        };
+      case 8:
+        return {
+          gridClass: "grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4",
+          getItemClass: () => ""
+        };
+      case 9:
+        return {
+          gridClass: "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-9 gap-4",
+          getItemClass: (idx: number) => idx === 8 ? "col-span-2 md:col-span-1 xl:col-span-1" : ""
+        };
+      case 10:
+        return {
+          gridClass: "grid grid-cols-2 md:grid-cols-5 xl:grid-cols-10 gap-4",
+          getItemClass: () => ""
+        };
+      default:
+        return {
+          gridClass: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4",
+          getItemClass: () => ""
+        };
+    }
+  };
+
+  const { gridClass, getItemClass } = getLayoutConfig();
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-9 gap-4">
+    <div className={gridClass}>
       {displayStats.map((stat, idx) => (
-        <LuxuryCard key={idx} padding="sm" className="flex items-center gap-4 hover:shadow-md transition-shadow group">
-          <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color} transition-transform group-hover:scale-105`}>
+        <LuxuryCard 
+          key={idx} 
+          padding="none" 
+          className={`p-3.5 flex items-center gap-3 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group cursor-pointer border border-slate-100/50 ${getItemClass(idx)}`}
+        >
+          <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color} transition-transform duration-300 group-hover:scale-110 shrink-0`}>
             <stat.icon className="w-5 h-5" />
           </div>
-          <div>
-            <p className="text-xl font-bold text-slate-900 leading-tight">
+          <div className="min-w-0">
+            <p className="text-xl font-bold text-slate-900 leading-tight tracking-tight">
               {loading && user ? '...' : stat.value}
             </p>
-            <p className="text-[10px] font-medium text-slate-500">{stat.label}</p>
+            <p className="text-xs font-semibold text-slate-500 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis group-hover:text-slate-700 transition-colors">
+              {stat.label}
+            </p>
           </div>
         </LuxuryCard>
       ))}

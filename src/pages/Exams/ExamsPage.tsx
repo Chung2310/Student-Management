@@ -18,10 +18,15 @@ import { AssignStudentModal } from '../../components/Exams/AssignStudentModal';
 import { ExamCard } from '../../components/Exams/ExamCard';
 import { useToast } from '../../hooks/useToast';
 import { Pagination } from '../../components/ui/Pagination';
+import { useAuth } from '../../hooks/useAuth';
+import { useAdminCenters } from '../../hooks/useAdminCenters';
 
 export function ExamsPage() {
-  const { exams, loading: examsLoading } = useExams();
-  const { students } = useStudents();
+  const { user } = useAuth();
+  const [selectedCenter, setSelectedCenter] = useState<string>('');
+  const { centers } = useAdminCenters();
+  const { exams, loading: examsLoading } = useExams(selectedCenter);
+  const { students } = useStudents(selectedCenter);
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'exams' | 'students'>('exams');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -49,7 +54,7 @@ export function ExamsPage() {
     const ranks = [...new Set(exams.map(e => e.rank).filter(Boolean))] as string[];
     return ['Tất cả hạng', ...ranks.sort()];
   }, [exams]);
-  const [areaFilter, setAreaFilter] = useState('Tất cả khu vực');
+
   const [statusFilter, setStatusFilter] = useState('Tất cả');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -61,7 +66,7 @@ export function ExamsPage() {
       setCurrentPage(1);
     }, 0);
     return () => clearTimeout(timer);
-  }, [searchQuery, rankFilter, areaFilter, statusFilter, fromDate, toDate]);
+  }, [searchQuery, rankFilter, statusFilter, fromDate, toDate, selectedCenter]);
 
   // Helper to parse DD/MM/YYYY to Date object
   const parseDateString = (dateStr: string): Date | null => {
@@ -76,7 +81,7 @@ export function ExamsPage() {
 
   const filteredExams = exams.filter(exam => {
     if (hasRankData && rankFilter !== 'Tất cả hạng' && exam.rank !== rankFilter) return false;
-    if (areaFilter !== 'Tất cả khu vực' && exam.area !== areaFilter) return false;
+
     if (statusFilter !== 'Tất cả' && exam.status !== statusFilter) return false;
     if (searchQuery && !exam.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
 
@@ -280,6 +285,35 @@ export function ExamsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Superadmin Center Filter */}
+      {user?.role === 'superadmin' && (
+        <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-100 rounded-[1.5rem] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-cyan-600 text-white rounded-xl shadow-md">
+              <UsersIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-800">Bộ lọc trung tâm</h3>
+              <p className="text-xs text-slate-500">Superadmin: Lọc danh sách đợt thi theo từng trung tâm</p>
+            </div>
+          </div>
+          <div className="relative min-w-[240px]">
+            <select
+              value={selectedCenter}
+              onChange={(e) => setSelectedCenter(e.target.value)}
+              className="w-full pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 shadow-sm appearance-none focus:outline-none focus:border-cyan-600 transition-all cursor-pointer"
+            >
+              <option value="">Tất cả trung tâm</option>
+              {centers.map(center => (
+                <option key={center.uid} value={center.uid}>
+                  {center.displayName} ({center.email})
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          </div>
+        </div>
+      )}
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -367,13 +401,12 @@ export function ExamsPage() {
             {hasRankData && (
               <FilterSelect label="Hạng bằng" value={rankFilter} onChange={setRankFilter} options={rankOptions} />
             )}
-            <FilterSelect label="Khu vực" value={areaFilter} onChange={setAreaFilter} options={['Tất cả khu vực', 'Nội thành', 'Ngoại thành']} />
+
             <FilterSelect label="Trạng thái" value={statusFilter} onChange={setStatusFilter} options={['Tất cả', 'Sắp diễn ra', 'Đã xác nhận', 'Đã hoàn thành']} />
             <div className="flex items-end pb-2 col-span-2 sm:col-span-1">
               <button 
                 onClick={() => {
                   setRankFilter('Tất cả hạng'); 
-                  setAreaFilter('Tất cả khu vực'); 
                   setStatusFilter('Tất cả'); 
                   setSearchQuery('');
                   setFromDate('');

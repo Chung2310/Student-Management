@@ -3,7 +3,7 @@ import Joi from "joi";
 const objectIdPattern = /^[0-9a-fA-F]{24}$/;
 
 export const objectIdSchema = Joi.string().pattern(objectIdPattern).messages({
-  "string.pattern.base": "Äá»‹nh dáº¡ng ID khÃ´ng há»£p lá»‡.",
+  "string.pattern.base": "Định dạng ID không hợp lệ.",
 });
 
 export const idParamSchema = Joi.object({
@@ -20,23 +20,25 @@ const uploadedFileSchema = Joi.object({
 
 export const createStudentSchema = Joi.object({
   fullName: Joi.string().required().messages({
-    "any.required": "Há» vÃ  tÃªn lÃ  báº¯t buá»™c.",
-    "string.empty": "Há» vÃ  tÃªn khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.",
+    "any.required": "Họ và tên là bắt buộc.",
+    "string.empty": "Họ và tên không được để trống.",
   }),
   phone: Joi.string().required().messages({
-    "any.required": "Sá»‘ Ä‘iá»‡n thoáº¡i lÃ  báº¯t buá»™c.",
-    "string.empty": "Sá»‘ Ä‘iá»‡n thoáº¡i khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.",
+    "any.required": "Số điện thoại là bắt buộc.",
+    "string.empty": "Số điện thoại không được để trống.",
   }),
   email: Joi.string().email().allow("").optional().messages({
-    "string.email": "Äá»‹nh dáº¡ng email khÃ´ng há»£p lá»‡.",
+    "string.email": "Định dạng email không hợp lệ.",
   }),
   referral: Joi.string().allow("").optional(),
   birthday: Joi.string().allow("").optional(),
-  idCard: Joi.string().allow("").optional(),
+  idCard: Joi.string().allow("").pattern(/^(?:\d{12})?$/).messages({
+    "string.pattern.base": "Số CCCD phải có đúng 12 chữ số.",
+  }).optional(),
   rank: Joi.string().allow("").optional(),
   courseId: objectIdSchema.allow("").optional(),
   registrationDate: Joi.string().required().messages({
-    "any.required": "NgÃ y Ä‘Äƒng kÃ½ lÃ  báº¯t buá»™c.",
+    "any.required": "Ngày đăng ký là bắt buộc.",
   }),
   enrollmentDate: Joi.string().allow("").optional(),
   fee: Joi.string().allow("").optional(),
@@ -53,8 +55,8 @@ export const createStudentSchema = Joi.object({
   idCardBackFile: uploadedFileSchema.optional(),
   portraitFile: uploadedFileSchema.optional(),
   status: Joi.alternatives().try(
-    Joi.array().items(Joi.string().valid("Chá»  KSK", "Ä Ã£ KSK", "Ä Ã£ ná»™p HS", "Ä ang há» c", "Ä ang thi", "Ä Ã£ Ä‘áº­u", "Thi láº¡i", "Nghá»‰ há» c", "Ná»£ há» c phÃ­", "Chờ KSK", "Đã KSK", "Đã nộp HS", "Đang học", "Đang thi", "Đã đậu", "Thi lại", "Nghỉ học", "Nợ học phí")),
-    Joi.string().valid("Chá»  KSK", "Ä Ã£ KSK", "Ä Ã£ ná»™p HS", "Ä ang há» c", "Ä ang thi", "Ä Ã£ Ä‘áº­u", "Thi láº¡i", "Nghá»‰ há» c", "Ná»£ há» c phÃ­", "Chờ KSK", "Đã KSK", "Đã nộp HS", "Đang học", "Đang thi", "Đã đậu", "Thi lại", "Nghỉ học", "Nợ học phí")
+    Joi.array().items(Joi.string().valid("Chờ KSK", "Đã KSK", "Đã nộp HS", "Đang học", "Đang thi", "Đã đậu", "Thi lại", "Nghỉ học", "Nợ học phí")),
+    Joi.string().valid("Chờ KSK", "Đã KSK", "Đã nộp HS", "Đang học", "Đang thi", "Đã đậu", "Thi lại", "Nghỉ học", "Nợ học phí")
   ).optional(),
 });
 
@@ -64,7 +66,9 @@ export const updateStudentSchema = Joi.object({
   email: Joi.string().email().allow("").optional(),
   referral: Joi.string().allow("").optional(),
   birthday: Joi.string().allow("").optional(),
-  idCard: Joi.string().allow("").optional(),
+  idCard: Joi.string().allow("").pattern(/^(?:\d{12})?$/).messages({
+    "string.pattern.base": "Số CCCD phải có đúng 12 chữ số.",
+  }).optional(),
   rank: Joi.string().allow("").optional(),
   courseId: objectIdSchema.allow("").optional(),
   registrationDate: Joi.string().optional(),
@@ -72,8 +76,8 @@ export const updateStudentSchema = Joi.object({
   fee: Joi.string().optional(),
   address: Joi.string().allow("").optional(),
   status: Joi.alternatives().try(
-    Joi.array().items(Joi.string().valid("Chá»  KSK", "Ä Ã£ KSK", "Ä Ã£ ná»™p HS", "Ä ang há» c", "Ä ang thi", "Ä Ã£ Ä‘áº­u", "Thi láº¡i", "Nghá»‰ há» c", "Ná»£ há» c phÃ­", "Chờ KSK", "Đã KSK", "Đã nộp HS", "Đang học", "Đang thi", "Đã đậu", "Thi lại", "Nghỉ học", "Nợ học phí")),
-    Joi.string().valid("Chá»  KSK", "Ä Ã£ KSK", "Ä Ã£ ná»™p HS", "Ä ang há» c", "Ä ang thi", "Ä Ã£ Ä‘áº­u", "Thi láº¡i", "Nghá»‰ há» c", "Ná»£ há» c phÃ­", "Chờ KSK", "Đã KSK", "Đã nộp HS", "Đang học", "Đang thi", "Đã đậu", "Thi lại", "Nghỉ học", "Nợ học phí")
+    Joi.array().items(Joi.string().valid("Chờ KSK", "Đã KSK", "Đã nộp HS", "Đang học", "Đang thi", "Đã đậu", "Thi lại", "Nghỉ học", "Nợ học phí")),
+    Joi.string().valid("Chờ KSK", "Đã KSK", "Đã nộp HS", "Đang học", "Đang thi", "Đã đậu", "Thi lại", "Nghỉ học", "Nợ học phí")
   ).optional(),
   healthCheckDate: Joi.string().allow("").optional(),
   healthCheckNotes: Joi.string().allow("").optional(),
@@ -115,46 +119,51 @@ export const updateStudentSchema = Joi.object({
 
 export const publicRegisterStudentSchema = Joi.object({
   fullName: Joi.string().required().messages({
-    "any.required": "Há» vÃ  tÃªn lÃ  báº¯t buá»™c.",
-    "string.empty": "Há» vÃ  tÃªn khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.",
+    "any.required": "Họ và tên là bắt buộc.",
+    "string.empty": "Họ và tên không được để trống.",
   }),
-  phone: Joi.string().required().messages({
-    "any.required": "Sá»‘ Ä‘iá»‡n thoáº¡i lÃ  báº¯t buá»™c.",
-    "string.empty": "Sá»‘ Ä‘iá»‡n thoáº¡i khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.",
+  phone: Joi.string().required().pattern(/^(0[35789]\d{8})$/).messages({
+    "any.required": "Số điện thoại là bắt buộc.",
+    "string.empty": "Số điện thoại không được để trống.",
+    "string.pattern.base": "Số điện thoại không hợp lệ (phải gồm 10 chữ số bắt đầu bằng 03, 05, 07, 08 hoặc 09).",
   }),
+  referral: Joi.string().allow("").optional(),
   email: Joi.string().email().required().messages({
-    "any.required": "Email lÃ  báº¯t buá»™c.",
-    "string.empty": "Email khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.",
-    "string.email": "Äá»‹nh dáº¡ng email khÃ´ng há»£p lá»‡.",
+    "any.required": "Email là bắt buộc.",
+    "string.empty": "Email không được để trống.",
+    "string.email": "Định dạng email không hợp lệ.",
   }),
-  birthday: Joi.string().required().messages({
-    "any.required": "NgÃ y sinh lÃ  báº¯t buá»™c.",
-    "string.empty": "NgÃ y sinh khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.",
+  birthday: Joi.string().required().pattern(/^\d{1,2}\/\d{1,2}\/\d{4}$/).messages({
+    "any.required": "Ngày sinh là bắt buộc.",
+    "string.empty": "Ngày sinh không được để trống.",
+    "string.pattern.base": "Ngày sinh không đúng định dạng DD/MM/YYYY.",
   }),
-  idCard: Joi.string().required().messages({
-    "any.required": "Sá»‘ CCCD/CMND lÃ  báº¯t buá»™c.",
-    "string.empty": "Sá»‘ CCCD/CMND khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.",
+  idCard: Joi.string().required().pattern(/^\d{12}$/).messages({
+    "any.required": "Số CCCD/CMND là bắt buộc.",
+    "string.empty": "Số CCCD/CMND không được để trống.",
+    "string.pattern.base": "Số CCCD phải có đúng 12 chữ số.",
   }),
   rank: Joi.string().allow("").optional(),
-  enrollmentDate: Joi.string().required().messages({
-    "any.required": "NgÃ y nháº­p há» c lÃ  báº¯t buá»™c.",
-    "string.empty": "NgÃ y nháº­p há» c khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.",
+  enrollmentDate: Joi.string().required().pattern(/^\d{1,2}\/\d{1,2}\/\d{4}$/).messages({
+    "any.required": "Ngày nhập học là bắt buộc.",
+    "string.empty": "Ngày nhập học không được để trống.",
+    "string.pattern.base": "Ngày nhập học không đúng định dạng DD/MM/YYYY.",
   }),
   address: Joi.string().required().messages({
-    "any.required": "Ä á»‹a chá»‰ lÃ  báº¯t buá»™c.",
-    "string.empty": "Ä á»‹a chá»‰ khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.",
+    "any.required": "Địa chỉ là bắt buộc.",
+    "string.empty": "Địa chỉ không được để trống.",
   }),
   idCardFrontFile: uploadedFileSchema.required().messages({
-    "any.required": "áº¢nh CCCD máº·t trÆ°á»›c lÃ  báº¯t buá»™c.",
+    "any.required": "Ảnh CCCD mặt trước là bắt buộc.",
   }),
   idCardBackFile: uploadedFileSchema.required().messages({
-    "any.required": "áº¢nh CCCD máº·t sau lÃ  báº¯t buá»™c.",
+    "any.required": "Ảnh CCCD mặt sau là bắt buộc.",
   }),
   portraitFile: uploadedFileSchema.required().messages({
-    "any.required": "áº¢nh chÃ¢n dung lÃ  báº¯t buá»™c.",
+    "any.required": "Ảnh chân dung là bắt buộc.",
   }),
   teacherId: objectIdSchema.required().messages({
-    "any.required": "ID giÃ¡o viÃªn lÃ  báº¯t buá»™c.",
-    "string.empty": "ID giÃ¡o viÃªn khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.",
+    "any.required": "ID giáo viên là bắt buộc.",
+    "string.empty": "ID giáo viên không được để trống.",
   }),
 });
