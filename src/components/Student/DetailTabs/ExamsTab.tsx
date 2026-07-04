@@ -1,7 +1,7 @@
 import React from 'react';
 import { Loader2, Save, Calendar, Trophy, Plus, Trash2 } from 'lucide-react';
 import { Student } from '../../../types';
-import { cn } from '../../../lib/utils';
+import { cn, toInputDate, toDisplayDate } from '../../../lib/utils';
 
 type StudentExam = NonNullable<Student['exams']>[number];
 
@@ -130,7 +130,7 @@ export function ExamsTab({
                     {isEditingExams ? (
                       <div className="space-y-1">
                         <input 
-                          className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1"
+                          className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 font-semibold text-slate-800"
                           value={exam.name}
                           placeholder="Tên kỳ thi..."
                           onChange={(e) => {
@@ -140,9 +140,9 @@ export function ExamsTab({
                           }}
                         />
                         <input 
-                          className="w-full text-[10px] bg-slate-50 border border-slate-200 rounded-lg px-2 py-1"
-                          value={exam.date}
-                          placeholder="Ngày thi..."
+                          type="date"
+                          className="w-full text-[10px] bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 relative font-semibold text-slate-800"
+                          value={toInputDate(exam.date)}
                           onChange={(e) => {
                             const newExams = [...examData];
                             newExams[idx].date = e.target.value;
@@ -153,7 +153,7 @@ export function ExamsTab({
                     ) : (
                       <>
                         <p className="text-sm font-bold text-slate-800">{exam.name}</p>
-                        <p className="text-[10px] text-slate-400 font-medium">{exam.date}</p>
+                        <p className="text-[10px] text-slate-400 font-semibold">{toDisplayDate(exam.date)}</p>
                       </>
                     )}
                   </td>

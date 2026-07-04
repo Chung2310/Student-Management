@@ -75,12 +75,12 @@ export function StatsGrid() {
         };
       case 9:
         return {
-          gridClass: "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-9 gap-4",
-          getItemClass: (idx: number) => idx === 8 ? "col-span-2 md:col-span-1 xl:col-span-1" : ""
+          gridClass: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4",
+          getItemClass: (idx: number) => idx === 8 ? "col-span-2 md:col-span-1 lg:col-span-1" : ""
         };
       case 10:
         return {
-          gridClass: "grid grid-cols-2 md:grid-cols-5 xl:grid-cols-10 gap-4",
+          gridClass: "grid grid-cols-2 md:grid-cols-5 gap-4",
           getItemClass: () => ""
         };
       default:

@@ -174,7 +174,7 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
 
       // 2. Update exam stats for each exam that was modified
       for (const exam of examData) {
-        if (exam.id) {
+        if (exam.id && /^[0-9a-fA-F]{24}$/.test(exam.id)) {
           let passCount = 0;
           let failCount = 0;
           let studentCount = 0;
