@@ -44,9 +44,10 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
 
   const visibleMenuItems = menuItems.filter((item) => {
     // Hide SettingsAdmin and UserManagement for regular users
-    if ((item.view === 'SettingsAdmin' || item.view === 'UserManagement') && user?.role === 'user') {
+    if (item.view === 'UserManagement' && user?.role === 'user') {
       return false;
     }
+    if (item.view === 'SettingsAdmin') return true;
     // Restrict other views for user role based on permissions
     if (user?.role === 'user') {
       // Dashboard is always visible

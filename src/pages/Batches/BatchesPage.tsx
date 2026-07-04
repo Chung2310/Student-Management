@@ -12,10 +12,11 @@ import { useManagedUsers } from '../../hooks/useManagedUsers';
 import { useStudents } from '../../hooks/useStudents';
 import { Batch, BatchStatus } from '../../types';
 import {
-  ErpPageHeader, ErpPrimaryButton, ErpSearchBar, ErpFilterTab,
+  ErpPageHeader, ErpPrimaryButton, ErpSearchBar, ErpFilterTab, ErpFilterRail,
   ErpModal, ErpField, ErpInput, ErpSelect,
   ErpEmptyState, ErpLoadingState, ErpCard, ErpConfirmModal, ErpTableHead
 } from '../../components/Erp/ErpUI';
+import { Pagination } from '../../components/ui/Pagination';
 
 const BATCH_STATUSES: BatchStatus[] = ['Sắp khai giảng', 'Đang học', 'Đã kết thúc'];
 
@@ -91,6 +92,8 @@ export function BatchesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [manageLearnersId, setManageLearnersId] = useState<string | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id: string; code: string }>({
     isOpen: false,
     id: '',
@@ -227,6 +230,15 @@ export function BatchesPage() {
     const matchesStatus = statusFilter === 'all' || b.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+  const totalPages = Math.ceil(filteredBatches.length / pageSize);
+  const paginatedBatches = filteredBatches.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [searchTerm, statusFilter]);
 
   const availableStudents = manageBatch
     ? students.filter(s => !manageBatch.learnerIds.includes(s.id))
@@ -252,7 +264,7 @@ export function BatchesPage() {
       {/* Controls */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <ErpSearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Tìm theo mã lớp, khóa học, giảng viên..." />
-        <div className="flex items-center gap-2 overflow-x-auto">
+        <ErpFilterRail>
           <ErpFilterTab active={statusFilter === 'all'} onClick={() => setStatusFilter('all')}>
             Tất cả
           </ErpFilterTab>
@@ -261,7 +273,7 @@ export function BatchesPage() {
               {st}
             </ErpFilterTab>
           ))}
-        </div>
+        </ErpFilterRail>
       </div>
 
       {/* Batch table */}
@@ -281,7 +293,7 @@ export function BatchesPage() {
             <table className="w-full text-xs text-left border-collapse">
               <ErpTableHead columns={['Mã lớp', 'Khóa học', 'Giảng viên', 'Lịch học', 'Thời gian', 'Sĩ số', 'Trạng thái', 'Thao tác']} />
               <tbody className={cn("divide-y", darkMode ? "divide-slate-800/30" : "divide-slate-100")}>
-                {filteredBatches.map((b) => (
+                {paginatedBatches.map((b) => (
                   <tr key={b.id} className={cn("transition-colors", darkMode ? "text-slate-350 hover:bg-slate-800/10" : "text-slate-600 hover:bg-slate-50/40")}>
                     <td className="py-4 px-6 font-black text-sm">{b.code}</td>
                     <td className="py-4 px-6">
@@ -369,6 +381,14 @@ export function BatchesPage() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredBatches.length}
+            pageSize={pageSize}
+            itemName="lớp học"
+          />
         </ErpCard>
       )}
 
