@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { UploadedFile } from '../../types';
-import { toDisplayDate } from '../../lib/utils';
+import { toDisplayDate, compressImage } from '../../lib/utils';
 import { DateInput } from '../../components/ui/DateInput';
 
 type PublicFileField = 'idCardFrontFile' | 'idCardBackFile' | 'portraitFile';
@@ -126,8 +126,9 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
     setUploadingField(field);
     setErrorMsg('');
     try {
+      const compressedFile = await compressImage(file);
       const body = new FormData();
-      body.append('file', file);
+      body.append('file', compressedFile);
       const res = await apiFetch('/upload', { method: 'POST', body });
       if (res.success && res.data) {
         const uploaded = {
