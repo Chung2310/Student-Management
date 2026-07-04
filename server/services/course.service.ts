@@ -17,7 +17,11 @@ interface CourseData {
 
 function normalizeCourseFee(fee: unknown): string {
   const raw = String(fee || "").trim();
-  return raw || "0";
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "0đ";
+  const num = parseInt(digits, 10);
+  if (isNaN(num)) return "0đ";
+  return `${num.toLocaleString("vi-VN")}đ`;
 }
 
 function buildOwnerQuery(ownerId: string | string[]): Record<string, unknown> {

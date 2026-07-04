@@ -47,6 +47,34 @@ export function formatDisplayDate(dateStr: string | undefined): string {
 }
 
 /**
+ * Converts a date string (either DD/MM/YYYY or YYYY-MM-DD) to YYYY-MM-DD format for HTML date inputs.
+ */
+export function toInputDate(dateStr: string | undefined): string {
+  if (!dateStr) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+    const parts = dateStr.split('/');
+    const day = parts[0].padStart(2, '0');
+    const month = parts[1].padStart(2, '0');
+    const year = parts[2];
+    return `${year}-${month}-${day}`;
+  }
+  return '';
+}
+
+/**
+ * Converts a date string from YYYY-MM-DD to DD/MM/YYYY.
+ */
+export function toDisplayDate(dateStr: string | undefined): string {
+  if (!dateStr) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
+  }
+  return dateStr;
+}
+
+/**
  * Converts a Vietnamese string into a clean URL-friendly slug.
  */
 export function toSlug(str: string): string {

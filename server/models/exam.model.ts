@@ -17,7 +17,6 @@ const examSchema = new Schema<IExam>(
       trim: true,
       index: true,
     },
-    area: { type: String, required: true },
     tentativeDate: { type: String, required: true },
     officialDate: { type: String, default: "" },
     location: { type: String, required: true },

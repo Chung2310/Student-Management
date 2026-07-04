@@ -7,7 +7,6 @@ export interface IExam extends Document {
   status: ExamStatus;
   /** Hạng bằng lái — riêng ngành lái xe, kỳ thi ngành khác để trống */
   rank?: string;
-  area: string;
   tentativeDate: string;
   officialDate?: string;
   location: string;

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ChevronDown, UserPlus, Edit3, Trash2,
-  CheckCircle2, MapPin, Map, UserMinus, RefreshCw,
+  CheckCircle2, Map, UserMinus, RefreshCw,
   Download, Upload, Calendar as CalendarIcon
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -192,9 +192,6 @@ export const ExamCard: React.FC<ExamCardProps> = ({
                   {exam.rank}
                 </span>
               )}
-              <span className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">
-                <MapPin className="w-3 h-3 sm:w-4 h-4 text-slate-300" /> {exam.area || 'Tất cả khu vực'}
-              </span>
             </div>
           </div>
           

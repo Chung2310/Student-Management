@@ -1,6 +1,7 @@
 import { Exam } from "../models/exam.model";
 import { Student } from "../models/student.model";
 import { IExam } from "../interfaces/exam.interface";
+import { User } from "../models/user.model";
 import { logger } from "../config/logger";
 
 interface ExamFilters {
@@ -8,7 +9,8 @@ interface ExamFilters {
   limit?: number | string;
   status?: string;
   rank?: string;
-  area?: string;
+  /** superadmin only: scope data to a specific center (admin uid) */
+  ownerFilter?: string;
 }
 
 interface ExamCreateData {
@@ -45,13 +47,21 @@ export class ExamService {
     const limit = filters.limit ? parseInt(String(filters.limit)) : 1000;
     const skip = (page - 1) * limit;
 
+    // superadmin scope override: if ownerFilter provided, resolve to that center's userIds
+    let resolvedOwnerId = ownerId;
+    if (ownerId === "ALL" && filters.ownerFilter) {
+      const centerUsers = await User.find({ centerId: filters.ownerFilter }).select("_id");
+      const ids = centerUsers.map(u => u._id.toString());
+      ids.push(filters.ownerFilter);
+      resolvedOwnerId = [...new Set(ids)];
+    }
+
     const query: Record<string, unknown> = {};
-    if (ownerId !== "ALL") {
-      query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
+    if (resolvedOwnerId !== "ALL") {
+      query.ownerId = Array.isArray(resolvedOwnerId) ? { $in: resolvedOwnerId } : resolvedOwnerId;
     }
     if (filters.status) query.status = filters.status;
     if (filters.rank) query.rank = filters.rank;
-    if (filters.area) query.area = filters.area;
 
     const total = await Exam.countDocuments(query);
     const exams = await Exam.find(query)

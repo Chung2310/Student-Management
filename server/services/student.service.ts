@@ -3,6 +3,7 @@ import { logger } from "../config/logger";
 import { IStudent } from "../interfaces/student.interface";
 import { Student, slugify } from "../models/student.model";
 import { Payment } from "../models/payment.model";
+import { User } from "../models/user.model";
 
 interface StudentFilters {
   page?: number | string;
@@ -10,6 +11,8 @@ interface StudentFilters {
   status?: string;
   rank?: string;
   search?: string;
+  /** superadmin only: scope data to a specific center (admin uid) */
+  ownerFilter?: string;
 }
 
 interface StudentCreateData {
@@ -122,8 +125,18 @@ export class StudentService {
     const limit = filters.limit ? parseInt(String(filters.limit)) : 1000;
     const skip = (page - 1) * limit;
 
+    // superadmin scope override: if ownerFilter provided, resolve to that center's userIds
+    let resolvedOwnerId = ownerId;
+    if (ownerId === "ALL" && filters.ownerFilter) {
+      const centerUsers = await User.find({ centerId: filters.ownerFilter }).select("_id");
+      const ids = centerUsers.map(u => u._id.toString());
+      // also include the admin themselves
+      ids.push(filters.ownerFilter);
+      resolvedOwnerId = [...new Set(ids)];
+    }
+
     const query: Record<string, unknown> = {
-      ...buildOwnerScopeQuery(ownerId),
+      ...buildOwnerScopeQuery(resolvedOwnerId),
     };
 
     if (filters.status) {
@@ -275,6 +288,9 @@ export class StudentService {
   static async bulkCreateStudents(creatorId: string, ownerId: string | string[], studentsData: any[]) {
     logger.info(`[Student] Bulk importing ${studentsData.length} students: creatorId=${creatorId}, ownerId=${ownerId}`);
 
+    const creator = await User.findById(creatorId).lean();
+    const businessType = creator?.businessType || "driving";
+
     let importedCount = 0;
     let skippedCount = 0;
     const errors: { row: number; name: string; phone: string; reason: string }[] = [];
@@ -308,7 +324,7 @@ export class StudentService {
         skippedCount++;
         continue;
       }
-      if (!["A1", "A2", "B1", "B2", "C"].includes(rank)) {
+      if (businessType === "driving" && !["A1", "A2", "B1", "B2", "C"].includes(rank)) {
         errors.push({ row: rowNum, name: fullName, phone, reason: `Hạng bằng '${rank}' không hợp lệ (chỉ nhận A1, A2, B1, B2, C).` });
         skippedCount++;
         continue;
@@ -335,7 +351,8 @@ export class StudentService {
       const fee = String(data.fee || "0").trim();
       const registrationDate = String(data.registrationDate || new Date().toLocaleDateString("vi-VN")).trim();
       const enrollmentDate = String(data.enrollmentDate || "").trim();
-      const status = String(data.status || "Chờ KSK").trim();
+      const defaultStatus = businessType === "driving" ? "Chờ KSK" : "Đang học";
+      const status = String(data.status || defaultStatus).trim();
 
       if (email && existingEmails.has(email)) {
         errors.push({ row: rowNum, name: fullName, phone, reason: "Email đã tồn tại trong trung tâm hiện tại." });

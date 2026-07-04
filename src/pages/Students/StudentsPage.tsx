@@ -10,8 +10,9 @@ import { cn, formatVND, formatDisplayDate } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
 import { useBatches } from '../../hooks/useBatches';
 import { useCourses } from '../../hooks/useCourses';
-import { useCourseCategories } from '../../hooks/useCourseCategories';
+import { useCourseCategories, CourseCategoryItem } from '../../hooks/useCourseCategories';
 import { useToast } from '../../hooks/useToast';
+import { useAdminCenters } from '../../hooks/useAdminCenters';
 import { Student } from '../../types';
 import { apiFetch } from '../../lib/api';
 import { EditStudentModal } from '../../components/Student/EditStudentModal';
@@ -42,7 +43,9 @@ function categoryIcon(name: string): React.ComponentType<{ className?: string }>
 
 export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProps) {
   const { user } = useAuth();
-  const { students, loading } = useStudents();
+  const [selectedCenter, setSelectedCenter] = useState<string>('');
+  const { centers } = useAdminCenters();
+  const { students, loading } = useStudents(selectedCenter);
   const { batches } = useBatches();
   const { courses } = useCourses();
   const { categories } = useCourseCategories();
@@ -75,11 +78,15 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
       setCurrentPage(1);
     }, 0);
     return () => clearTimeout(timer);
-  }, [category, selectedStatuses, searchQuery, startDate, endDate, rankFilter, feeStatusFilter]);
+  }, [category, selectedStatuses, searchQuery, startDate, endDate, rankFilter, feeStatusFilter, selectedCenter]);
 
   // Helper to parse DD/MM/YYYY to Date object
   const parseDate = (dateStr: string) => {
-    const [day, month, year] = dateStr.split('/').map(Number);
+    if (!dateStr) return new Date(0);
+    const parts = dateStr.split('/');
+    if (parts.length < 3) return new Date(0);
+    const [day, month, year] = parts.map(Number);
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return new Date(0);
     return new Date(year, month - 1, day);
   };
 
@@ -136,11 +143,14 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
     if (startDate || endDate) {
       const regDate = parseDate(student.registrationDate);
       if (startDate) {
-        const start = new Date(startDate);
+        const [sYear, sMonth, sDay] = startDate.split('-').map(Number);
+        const start = new Date(sYear, sMonth - 1, sDay);
         if (regDate < start) return false;
       }
       if (endDate) {
-        const end = new Date(endDate);
+        const [eYear, eMonth, eDay] = endDate.split('-').map(Number);
+        const end = new Date(eYear, eMonth - 1, eDay);
+        end.setHours(23, 59, 59, 999);
         if (regDate > end) return false;
       }
     }
@@ -161,7 +171,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
       const remaining = totalFeeNum - paidSoFar;
 
       if (feeStatusFilter === 'Đã đóng đủ') {
-        if (remaining > 0 || totalFeeNum === 0) return false;
+        if (remaining > 0) return false;
       } else if (feeStatusFilter === 'Chưa đóng') {
         if (paidSoFar > 0) return false;
       } else if (feeStatusFilter === 'Còn thiếu') {
@@ -419,6 +429,36 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
 
   return (
     <div className="space-y-6">
+      {/* Superadmin Center Filter */}
+      {user?.role === 'superadmin' && (
+        <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-100 rounded-[1.5rem] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-cyan-600 text-white rounded-xl shadow-md">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-800">Bộ lọc trung tâm</h3>
+              <p className="text-xs text-slate-500">Superadmin: Lọc danh sách học viên theo từng trung tâm</p>
+            </div>
+          </div>
+          <div className="relative min-w-[240px]">
+            <select
+              value={selectedCenter}
+              onChange={(e) => setSelectedCenter(e.target.value)}
+              className="w-full pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 shadow-sm appearance-none focus:outline-none focus:border-cyan-600 transition-all cursor-pointer"
+            >
+              <option value="">Tất cả trung tâm</option>
+              {centers.map(center => (
+                <option key={center.uid} value={center.uid}>
+                  {center.displayName} ({center.email})
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          </div>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -457,7 +497,9 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
       <div className="flex items-center gap-2 sm:gap-6 border-b border-slate-200 overflow-x-auto no-scrollbar">
         {[
           { id: TAB_ALL, icon: Users },
-          ...categories.map((cat) => ({ id: cat.name, icon: categoryIcon(cat.name) })),
+          // dedup by name — superadmin thấy categories từ nhiều trung tâm, tránh tab trùng
+          ...Array.from(new Map(categories.map((cat) => [cat.name, cat])).values())
+            .map((cat: CourseCategoryItem) => ({ id: cat.name, icon: categoryIcon(cat.name) })),
           { id: TAB_UNASSIGNED, icon: UserX },
         ].map((item) => (
           <button
@@ -708,7 +750,9 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
                           const remaining = totalFeeNum - paidSoFar;
                           return (
                             <>
-                              {remaining > 0 ? (
+                              {totalFeeNum === 0 ? (
+                                <span className="text-rose-500/80 whitespace-nowrap">Chưa đóng</span>
+                              ) : remaining > 0 ? (
                                 <span className="text-rose-500 whitespace-nowrap">-{formatVND(remaining)}đ</span>
                               ) : (
                                 <span className="text-emerald-600 whitespace-nowrap">Đã hoàn tất</span>

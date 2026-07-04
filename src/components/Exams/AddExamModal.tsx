@@ -31,6 +31,15 @@ export function AddExamModal({ isOpen, onClose, onSuccess, initialData }: AddExa
     location: '',
   });
 
+  const dateInputRef = React.useRef<HTMLInputElement>(null);
+  const [localTentativeDate, setLocalTentativeDate] = useState('');
+
+  useEffect(() => {
+    if (document.activeElement !== dateInputRef.current) {
+      setLocalTentativeDate(formData.tentativeDate);
+    }
+  }, [formData.tentativeDate]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (initialData) {
@@ -213,16 +222,20 @@ export function AddExamModal({ isOpen, onClose, onSuccess, initialData }: AddExa
                   )}
                 </div>
 
-                <div className="space-y-1">
+                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
                     Ngày thi dự kiến <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <input
+                      ref={dateInputRef}
                       type="date"
                       name="tentativeDate"
-                      value={formData.tentativeDate}
-                      onChange={handleInputChange}
+                      value={localTentativeDate}
+                      onChange={(e) => {
+                        setLocalTentativeDate(e.target.value);
+                        handleInputChange(e);
+                      }}
                       required
                       className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all pr-10"
                     />
