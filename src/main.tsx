@@ -33,7 +33,8 @@ class ErrorBoundary extends React.Component<Props, State> {
     console.error("Uncaught error:", error, errorInfo);
     
     const errString = error.stack || error.toString();
-    checkAndReloadOnChunkError(errString);
+    const wasReloaded = checkAndReloadOnChunkError(errString);
+    if (wasReloaded) return;
 
     // Gửi lỗi lên server
     fetch("/api/v1/log-client-error", {
@@ -79,7 +80,7 @@ class ErrorBoundary extends React.Component<Props, State> {
 }
 
 // Helper function to detect chunk/asset loading errors and automatically reload
-function checkAndReloadOnChunkError(errorStr: string) {
+function checkAndReloadOnChunkError(errorStr: string): boolean {
   const isChunkError =
     errorStr.includes("Failed to fetch dynamically imported module") ||
     errorStr.includes("ChunkLoadError") ||
@@ -99,15 +100,24 @@ function checkAndReloadOnChunkError(errorStr: string) {
     // Giới hạn chỉ tự động tải lại tối đa 1 lần mỗi 10 giây để tránh lặp vô hạn
     if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
       sessionStorage.setItem("chunk-error-reload", now.toString());
-      window.location.reload();
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set("t", now.toString());
+        window.location.replace(url.toString());
+      } catch {
+        window.location.reload();
+      }
     }
+    return true;
   }
+  return false;
 }
 
 // Bắt lỗi toàn cục ngoài React
 window.addEventListener("error", (event) => {
   const errString = event.error?.stack || event.message || "";
-  checkAndReloadOnChunkError(errString);
+  const wasReloaded = checkAndReloadOnChunkError(errString);
+  if (wasReloaded) return;
 
   fetch("/api/v1/log-client-error", {
     method: "POST",
@@ -129,7 +139,8 @@ window.addEventListener("error", (event) => {
 
 window.addEventListener("unhandledrejection", (event) => {
   const errString = event.reason?.stack || String(event.reason) || "";
-  checkAndReloadOnChunkError(errString);
+  const wasReloaded = checkAndReloadOnChunkError(errString);
+  if (wasReloaded) return;
 
   fetch("/api/v1/log-client-error", {
     method: "POST",
