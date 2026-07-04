@@ -99,7 +99,7 @@ export class StudentController {
         registrationDate: new Date().toLocaleDateString('vi-VN'),
         fee: "0",
         paidAmount: 0,
-        status: "Chờ KSK",
+        status: teacher.businessType === "driving" ? "Chờ KSK" : "Đang học",
       };
 
       const teacherScope = teacher.centerId === "superadmin"

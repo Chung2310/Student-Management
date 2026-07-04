@@ -10,7 +10,6 @@ import React, { useState } from 'react';
 interface MockRegistration {
   fullName: string;
   rank: string;
-  area: string;
   status: string;
 }
 
@@ -58,11 +57,11 @@ export function DrivingDashboardTables({ onSelectStudent, onNavigate }: DrivingD
   });
 
   const mockRegistrations = [
-    { fullName: 'Cao Văn Long', rank: 'B2', area: 'Tỉnh lân cận', status: 'Đang thi' },
-    { fullName: 'Đặng Văn Giang', rank: 'A1', area: 'Nội thành', status: 'Đã đậu' },
-    { fullName: 'Phạm Thị Dung', rank: 'B2', area: 'Nội thành', status: 'Đang học' },
-    { fullName: 'Mai Thị Kiều', rank: 'B2', area: 'Nội thành', status: 'Chờ KSK' },
-    { fullName: 'Bùi Thị Lan', rank: 'A2', area: 'Ngoại thành', status: 'Thi lại' },
+    { fullName: 'Cao Văn Long', rank: 'B2', status: 'Đang thi' },
+    { fullName: 'Đặng Văn Giang', rank: 'A1', status: 'Đã đậu' },
+    { fullName: 'Phạm Thị Dung', rank: 'B2', status: 'Đang học' },
+    { fullName: 'Mai Thị Kiều', rank: 'B2', status: 'Chờ KSK' },
+    { fullName: 'Bùi Thị Lan', rank: 'A2', status: 'Thi lại' },
   ];
 
   const getStatusInfo = (status: string) => {

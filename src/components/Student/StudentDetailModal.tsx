@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { Student } from '../../types';
 import { apiFetch } from '../../lib/api';
-import { cn } from '../../lib/utils';
+import { cn, toDisplayDate } from '../../lib/utils';
 import { analyzeStudentPerformance } from '../../services/geminiService';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
@@ -174,7 +174,7 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
 
       // 2. Update exam stats for each exam that was modified
       for (const exam of examData) {
-        if (exam.id) {
+        if (exam.id && /^[0-9a-fA-F]{24}$/.test(exam.id)) {
           let passCount = 0;
           let failCount = 0;
           let studentCount = 0;
@@ -236,7 +236,7 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
     try {
       const updates: Record<string, string | { name: string; url: string; type: string; uploadedAt: string }[]> = {
         status: kskData.status === 'Completed' ? 'Đã KSK' : 'Chờ KSK',
-        healthCheckDate: kskData.date,
+        healthCheckDate: toDisplayDate(kskData.date),
         healthCheckNotes: kskData.notes,
         healthCheckFiles: kskData.files,
       };
@@ -326,7 +326,7 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
       updatedHistory[editingPayment.index] = {
         ...updatedHistory[editingPayment.index],
         amount: parsedAmount,
-        date: editingPayment.date,
+        date: toDisplayDate(editingPayment.date),
         method: editingPayment.method,
         note: editingPayment.note,
         recipient: editingPayment.recipient

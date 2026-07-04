@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Check, Loader2, Save, Sparkles, Trophy } from 'lucide-react';
 import { Student } from '../../../types';
-import { cn } from '../../../lib/utils';
+import { cn, toInputDate, toDisplayDate } from '../../../lib/utils';
 
 interface ProgressData {
   theory: { completed: boolean; score: number; lastDate: string };
@@ -31,6 +31,14 @@ export function ProgressTab({
   isUpdatingProgress,
   handleUpdateProgress
 }: ProgressTabProps) {
+  const todayStr = React.useMemo(() => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -87,17 +95,17 @@ export function ProgressTab({
                   placeholder="Điểm"
                   value={progressData.theory.score}
                   onChange={(e) => setProgressData((p) => ({ ...p, theory: { ...p.theory, score: parseInt(e.target.value) || 0 } }))}
-                  className="w-20 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs" 
+                  className="w-20 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 shrink-0" 
                 />
                 <input 
-                  type="text" 
-                  placeholder="Ngày thi"
-                  value={progressData.theory.lastDate}
+                  type="date" 
+                  max={todayStr}
+                  value={toInputDate(progressData.theory.lastDate)}
                   onChange={(e) => setProgressData((p) => ({ ...p, theory: { ...p.theory, lastDate: e.target.value } }))}
-                  className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs" 
+                  className="flex-1 min-w-0 relative px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800" 
                 />
               </div>
-            ) : (progressData.theory.completed ? `Đạt ${progressData.theory.score}đ • ${progressData.theory.lastDate}` : 'Chưa hoàn thành')}
+            ) : (progressData.theory.completed ? `Đạt ${progressData.theory.score}đ • ${toDisplayDate(progressData.theory.lastDate)}` : 'Chưa hoàn thành')}
           />
 
           <ProgressControlCard 
@@ -107,13 +115,13 @@ export function ProgressTab({
             onCheck={() => setProgressData((p) => ({ ...p, sim: { ...p.sim, completed: !p.sim.completed } }))}
             info={isEditingProgress ? (
               <input 
-                type="text" 
-                placeholder="Ngày cập nhật"
-                value={progressData.sim.lastDate}
+                type="date" 
+                max={todayStr}
+                value={toInputDate(progressData.sim.lastDate)}
                 onChange={(e) => setProgressData((p) => ({ ...p, sim: { ...p.sim, lastDate: e.target.value } }))}
-                className="w-full mt-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs" 
+                className="w-full mt-2 relative px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800" 
               />
-            ) : (progressData.sim.completed ? `Cập nhật: ${progressData.sim.lastDate}` : 'Cần ôn 120 tình huống')}
+            ) : (progressData.sim.completed ? `Cập nhật: ${toDisplayDate(progressData.sim.lastDate)}` : 'Cần ôn 120 tình huống')}
           />
         </div>
 

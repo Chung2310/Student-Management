@@ -256,7 +256,6 @@ const swaggerDefinition = {
         parameters: [
           { name: "status", in: "query", schema: { type: "string" } },
           { name: "rank", in: "query", schema: { type: "string" } },
-          { name: "area", in: "query", schema: { type: "string" } },
         ],
         responses: {
           200: { description: "Thành công" },
@@ -272,12 +271,11 @@ const swaggerDefinition = {
             "application/json": {
               schema: {
                 type: "object",
-                required: ["name", "status", "rank", "area", "tentativeDate", "location"],
+                required: ["name", "status", "rank", "tentativeDate", "location"],
                 properties: {
                   name: { type: "string", example: "Đợt thi B2 Tháng 7" },
                   status: { type: "string", enum: ["Sắp diễn ra", "Đã xác nhận", "Đã hoàn thành", "Đã hủy"] },
                   rank: { type: "string", enum: ["A1", "A2", "B1", "B2", "C"] },
-                  area: { type: "string", example: "Nội thành" },
                   tentativeDate: { type: "string", example: "15/07/2026" },
                   location: { type: "string", example: "Sân sát hạch Sài Đồng" },
                 },
