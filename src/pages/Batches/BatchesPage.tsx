@@ -75,14 +75,15 @@ const notifyBatchMutation = () => {
   window.dispatchEvent(new Event('user-mutation'));
 };
 
-export function BatchesPage() {
+export function BatchesPage({ selectedCenter }: { selectedCenter?: string }) {
   const darkMode = false;
   const { toast } = useToast();
-  const { batches, loading } = useBatches();
-  const { courses } = useCourses();
+  const resolvedCenter = selectedCenter === 'all' ? undefined : selectedCenter;
+  const { batches, loading } = useBatches(resolvedCenter);
+  const { courses } = useCourses(resolvedCenter);
   const { users } = useManagedUsers();
   const instructors = users.filter(u => u.role === 'user');
-  const { students } = useStudents();
+  const { students } = useStudents(resolvedCenter);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');

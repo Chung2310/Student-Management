@@ -16,7 +16,7 @@ import {
 } from '../../components/Erp/ErpUI';
 import { Pagination } from '../../components/ui/Pagination';
 
-export function CoursesPage() {
+export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
   const darkMode = false;
   const { user } = useAuth();
   const businessType = user?.businessType || 'driving';
@@ -29,8 +29,9 @@ export function CoursesPage() {
   const courseDurationPlaceholder = businessType === 'driving' ? 'Ví dụ: 3 tháng / 12 buổi' : 'Ví dụ: 3 tháng / 8 tuần';
   const drivingFeeHint = 'Học phí lấy trực tiếp từ hồ sơ học viên.';
   const { toast } = useToast();
-  const { courses, loading } = useCourses();
-  const { categories, loading: categoriesLoading } = useCourseCategories();
+  const resolvedCenter = selectedCenter === 'all' ? undefined : selectedCenter;
+  const { courses, loading } = useCourses(resolvedCenter);
+  const { categories, loading: categoriesLoading } = useCourseCategories(resolvedCenter);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');

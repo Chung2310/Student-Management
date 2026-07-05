@@ -11,9 +11,10 @@ interface DashboardPageProps {
   onAddStudent: () => void;
   onSelectStudent: (student: Student) => void;
   onNavigate: (view: string) => void;
+  selectedCenter?: string;
 }
 
-export function DashboardPage({ formattedDate, onAddStudent, onSelectStudent, onNavigate }: DashboardPageProps) {
+export function DashboardPage({ formattedDate, onAddStudent, onSelectStudent, onNavigate, selectedCenter }: DashboardPageProps) {
   return (
     <>
       <section className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -28,9 +29,9 @@ export function DashboardPage({ formattedDate, onAddStudent, onSelectStudent, on
           <Plus className="w-4 h-4 mr-2" /> Thêm học viên
         </LuxuryButton>
       </section>
-      <section><StatsGrid /></section>
-      <section><ScheduleCalendar /></section>
-      <section><DrivingDashboardTables onSelectStudent={onSelectStudent} onNavigate={onNavigate} /></section>
+      <section><StatsGrid selectedCenter={selectedCenter} /></section>
+      <section><ScheduleCalendar selectedCenter={selectedCenter} /></section>
+      <section><DrivingDashboardTables onSelectStudent={onSelectStudent} onNavigate={onNavigate} selectedCenter={selectedCenter} /></section>
     </>
   );
 }

@@ -458,6 +458,10 @@ code, kbd, samp, pre {
 }
 
 /* Hide native date picker icon to avoid conflict with Lucide icons */
+input[type="date"] {
+  position: relative;
+}
+
 input[type="date"]::-webkit-calendar-picker-indicator {
   background: transparent;
   bottom: 0;

@@ -12,6 +12,7 @@ interface BatchFilters {
   instructorId?: string;
   status?: string;
   search?: string;
+  ownerFilter?: string;
 }
 
 interface BatchData {
@@ -123,7 +124,15 @@ export class BatchService {
     const limit = filters.limit ? parseInt(String(filters.limit)) : 1000;
     const skip = (page - 1) * limit;
 
-    const query: Record<string, unknown> = buildOwnerQuery(ownerId);
+    let resolvedOwnerId = ownerId;
+    if (ownerId === "ALL" && filters.ownerFilter) {
+      const centerUsers = await User.find({ centerId: filters.ownerFilter }).select("_id");
+      const ids = centerUsers.map(u => u._id.toString());
+      ids.push(filters.ownerFilter);
+      resolvedOwnerId = [...new Set(ids)];
+    }
+
+    const query: Record<string, unknown> = buildOwnerQuery(resolvedOwnerId);
     if (filters.courseId) query.courseId = filters.courseId;
     if (filters.instructorId) query.instructorId = filters.instructorId;
     if (filters.status) query.status = filters.status;

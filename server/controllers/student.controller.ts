@@ -7,8 +7,20 @@ import { getAllowedOwnerIds, getCenterOwnerIds } from "../utils/auth.util";
 export class StudentController {
   static async create(req: AuthRequest, res: Response) {
     try {
-      const ownerId = req.user!.uid;
-      const centerOwnerIds = await getCenterOwnerIds(req.user!);
+      let ownerId = req.user!.uid;
+      let centerOwnerIds: string | string[] = "ALL";
+      
+      if (req.user!.role === "superadmin") {
+        const centerId = req.body.centerId;
+        if (!centerId || typeof centerId !== "string") {
+          return res.status(400).json({ success: false, error: "Vui lòng chọn trung tâm." });
+        }
+        ownerId = centerId;
+        centerOwnerIds = await getCenterOwnerIds({ uid: centerId, role: "admin", centerId: centerId });
+      } else {
+        centerOwnerIds = await getCenterOwnerIds(req.user!);
+      }
+
       const student = await StudentService.createStudent(ownerId, centerOwnerIds, req.body);
       res.status(201).json({ success: true, data: student });
     } catch (error: unknown) {
@@ -71,12 +83,25 @@ export class StudentController {
   static async bulkCreate(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const creatorId = req.user!.uid;
-      const ownerId = await getCenterOwnerIds(req.user!);
+      let ownerId: string | string[];
+      let targetOwnerId: string | undefined;
+
+      if (req.user!.role === "superadmin") {
+        const centerId = req.query.centerId || req.body.centerId;
+        if (!centerId || typeof centerId !== "string") {
+          return res.status(400).json({ success: false, error: "Vui lòng chọn trung tâm." });
+        }
+        targetOwnerId = centerId;
+        ownerId = await getCenterOwnerIds({ uid: centerId, role: "admin", centerId: centerId });
+      } else {
+        ownerId = await getCenterOwnerIds(req.user!);
+      }
+
       const students = req.body.students;
       if (!Array.isArray(students)) {
         return res.status(400).json({ success: false, error: "Dữ liệu học viên không hợp lệ (phải là danh sách)." });
       }
-      const result = await StudentService.bulkCreateStudents(creatorId, ownerId, students);
+      const result = await StudentService.bulkCreateStudents(creatorId, ownerId, students, targetOwnerId);
       res.status(200).json({ success: true, ...result });
     } catch (error: unknown) {
       next(error);

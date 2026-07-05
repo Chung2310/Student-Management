@@ -500,6 +500,35 @@ export class AuthService {
         await sa.save();
         logger.info(`>>> Migrated superadmin user ${sa.email} centerId to superadmin`);
       }
+
+      // Migrating staff users (role "user") with mismatched centerId
+      const staffUsers = await User.find({ role: "user" });
+      for (const staff of staffUsers) {
+        let targetCenterId = staff.centerId;
+        
+        // If created by an admin, align centerId with the admin's centerId
+        if (staff.createdBy) {
+          const creator = await User.findById(staff.createdBy);
+          if (creator && creator.role === "admin") {
+            targetCenterId = creator.centerId;
+          }
+        }
+        
+        // If it's a known string code like "tuna" or "system_admin", map to the corresponding admin's centerId
+        if (targetCenterId === "tuna") {
+          const tunaAdmin = await User.findOne({ email: "tuna@gmail.com" });
+          if (tunaAdmin) targetCenterId = tunaAdmin.centerId;
+        } else if (targetCenterId === "system_admin") {
+          const sysAdmin = await User.findOne({ email: "admin@studentmanagement.com" });
+          if (sysAdmin) targetCenterId = sysAdmin.centerId;
+        }
+        
+        if (staff.centerId !== targetCenterId) {
+          logger.info(`>>> Migrated staff user ${staff.email} centerId from '${staff.centerId}' to '${targetCenterId}'`);
+          staff.centerId = targetCenterId;
+          await staff.save();
+        }
+      }
     } catch (error) {
       logger.error(">>> Error running centerId self-healing migration:", error);
     }

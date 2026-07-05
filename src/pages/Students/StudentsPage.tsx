@@ -24,6 +24,7 @@ import * as XLSX from 'xlsx';
 interface StudentsPageProps {
   onSelectStudent: (student: Student) => void;
   onAddStudent: () => void;
+  selectedCenter?: string;
 }
 
 type StatusFilter = 'Tất cả' | 'KSK' | 'Đã KSK' | 'Nộp HS' | 'Đang học' | 'Đang thi' | 'Đã đậu' | 'Thi lại' | 'Nghỉ học';
@@ -41,14 +42,13 @@ function categoryIcon(name: string): React.ComponentType<{ className?: string }>
   return BookOpen;
 }
 
-export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProps) {
+export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: StudentsPageProps) {
   const { user } = useAuth();
-  const [selectedCenter, setSelectedCenter] = useState<string>('');
-  const { centers } = useAdminCenters();
-  const { students, loading } = useStudents(selectedCenter);
+  const resolvedCenter = selectedCenter === 'all' ? undefined : selectedCenter;
+  const { students, loading } = useStudents(resolvedCenter);
   const { batches } = useBatches();
-  const { courses } = useCourses();
-  const { categories } = useCourseCategories();
+  const { courses } = useCourses(resolvedCenter);
+  const { categories } = useCourseCategories(resolvedCenter);
   const { toast } = useToast();
   const [category, setCategory] = useState<string>(TAB_ALL);
   const [selectedStatuses, setSelectedStatuses] = useState<StatusFilter[]>(['Tất cả']);
@@ -429,36 +429,6 @@ export function StudentsPage({ onSelectStudent, onAddStudent }: StudentsPageProp
 
   return (
     <div className="space-y-6">
-      {/* Superadmin Center Filter */}
-      {user?.role === 'superadmin' && (
-        <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-100 rounded-[1.5rem] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-cyan-600 text-white rounded-xl shadow-md">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-800">Bộ lọc trung tâm</h3>
-              <p className="text-xs text-slate-500">Superadmin: Lọc danh sách học viên theo từng trung tâm</p>
-            </div>
-          </div>
-          <div className="relative min-w-[240px]">
-            <select
-              value={selectedCenter}
-              onChange={(e) => setSelectedCenter(e.target.value)}
-              className="w-full pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 shadow-sm appearance-none focus:outline-none focus:border-cyan-600 transition-all cursor-pointer"
-            >
-              <option value="">Tất cả trung tâm</option>
-              {centers.map(center => (
-                <option key={center.uid} value={center.uid}>
-                  {center.displayName} ({center.email})
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-          </div>
-        </div>
-      )}
-
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
