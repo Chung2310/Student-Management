@@ -19,8 +19,7 @@ export function useBatches(ownerFilter?: string) {
       const url = ownerFilter ? `/batches?ownerFilter=${encodeURIComponent(ownerFilter)}` : "/batches";
       const res = await apiFetch(url);
       if (res.success && res.batches) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mapped = res.batches.map((b: any) => ({
+        const mapped = res.batches.map((b: Omit<Batch, 'id'> & { _id: string }) => ({
           ...b,
           id: b._id,
         })) as Batch[];

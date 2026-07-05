@@ -4,12 +4,12 @@ import { Student } from '../../../types';
 import { cn, formatVND, parseVND, getVietQRBankCode } from '../../../lib/utils';
 import { useAuth } from '../../../hooks/useAuth';
 
+type PaymentHistoryItem = NonNullable<Student['paymentHistory']>[number];
+
 interface TuitionTabProps {
   student: Student;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  handleStartEditPayment: (p: any, idx: number) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  handleDeletePaymentClick: (p: any, idx: number) => Promise<void>;
+  handleStartEditPayment: (p: PaymentHistoryItem, idx: number) => void;
+  handleDeletePaymentClick: (p: PaymentHistoryItem, idx: number) => Promise<void>;
 }
 
 export function TuitionTab({

@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
 import { logger } from "../config/logger";
-import { IStudent } from "../interfaces/student.interface";
+import { IStudent, StudentStatus } from "../interfaces/student.interface";
 import { Student, slugify } from "../models/student.model";
 import { Payment } from "../models/payment.model";
 import { User } from "../models/user.model";
@@ -22,6 +22,22 @@ interface StudentCreateData {
 
 interface StudentUpdateData {
   [key: string]: unknown;
+}
+
+interface BulkStudentInput {
+  fullName?: string;
+  phone?: string;
+  rank?: string;
+  birthday?: string;
+  idCard?: string;
+  email?: string;
+  referral?: string;
+  address?: string;
+  registrationDate?: string;
+  enrollmentDate?: string;
+  fee?: string;
+  status?: string;
+  paidAmount?: string | number;
 }
 
 function normalizeIdCard(idCard: string): string {
@@ -284,8 +300,7 @@ export class StudentService {
     return deletedStudent;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static async bulkCreateStudents(creatorId: string, ownerId: string | string[], studentsData: any[], targetOwnerId?: string) {
+  static async bulkCreateStudents(creatorId: string, ownerId: string | string[], studentsData: BulkStudentInput[], targetOwnerId?: string) {
     logger.info(`[Student] Bulk importing ${studentsData.length} students: creatorId=${creatorId}, ownerId=${ownerId}, targetOwnerId=${targetOwnerId}`);
 
     const creator = await User.findById(creatorId).lean();
@@ -294,8 +309,7 @@ export class StudentService {
     let importedCount = 0;
     let skippedCount = 0;
     const errors: { row: number; name: string; phone: string; reason: string }[] = [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const validStudents: any[] = [];
+    const validStudents: Partial<IStudent>[] = [];
 
     const seenPhonesInBatch = new Set<string>();
 
@@ -396,7 +410,7 @@ export class StudentService {
         paidAmount: Math.min(paidAmount, feeNum),
         paymentHistory,
         address,
-        status,
+        status: [status as StudentStatus],
         ownerId: targetOwnerId || creatorId,
       });
 

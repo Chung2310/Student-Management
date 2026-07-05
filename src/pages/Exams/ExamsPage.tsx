@@ -18,11 +18,8 @@ import { AssignStudentModal } from '../../components/Exams/AssignStudentModal';
 import { ExamCard } from '../../components/Exams/ExamCard';
 import { useToast } from '../../hooks/useToast';
 import { Pagination } from '../../components/ui/Pagination';
-import { useAuth } from '../../hooks/useAuth';
-import { useAdminCenters } from '../../hooks/useAdminCenters';
 
 export function ExamsPage({ selectedCenter }: { selectedCenter?: string }) {
-  const { user } = useAuth();
   const resolvedCenter = selectedCenter === 'all' ? undefined : selectedCenter;
   const { exams, loading: examsLoading } = useExams(resolvedCenter);
   const { students } = useStudents(resolvedCenter);

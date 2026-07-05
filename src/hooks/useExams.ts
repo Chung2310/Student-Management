@@ -19,8 +19,7 @@ export function useExams(ownerFilter?: string) {
       const url = ownerFilter ? `/exams?ownerFilter=${encodeURIComponent(ownerFilter)}` : "/exams";
       const res = await apiFetch(url);
       if (res.success && res.exams) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mapped = res.exams.map((e: any) => ({
+        const mapped = res.exams.map((e: Omit<ExamSession, 'id'> & { _id: string }) => ({
           ...e,
           id: e._id,
         })) as ExamSession[];

@@ -22,8 +22,7 @@ export function useResourceCategories() {
     try {
       const res = await apiFetch("/resources/categories");
       if (res.success && res.data) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mapped = res.data.map((cat: any) => ({
+        const mapped = res.data.map((cat: { _id: string; name: string }) => ({
           id: cat._id,
           name: cat.name,
         }));

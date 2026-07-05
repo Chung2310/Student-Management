@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '../lib/api';
 import { useAuth } from './useAuth';
-import { ResourceItem } from '../types';
+import { ResourceItem, ResourceBooking } from '../types';
 
 export function useResources() {
   const { user } = useAuth();
@@ -18,12 +18,10 @@ export function useResources() {
     try {
       const res = await apiFetch("/resources");
       if (res.success && res.resources) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mapped = res.resources.map((r: any) => ({
+        const mapped = res.resources.map((r: Omit<ResourceItem, 'id' | 'bookings'> & { _id: string; bookings: (Omit<ResourceBooking, 'id'> & { _id: string })[] }) => ({
           ...r,
           id: r._id,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          bookings: (r.bookings || []).map((b: any) => ({ ...b, id: b._id })),
+          bookings: (r.bookings || []).map((b: Omit<ResourceBooking, 'id'> & { _id: string }) => ({ ...b, id: b._id })),
         })) as ResourceItem[];
         setResources(mapped);
       }

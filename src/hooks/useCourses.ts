@@ -19,8 +19,7 @@ export function useCourses(ownerFilter?: string) {
       const url = ownerFilter ? `/courses?ownerFilter=${encodeURIComponent(ownerFilter)}` : "/courses";
       const res = await apiFetch(url);
       if (res.success && res.courses) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mapped = res.courses.map((c: any) => ({
+        const mapped = res.courses.map((c: Omit<Course, 'id'> & { _id: string }) => ({
           ...c,
           id: c._id,
         })) as Course[];

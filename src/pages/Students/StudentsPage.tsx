@@ -12,7 +12,6 @@ import { useBatches } from '../../hooks/useBatches';
 import { useCourses } from '../../hooks/useCourses';
 import { useCourseCategories, CourseCategoryItem } from '../../hooks/useCourseCategories';
 import { useToast } from '../../hooks/useToast';
-import { useAdminCenters } from '../../hooks/useAdminCenters';
 import { Student } from '../../types';
 import { apiFetch } from '../../lib/api';
 import { EditStudentModal } from '../../components/Student/EditStudentModal';
