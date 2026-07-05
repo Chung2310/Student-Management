@@ -16,6 +16,7 @@ interface MockRegistration {
 interface DrivingDashboardTablesProps {
   onSelectStudent: (student: DrivingStudent | MockRegistration) => void;
   onNavigate: (view: 'Students' | 'Exams') => void;
+  selectedCenter?: string;
 }
 
 const parseDateString = (dateStr: string) => {
@@ -24,9 +25,9 @@ const parseDateString = (dateStr: string) => {
   return new Date(year, month - 1, day);
 };
 
-export function DrivingDashboardTables({ onSelectStudent, onNavigate }: DrivingDashboardTablesProps) {
-  const { students, loading: studentsLoading } = useStudents();
-  const { exams, loading: examsLoading } = useExams();
+export function DrivingDashboardTables({ onSelectStudent, onNavigate, selectedCenter }: DrivingDashboardTablesProps) {
+  const { students, loading: studentsLoading } = useStudents(selectedCenter === 'all' ? undefined : selectedCenter);
+  const { exams, loading: examsLoading } = useExams(selectedCenter === 'all' ? undefined : selectedCenter);
   const { user } = useAuth();
   
   const [currentPage, setCurrentPage] = useState(1);

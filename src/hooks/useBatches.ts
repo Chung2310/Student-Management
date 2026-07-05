@@ -3,7 +3,7 @@ import { apiFetch } from '../lib/api';
 import { useAuth } from './useAuth';
 import { Batch } from '../types';
 
-export function useBatches() {
+export function useBatches(ownerFilter?: string) {
   const { user } = useAuth();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +16,8 @@ export function useBatches() {
     }
 
     try {
-      const res = await apiFetch("/batches");
+      const url = ownerFilter ? `/batches?ownerFilter=${encodeURIComponent(ownerFilter)}` : "/batches";
+      const res = await apiFetch(url);
       if (res.success && res.batches) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mapped = res.batches.map((b: any) => ({
@@ -30,7 +31,7 @@ export function useBatches() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, ownerFilter]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

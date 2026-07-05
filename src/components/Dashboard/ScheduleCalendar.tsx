@@ -21,7 +21,7 @@ const typeStyle = (type: ScheduleEvent['type']) => {
 };
 
 /** Lịch tháng tổng hợp: lớp học định kỳ + kỳ thi + booking tài nguyên (nguồn GET /schedule) */
-export function ScheduleCalendar() {
+export function ScheduleCalendar({ selectedCenter }: { selectedCenter?: string }) {
   const [selectedType, setSelectedType] = useState<'all' | 'class' | 'exam' | 'resource'>('all');
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
@@ -35,7 +35,7 @@ export function ScheduleCalendar() {
   // Khoảng ngày của tháng đang xem — nạp lịch tổng hợp từ server
   const fromDate = useMemo(() => `${year}-${pad2(month + 1)}-01`, [year, month]);
   const toDate = useMemo(() => `${year}-${pad2(month + 1)}-${pad2(daysInMonth)}`, [year, month, daysInMonth]);
-  const { events } = useSchedule(fromDate, toDate);
+  const { events } = useSchedule(fromDate, toDate, selectedCenter === 'all' ? undefined : selectedCenter);
 
   const firstDayOfMonth = new Date(year, month, 1);
   const startDayOfWeek = firstDayOfMonth.getDay(); // 0 = Chủ nhật

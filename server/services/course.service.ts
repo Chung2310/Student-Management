@@ -1,6 +1,7 @@
 import { Course } from "../models/course.model";
 import { ICourse } from "../interfaces/course.interface";
 import { BatchService } from "./batch.service";
+import { User } from "../models/user.model";
 import { logger } from "../config/logger";
 
 interface CourseFilters {
@@ -9,6 +10,7 @@ interface CourseFilters {
   category?: string;
   status?: string;
   search?: string;
+  ownerFilter?: string;
 }
 
 interface CourseData {
@@ -47,7 +49,15 @@ export class CourseService {
     const limit = filters.limit ? parseInt(String(filters.limit)) : 1000;
     const skip = (page - 1) * limit;
 
-    const query: Record<string, unknown> = buildOwnerQuery(ownerId);
+    let resolvedOwnerId = ownerId;
+    if (ownerId === "ALL" && filters.ownerFilter) {
+      const centerUsers = await User.find({ centerId: filters.ownerFilter }).select("_id");
+      const ids = centerUsers.map(u => u._id.toString());
+      ids.push(filters.ownerFilter);
+      resolvedOwnerId = [...new Set(ids)];
+    }
+
+    const query: Record<string, unknown> = buildOwnerQuery(resolvedOwnerId);
     if (filters.category) query.category = filters.category;
     if (filters.status) query.status = filters.status;
     if (filters.search) {

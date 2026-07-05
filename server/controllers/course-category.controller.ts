@@ -7,7 +7,7 @@ export class CourseCategoryController {
   static async getList(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const ownerId = await getAllowedOwnerIds(req.user!);
-      const categories = await CourseCategoryService.getCategories(ownerId);
+      const categories = await CourseCategoryService.getCategories(ownerId, req.query as { ownerFilter?: string });
       res.json({ success: true, data: categories });
     } catch (error: unknown) {
       next(error);

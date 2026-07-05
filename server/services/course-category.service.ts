@@ -1,15 +1,24 @@
 import { CourseCategory } from "../models/course-category.model";
 import { ICourseCategory } from "../interfaces/course-category.interface";
 import { Course } from "../models/course.model";
+import { User } from "../models/user.model";
 import { logger } from "../config/logger";
 
 export class CourseCategoryService {
-  static async getCategories(ownerId: string | string[]): Promise<ICourseCategory[]> {
-    logger.info(`[CourseCategory] Fetching categories for ownerId: ${ownerId}`);
+  static async getCategories(ownerId: string | string[], filters: { ownerFilter?: string } = {}): Promise<ICourseCategory[]> {
+    logger.info(`[CourseCategory] Fetching categories for ownerId: ${ownerId}, ownerFilter: ${filters.ownerFilter}`);
     
+    let resolvedOwnerId = ownerId;
+    if (ownerId === "ALL" && filters.ownerFilter) {
+      const centerUsers = await User.find({ centerId: filters.ownerFilter }).select("_id");
+      const ids = centerUsers.map(u => u._id.toString());
+      ids.push(filters.ownerFilter);
+      resolvedOwnerId = [...new Set(ids)];
+    }
+
     let query: Record<string, unknown> = {};
-    if (ownerId !== "ALL") {
-      query = { ownerId: Array.isArray(ownerId) ? { $in: ownerId } : ownerId };
+    if (resolvedOwnerId !== "ALL") {
+      query = { ownerId: Array.isArray(resolvedOwnerId) ? { $in: resolvedOwnerId } : resolvedOwnerId };
     }
 
     return await CourseCategory.find(query).sort({ createdAt: 1 });

@@ -14,10 +14,12 @@ import { Pagination } from '../../components/ui/Pagination';
 
 interface FeesPageProps {
   onSelectStudent?: (student: Student, tab: string) => void;
+  selectedCenter?: string;
 }
 
-export function FeesPage({ onSelectStudent }: FeesPageProps) {
-  const { students, loading } = useStudents();
+export function FeesPage({ onSelectStudent, selectedCenter }: FeesPageProps) {
+  const resolvedCenter = selectedCenter === 'all' ? undefined : selectedCenter;
+  const { students, loading } = useStudents(resolvedCenter);
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [debtFilter, setDebtFilter] = useState('Tất cả');

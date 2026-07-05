@@ -5,6 +5,7 @@ import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { useBatches } from '../../hooks/useBatches';
+import { useAdminCenters } from '../../hooks/useAdminCenters';
 import { formatVND, toInputDate, toDisplayDate, compressImage } from '../../lib/utils';
 import { DrivingStudent, Student, UploadedFile } from '../../types';
 import { findDuplicateStudentField } from '../../lib/studentUniqueness';
@@ -15,20 +16,23 @@ interface AddStudentModalProps {
   onClose: () => void;
   onSuccess: (student: DrivingStudent) => void;
   students: Student[];
+  selectedCenter?: string;
 }
 
 type FileField = 'idCardFrontFile' | 'idCardBackFile' | 'portraitFile';
 
-export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStudentModalProps) {
+export function AddStudentModal({ isOpen, onClose, onSuccess, students, selectedCenter }: AddStudentModalProps) {
   const { user, login } = useAuth();
   const { toast } = useToast();
   const { batches } = useBatches();
+  const { centers } = useAdminCenters();
   const businessType = user?.businessType || 'driving';
   const usesCourseFeePolicy = businessType !== 'driving';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingField, setUploadingField] = useState<FileField | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [batchId, setBatchId] = useState('');
+  const [selectedCenterId, setSelectedCenterId] = useState<string>('');
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -45,6 +49,14 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStu
     idCardBackFile: undefined as UploadedFile | undefined,
     portraitFile: undefined as UploadedFile | undefined,
   });
+
+  React.useEffect(() => {
+    if (selectedCenter && selectedCenter !== 'all') {
+      setSelectedCenterId(selectedCenter);
+    } else {
+      setSelectedCenterId('');
+    }
+  }, [selectedCenter]);
 
   const getRequiredFieldsConfig = () => {
     const saved = localStorage.getItem('requiredFieldsConfig');
@@ -147,6 +159,13 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStu
       return;
     }
 
+    if (user?.role === 'superadmin' && !selectedCenterId) {
+      const message = "Vui lòng chọn trung tâm quản lý học viên.";
+      setErrorMsg(message);
+      toast.error(message);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const res = await apiFetch('/students', {
@@ -160,6 +179,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStu
           idCardBack: formData.idCardBackFile?.url || '',
           status: businessType === 'driving' ? ['Chờ KSK'] : ['Đang học'],
           registrationDate: new Date().toLocaleDateString('vi-VN'),
+          centerId: selectedCenterId || undefined,
         }),
       });
 
@@ -201,6 +221,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStu
           portraitFile: undefined,
         });
         setBatchId('');
+        setSelectedCenterId(selectedCenter && selectedCenter !== 'all' ? selectedCenter : '');
       }
     } catch (error: unknown) {
       console.error('Error saving student:', error);
@@ -250,6 +271,29 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students }: AddStu
               {errorMsg && (
                 <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-sm font-bold text-rose-600">
                   {errorMsg}
+                </div>
+              )}
+
+              {user?.role === 'superadmin' && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                    Trung tâm quản lý *
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={selectedCenterId}
+                      onChange={(e) => setSelectedCenterId(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all cursor-pointer"
+                    >
+                      <option value="">-- Chọn trung tâm quản lý --</option>
+                      {centers.map(center => (
+                        <option key={center.uid} value={center.uid}>
+                          {center.displayName} ({center.email})
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  </div>
                 </div>
               )}
 

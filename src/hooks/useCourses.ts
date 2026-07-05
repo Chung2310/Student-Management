@@ -3,7 +3,7 @@ import { apiFetch } from '../lib/api';
 import { useAuth } from './useAuth';
 import { Course } from '../types';
 
-export function useCourses() {
+export function useCourses(ownerFilter?: string) {
   const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +16,8 @@ export function useCourses() {
     }
 
     try {
-      const res = await apiFetch("/courses");
+      const url = ownerFilter ? `/courses?ownerFilter=${encodeURIComponent(ownerFilter)}` : "/courses";
+      const res = await apiFetch(url);
       if (res.success && res.courses) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mapped = res.courses.map((c: any) => ({
@@ -30,7 +31,7 @@ export function useCourses() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, ownerFilter]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

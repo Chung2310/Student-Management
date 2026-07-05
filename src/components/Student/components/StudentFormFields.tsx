@@ -25,40 +25,16 @@ export function FormInput({
   className = '',
   type = 'text',
 }: FormInputProps) {
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const [localVal, setLocalVal] = React.useState(value || '');
-
-  React.useEffect(() => {
-    if (type === 'date' && document.activeElement !== inputRef.current) {
-      setLocalVal(value || '');
-    }
-  }, [value, type]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (type === 'date') {
-      setLocalVal(e.target.value);
-    }
-    onChange(e);
-  };
-
-  const handleBlur = () => {
-    if (type === 'date') {
-      setLocalVal(value || '');
-    }
-  };
-
   return (
     <div className={`space-y-1 ${className}`}>
       <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
         {label} {required && <span className="text-rose-500">*</span>}
       </label>
       <input
-        ref={inputRef}
         type={type}
         name={name}
-        value={type === 'date' ? localVal : value}
-        onChange={handleChange}
-        onBlur={handleBlur}
+        value={value}
+        onChange={onChange}
         readOnly={readOnly}
         placeholder={placeholder}
         className={`w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all ${
