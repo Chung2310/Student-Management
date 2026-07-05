@@ -1,5 +1,6 @@
 import { Response, NextFunction } from "express";
 import { Exam } from "../models/exam.model";
+import { User } from "../models/user.model";
 import { ResourceService } from "../services/resource.service";
 import { BatchService } from "../services/batch.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
@@ -33,13 +34,22 @@ export class ScheduleController {
       const ownerId = await getAllowedOwnerIds(req.user!);
       const from = typeof req.query.from === "string" ? req.query.from : undefined;
       const to = typeof req.query.to === "string" ? req.query.to : undefined;
+      const ownerFilter = typeof req.query.ownerFilter === "string" ? req.query.ownerFilter : undefined;
+
+      let resolvedOwnerId = ownerId;
+      if (ownerId === "ALL" && ownerFilter) {
+        const centerUsers = await User.find({ centerId: ownerFilter }).select("_id");
+        const ids = centerUsers.map(u => u._id.toString());
+        ids.push(ownerFilter);
+        resolvedOwnerId = [...new Set(ids)];
+      }
 
       const events: ScheduleEvent[] = [];
 
       // Kỳ thi
       const examQuery: Record<string, unknown> = {};
-      if (ownerId !== "ALL") {
-        examQuery.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
+      if (resolvedOwnerId !== "ALL") {
+        examQuery.ownerId = Array.isArray(resolvedOwnerId) ? { $in: resolvedOwnerId } : resolvedOwnerId;
       }
       const exams = await Exam.find(examQuery);
       for (const exam of exams) {
@@ -59,13 +69,13 @@ export class ScheduleController {
       }
 
       // Booking tài nguyên (phòng, xe, thiết bị)
-      const bookings = await ResourceService.getBookingsInRange(ownerId, from, to);
+      const bookings = await ResourceService.getBookingsInRange(resolvedOwnerId, from, to);
       for (const b of bookings) {
         events.push({ ...b, type: "resource" });
       }
 
       // Lịch học định kỳ của các lớp mở
-      const classes = await BatchService.getClassEventsInRange(ownerId, from, to);
+      const classes = await BatchService.getClassEventsInRange(resolvedOwnerId, from, to);
       for (const c of classes) {
         events.push({ ...c, type: "class" });
       }

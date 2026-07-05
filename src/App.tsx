@@ -94,9 +94,23 @@ function mapLegacyErpPath(path: string): string {
 export type TabType = 'Hồ sơ' | 'KSK' | 'Tiến độ học' | 'Lịch thi & KQ' | 'Học phí' | 'Lịch sử' | 'Trợ lý AI';
 
 export default function App() {
+  const [selectedCenter, setSelectedCenter] = React.useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('superadmin_selected_center') || 'all';
+    }
+    return 'all';
+  });
+
+  const handleCenterChange = (center: string) => {
+    setSelectedCenter(center);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('superadmin_selected_center', center);
+    }
+  };
+
   const { user, loading } = useAuth();
   useRealtimePayment();
-  const { students } = useStudents();
+  const { students } = useStudents(selectedCenter === 'all' ? undefined : selectedCenter);
 
   const [currentPath, setCurrentPath] = React.useState(() => typeof window !== 'undefined' ? window.location.pathname : '/');
 
@@ -322,6 +336,7 @@ export default function App() {
             onAddStudent={() => setIsAddModalOpen(true)}
             onSelectStudent={handleOpenProfile}
             onNavigate={handleViewChange}
+            selectedCenter={selectedCenter}
           />
         );
       case 'Students':
@@ -329,18 +344,19 @@ export default function App() {
           <StudentsPage
             onSelectStudent={handleOpenProfile}
             onAddStudent={() => setIsAddModalOpen(true)}
+            selectedCenter={selectedCenter}
           />
         );
       case 'Exams':
-        return <ExamsPage />;
+        return <ExamsPage selectedCenter={selectedCenter} />;
       case 'Fees':
-        return <FeesPage onSelectStudent={handleOpenProfile} />;
+        return <FeesPage onSelectStudent={handleOpenProfile} selectedCenter={selectedCenter} />;
       case 'Bot':
         return <NotificationsPage />;
       case 'Courses':
-        return <CoursesPage />;
+        return <CoursesPage selectedCenter={selectedCenter} />;
       case 'Batches':
-        return <BatchesPage />;
+        return <BatchesPage selectedCenter={selectedCenter} />;
       case 'Resources':
         return <ResourcesPage />;
       case 'UserManagement':
@@ -373,6 +389,8 @@ export default function App() {
         <MainHeader
           currentView={currentView}
           onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          selectedCenter={selectedCenter}
+          onCenterChange={handleCenterChange}
         />
 
         <main className="flex-1 p-4 md:p-8 space-y-6 max-w-[1600px] mx-auto w-full">
@@ -396,6 +414,7 @@ export default function App() {
             onClose={() => setIsAddModalOpen(false)}
             students={students}
             onSuccess={handleOpenProfile}
+            selectedCenter={selectedCenter}
           />
         </Suspense>
       )}

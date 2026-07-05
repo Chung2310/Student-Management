@@ -7,7 +7,7 @@ export interface CourseCategoryItem {
   name: string;
 }
 
-export function useCourseCategories() {
+export function useCourseCategories(ownerFilter?: string) {
   const { user } = useAuth();
   const [categories, setCategories] = useState<CourseCategoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +20,8 @@ export function useCourseCategories() {
     }
 
     try {
-      const res = await apiFetch("/courses/categories");
+      const url = ownerFilter ? `/courses/categories?ownerFilter=${encodeURIComponent(ownerFilter)}` : "/courses/categories";
+      const res = await apiFetch(url);
       if (res.success && res.data) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mapped = res.data.map((cat: any) => ({
@@ -34,7 +35,7 @@ export function useCourseCategories() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, ownerFilter]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

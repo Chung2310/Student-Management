@@ -3,8 +3,8 @@ import { LuxuryCard } from '../ui/LuxuryCard';
 import { useStudents } from '../../hooks/useStudents';
 import { useAuth } from '../../hooks/useAuth';
 
-export function StatsGrid() {
-  const { students, loading } = useStudents();
+export function StatsGrid({ selectedCenter }: { selectedCenter?: string }) {
+  const { students, loading } = useStudents(selectedCenter === 'all' ? undefined : selectedCenter);
   const { user } = useAuth();
 
   const mockStats = [

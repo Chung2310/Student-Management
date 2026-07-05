@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
-import { Home, ChevronRight, Menu, QrCode, X, Copy, Check, Download } from 'lucide-react';
+import { Home, ChevronRight, Menu, QrCode, X, Copy, Check, Download, Building } from 'lucide-react';
 import { ViewType } from '../../App';
 import { useAuth } from '../../hooks/useAuth';
+import { useAdminCenters } from '../../hooks/useAdminCenters';
 
 interface MainHeaderProps {
   currentView: ViewType;
   onMenuClick: () => void;
+  selectedCenter?: string;
+  onCenterChange?: (center: string) => void;
 }
 
-export function MainHeader({ currentView, onMenuClick }: MainHeaderProps) {
+export function MainHeader({ currentView, onMenuClick, selectedCenter = 'all', onCenterChange }: MainHeaderProps) {
   const { user } = useAuth();
+  const { centers } = useAdminCenters();
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -75,7 +79,25 @@ export function MainHeader({ currentView, onMenuClick }: MainHeaderProps) {
         </div>
 
         {user && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {user.role === 'superadmin' && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50/50 shadow-sm">
+                <Building className="w-4 h-4 text-slate-500" />
+                <select
+                  value={selectedCenter}
+                  onChange={(e) => onCenterChange?.(e.target.value)}
+                  className="bg-transparent text-slate-700 font-semibold text-xs md:text-sm focus:outline-none cursor-pointer pr-2"
+                >
+                  <option value="all">Tất cả trung tâm</option>
+                  {centers.map((c) => (
+                    <option key={c.uid} value={c.uid}>
+                      {c.displayName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <button
               onClick={() => setIsQrModalOpen(true)}
               title="Mã QR đăng ký học viên"

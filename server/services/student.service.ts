@@ -285,8 +285,8 @@ export class StudentService {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static async bulkCreateStudents(creatorId: string, ownerId: string | string[], studentsData: any[]) {
-    logger.info(`[Student] Bulk importing ${studentsData.length} students: creatorId=${creatorId}, ownerId=${ownerId}`);
+  static async bulkCreateStudents(creatorId: string, ownerId: string | string[], studentsData: any[], targetOwnerId?: string) {
+    logger.info(`[Student] Bulk importing ${studentsData.length} students: creatorId=${creatorId}, ownerId=${ownerId}, targetOwnerId=${targetOwnerId}`);
 
     const creator = await User.findById(creatorId).lean();
     const businessType = creator?.businessType || "driving";
@@ -397,7 +397,7 @@ export class StudentService {
         paymentHistory,
         address,
         status,
-        ownerId: creatorId,
+        ownerId: targetOwnerId || creatorId,
       });
 
       existingPhones.add(phone);

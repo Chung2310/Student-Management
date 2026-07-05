@@ -4,7 +4,7 @@ import { useAuth } from './useAuth';
 import { ScheduleEvent } from '../types';
 
 /** Lịch tổng hợp (lớp học định kỳ + kỳ thi + booking tài nguyên) trong một khoảng ngày */
-export function useSchedule(from?: string, to?: string) {
+export function useSchedule(from?: string, to?: string, ownerFilter?: string) {
   const { user } = useAuth();
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +17,7 @@ export function useSchedule(from?: string, to?: string) {
     }
 
     try {
-      const res = await apiFetch("/schedule", { params: { from, to } });
+      const res = await apiFetch("/schedule", { params: { from, to, ownerFilter } });
       if (res.success && res.events) {
         setEvents(res.events as ScheduleEvent[]);
       }
@@ -26,7 +26,7 @@ export function useSchedule(from?: string, to?: string) {
     } finally {
       setLoading(false);
     }
-  }, [user, from, to]);
+  }, [user, from, to, ownerFilter]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
