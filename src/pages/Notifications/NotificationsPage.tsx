@@ -83,8 +83,7 @@ function HistoryCard({ notification, onDelete }: HistoryCardProps) {
   };
 
   // Lấy installmentPlan nếu có
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const installmentPlan = (notification as any).installmentPlan as InstallmentPlanItem | undefined;
+  const installmentPlan = (notification as BroadcastNotification & { installmentPlan?: InstallmentPlanItem }).installmentPlan;
 
   return (
     <div className="p-5 rounded-[1.5rem] border border-slate-100 hover:border-cyan-100 hover:bg-cyan-50/20 transition-all group relative">
@@ -415,8 +414,7 @@ export function NotificationsPage() {
       setLoadingHistory(true);
       const res = await apiFetch('/notifications');
       if (res.success && res.notifications) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mapped = res.notifications.map((n: any) => ({
+        const mapped = res.notifications.map((n: Omit<BroadcastNotification, 'id'> & { _id: string }) => ({
           ...n,
           id: n._id,
         })) as BroadcastNotification[];

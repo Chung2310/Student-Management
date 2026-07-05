@@ -32,7 +32,16 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
   const [uploadingField, setUploadingField] = useState<FileField | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [batchId, setBatchId] = useState('');
-  const [selectedCenterId, setSelectedCenterId] = useState<string>('');
+  const [selectedCenterId, setSelectedCenterId] = useState<string>(() => {
+    return selectedCenter && selectedCenter !== 'all' ? selectedCenter : '';
+  });
+  const [prevSelectedCenter, setPrevSelectedCenter] = useState(selectedCenter);
+
+  if (selectedCenter !== prevSelectedCenter) {
+    setPrevSelectedCenter(selectedCenter);
+    setSelectedCenterId(selectedCenter && selectedCenter !== 'all' ? selectedCenter : '');
+  }
+
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -49,14 +58,6 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
     idCardBackFile: undefined as UploadedFile | undefined,
     portraitFile: undefined as UploadedFile | undefined,
   });
-
-  React.useEffect(() => {
-    if (selectedCenter && selectedCenter !== 'all') {
-      setSelectedCenterId(selectedCenter);
-    } else {
-      setSelectedCenterId('');
-    }
-  }, [selectedCenter]);
 
   const getRequiredFieldsConfig = () => {
     const saved = localStorage.getItem('requiredFieldsConfig');

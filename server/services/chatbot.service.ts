@@ -148,8 +148,7 @@ QUY TẮC PHẢN HỒI:
         throw new Error(`Lỗi kết nối dịch vụ OpenRouter AI (Mã lỗi: ${response.status} ${response.statusText}).`);
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as { choices?: { message?: { content?: string } }[] };
       const choice = data.choices?.[0];
       const content = choice?.message?.content;
 

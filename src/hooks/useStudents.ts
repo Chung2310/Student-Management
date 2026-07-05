@@ -19,8 +19,7 @@ export function useStudents(ownerFilter?: string) {
       const url = ownerFilter ? `/students?ownerFilter=${encodeURIComponent(ownerFilter)}` : "/students";
       const res = await apiFetch(url);
       if (res.success && res.students) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mapped = res.students.map((s: any) => ({
+        const mapped = res.students.map((s: Omit<Student, 'id'> & { _id: string }) => ({
           ...s,
           id: s._id,
         })) as Student[];

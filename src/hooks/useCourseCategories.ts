@@ -23,8 +23,7 @@ export function useCourseCategories(ownerFilter?: string) {
       const url = ownerFilter ? `/courses/categories?ownerFilter=${encodeURIComponent(ownerFilter)}` : "/courses/categories";
       const res = await apiFetch(url);
       if (res.success && res.data) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mapped = res.data.map((cat: any) => ({
+        const mapped = res.data.map((cat: { _id: string; name: string }) => ({
           id: cat._id,
           name: cat.name,
         }));
