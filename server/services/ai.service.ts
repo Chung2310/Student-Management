@@ -1,8 +1,15 @@
 import { logger } from "../config/logger";
 
+interface AIStudentInput {
+  fullName: string;
+  rank?: string;
+  registrationDate: string;
+  status: string | string[];
+  fee: string;
+}
+
 export class AIService {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static async analyzeStudent(student: any): Promise<string> {
+  static async analyzeStudent(student: AIStudentInput): Promise<string> {
     const apiKey = process.env.OPENROUTER_API_KEY?.trim();
     const model = process.env.OPENROUTER_MODEL?.trim() || "google/gemini-2.5-flash";
 
@@ -55,8 +62,7 @@ Hãy phản hồi bằng tiếng Việt, định dạng Markdown, phong cách ti
         throw new Error(`Lỗi kết nối dịch vụ OpenRouter AI (Mã lỗi: ${response.status} ${response.statusText}).`);
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as { choices?: { message?: { content?: string } }[] };
       const choice = data.choices?.[0];
       const content = choice?.message?.content;
 
