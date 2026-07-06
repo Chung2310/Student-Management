@@ -32,7 +32,7 @@ export function isStudentEligibleForExamRank(
   if (!normalizedExamRank) return true;
 
   if (businessType !== 'driving') {
-    return normalize(studentRank) === normalizedExamRank;
+    return true;
   }
 
   const examBucket = getDrivingExamBucket(normalizedExamRank);

@@ -4,6 +4,43 @@ import { IExam } from "../interfaces/exam.interface";
 import { User } from "../models/user.model";
 import { logger } from "../config/logger";
 
+const MOTORBIKE_LICENSE_PREFIXES = ['A1', 'A2', 'A3', 'A4'];
+const CAR_LICENSE_PREFIXES = ['B1', 'B2', 'C', 'D', 'E', 'F', 'FB', 'FC', 'FD', 'FE'];
+
+function normalizeRank(value?: string | null) {
+  return String(value || '').trim().toUpperCase();
+}
+
+function getDrivingExamBucket(rank?: string | null): 'motorbike' | 'car' | null {
+  const normalized = normalizeRank(rank);
+  if (!normalized) return null;
+  if (MOTORBIKE_LICENSE_PREFIXES.some(prefix => normalized.startsWith(prefix))) return 'motorbike';
+  if (CAR_LICENSE_PREFIXES.some(prefix => normalized.startsWith(prefix))) return 'car';
+  return null;
+}
+
+function isStudentEligibleForExamRank(
+  businessType: string,
+  examRank?: string | null,
+  studentRank?: string | null
+) {
+  const normalizedExamRank = normalizeRank(examRank);
+  if (!normalizedExamRank) return true;
+
+  if (businessType !== 'driving') {
+    return true;
+  }
+
+  const examBucket = getDrivingExamBucket(normalizedExamRank);
+  const studentBucket = getDrivingExamBucket(studentRank);
+
+  if (!examBucket) {
+    return normalizeRank(studentRank) === normalizedExamRank;
+  }
+
+  return examBucket === studentBucket;
+}
+
 interface ExamFilters {
   page?: number | string;
   limit?: number | string;
@@ -27,6 +64,23 @@ interface ImportResultItem {
   theory?: number;
   practice?: number;
   simulation?: number;
+  fullName?: string;
+}
+
+interface ValidImportPreview {
+  phone: string;
+  fullName: string;
+  rank?: string;
+  overallResult: string;
+  theory?: number;
+  practice?: number;
+  simulation?: number;
+}
+
+interface InvalidImportPreview {
+  phone: string;
+  fullName: string;
+  reason: string;
 }
 
 export class ExamService {
@@ -334,9 +388,17 @@ export class ExamService {
   static async importResults(
     ownerId: string | string[],
     examId: string,
-    results: ImportResultItem[]
-  ): Promise<{ success: boolean; successCount: number; failedCount: number; errors: string[] }> {
-    logger.info(`[Exam] Importing ${results.length} results for examId=${examId}, ownerId=${ownerId}`);
+    results: ImportResultItem[],
+    preview: boolean = false
+  ): Promise<{
+    success: boolean;
+    successCount?: number;
+    failedCount?: number;
+    errors?: string[];
+    valid?: ValidImportPreview[];
+    invalid?: InvalidImportPreview[];
+  }> {
+    logger.info(`[Exam] Importing ${results.length} results for examId=${examId}, ownerId=${ownerId}, preview=${preview}`);
 
     // Check if the exam exists
     const examQuery: Record<string, unknown> = { _id: examId };
@@ -349,6 +411,12 @@ export class ExamService {
       throw new Error("Kỳ thi không tồn tại.");
     }
 
+    const userDoc = await User.findById(exam.ownerId);
+    const businessType = userDoc?.businessType || 'driving';
+
+    const validList: ValidImportPreview[] = [];
+    const invalidList: InvalidImportPreview[] = [];
+
     let successCount = 0;
     let failedCount = 0;
     const errors: string[] = [];
@@ -358,16 +426,80 @@ export class ExamService {
       try {
         const { phone, overallResult, theory = 0, practice = 0, simulation = 0 } = item;
 
-        // Find the student by phone and ownerId, having this examId
-        const studentQuery: Record<string, unknown> = { phone, examId };
+        const cleanPhone = phone.trim().replace(/[\s.-]/g, '');
+        const phoneVariants = [cleanPhone];
+        if (/^[1-9]\d{8}$/.test(cleanPhone)) {
+          phoneVariants.push('0' + cleanPhone);
+        } else if (cleanPhone.startsWith('0') && cleanPhone.length === 10) {
+          phoneVariants.push(cleanPhone.slice(1));
+        }
+        if (cleanPhone.startsWith('84') && cleanPhone.length === 11) {
+          const raw = '0' + cleanPhone.slice(2);
+          phoneVariants.push(raw);
+          phoneVariants.push(cleanPhone.slice(2));
+        }
+        if (cleanPhone.startsWith('+84')) {
+          const raw = '0' + cleanPhone.slice(3);
+          phoneVariants.push(raw);
+          phoneVariants.push(cleanPhone.slice(3));
+        }
+
+        // Find the student by phone and ownerId (independent of examId to support auto-assignment)
+        const studentQuery: Record<string, unknown> = { phone: { $in: phoneVariants } };
         if (ownerId !== "ALL") {
           studentQuery.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
         }
 
         const student = await Student.findOne(studentQuery);
         if (!student) {
-          errors.push(`Học viên có SĐT ${phone} không nằm trong kỳ thi này hoặc không tồn tại.`);
+          const reason = `SĐT không tồn tại trên hệ thống.`;
+          invalidList.push({ phone, fullName: item.fullName || 'Chưa rõ', reason });
+          errors.push(`Học viên có SĐT ${phone} không tồn tại trên hệ thống.`);
           failedCount++;
+          continue;
+        }
+
+        // 1. Check tuition completion (Must be fully paid)
+        const totalFee = parseInt(String(student.fee || "0").replace(/\D/g, ""), 10) || 0;
+        const paidAmount = student.paidAmount || 0;
+        const isFullyPaid = paidAmount >= totalFee;
+        if (!isFullyPaid) {
+          const reason = `Chưa hoàn thành học phí (Đã đóng: ${paidAmount.toLocaleString('vi-VN')}đ / Học phí: ${totalFee.toLocaleString('vi-VN')}đ).`;
+          invalidList.push({ phone, fullName: student.fullName, reason });
+          errors.push(`Học viên ${student.fullName} (SĐT ${phone}) ${reason}`);
+          failedCount++;
+          continue;
+        }
+
+        // 2. Check Rank suitability
+        const eligibleRank = isStudentEligibleForExamRank(businessType, exam.rank, student.rank);
+        if (!eligibleRank) {
+          const reason = `Hạng bằng (${student.rank || "N/A"}) không phù hợp với đợt thi hạng ${exam.rank || "N/A"}.`;
+          invalidList.push({ phone, fullName: student.fullName, reason });
+          errors.push(`Học viên ${student.fullName} (SĐT ${phone}) ${reason}`);
+          failedCount++;
+          continue;
+        }
+
+        // 3. Check if student is assigned to another exam
+        if (student.examId && student.examId !== examId) {
+          const reason = `Đang tham gia đợt thi khác (${student.examName || "Chưa rõ tên"}).`;
+          invalidList.push({ phone, fullName: student.fullName, reason });
+          errors.push(`Học viên ${student.fullName} (SĐT ${phone}) ${reason}`);
+          failedCount++;
+          continue;
+        }
+
+        if (preview) {
+          validList.push({
+            phone,
+            fullName: student.fullName,
+            rank: student.rank,
+            overallResult,
+            theory,
+            practice,
+            simulation
+          });
           continue;
         }
 
@@ -385,20 +517,54 @@ export class ExamService {
           examStatus = "Sắp thi";
         }
 
-        // Update the student and their exam details inside exams array
-        await Student.updateOne(
-          { _id: student._id, "exams.id": examId },
-          {
-            $set: {
-              status: studentStatus,
-              "exams.$.status": examStatus,
-              "exams.$.result.theory": theory,
-              "exams.$.result.practice": practice,
-              "exams.$.result.simulation": simulation,
-              "exams.$.result.overall": overallResult,
+        // Check if student already has this exam entry in history
+        const hasExamEntry = student.exams?.some((e) => e.id === examId);
+
+        if (hasExamEntry) {
+          await Student.updateOne(
+            { _id: student._id, "exams.id": examId },
+            {
+              $set: {
+                examId: exam._id.toString(),
+                examName: exam.name,
+                examDate: exam.tentativeDate,
+                status: studentStatus,
+                "exams.$.status": examStatus,
+                "exams.$.result.theory": theory,
+                "exams.$.result.practice": practice,
+                "exams.$.result.simulation": simulation,
+                "exams.$.result.overall": overallResult,
+              }
             }
-          }
-        );
+          );
+        } else {
+          await Student.updateOne(
+            { _id: student._id },
+            {
+              $set: {
+                examId: exam._id.toString(),
+                examName: exam.name,
+                examDate: exam.tentativeDate,
+                status: studentStatus,
+              },
+              $push: {
+                exams: {
+                  id: exam._id.toString(),
+                  name: exam.name,
+                  date: exam.tentativeDate,
+                  type: "Sát hạch",
+                  status: examStatus,
+                  result: {
+                    theory,
+                    practice,
+                    simulation,
+                    overall: overallResult
+                  }
+                }
+              }
+            }
+          );
+        }
 
         successCount++;
       } catch (err) {
@@ -408,7 +574,16 @@ export class ExamService {
       }
     }
 
+    if (preview) {
+      return {
+        success: true,
+        valid: validList,
+        invalid: invalidList
+      };
+    }
+
     // Recalculate stats for the exam
+    const studentCount = await Student.countDocuments({ examId });
     const passCount = await Student.countDocuments({
       examId,
       exams: {
@@ -428,11 +603,12 @@ export class ExamService {
       }
     });
 
+    exam.studentCount = studentCount;
     exam.passCount = passCount;
     exam.failCount = failCount;
     await exam.save();
 
-    logger.info(`[Exam] Finished importing results. Success: ${successCount}, Failed: ${failedCount}, passCount=${passCount}, failCount=${failCount}`);
+    logger.info(`[Exam] Finished importing results. Success: ${successCount}, Failed: ${failedCount}, studentCount=${studentCount}, passCount=${passCount}, failCount=${failCount}`);
 
     return {
       success: true,

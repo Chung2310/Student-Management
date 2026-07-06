@@ -12,6 +12,7 @@ import {
   Tag,
   Trash2,
   Users,
+  Pencil,
 } from 'lucide-react';
 import { cn, formatVND } from '../../lib/utils';
 import { apiFetch } from '../../lib/api';
@@ -143,6 +144,8 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>(DEFAULT_DELETE_CONFIRM);
   const [newCourse, setNewCourse] = useState<NewCourseFormState>(DEFAULT_NEW_COURSE);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [editForm, setEditForm] = useState<NewCourseFormState>(DEFAULT_NEW_COURSE);
 
   const pageSize = viewMode === 'grid' ? 6 : 8;
 
@@ -152,6 +155,21 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
       setNewCourse((prev) => ({ ...prev, category: categories[0].name }));
     }
   }, [categories, newCourse.category]);
+
+  useEffect(() => {
+    if (editingCourse) {
+      setTimeout(() => {
+        setEditForm({
+          code: editingCourse.code || '',
+          title: editingCourse.title || '',
+          category: editingCourse.category || '',
+          fee: editingCourse.fee || '',
+          duration: editingCourse.duration || '',
+          maxLearners: editingCourse.maxLearners || 20,
+        });
+      }, 0);
+    }
+  }, [editingCourse]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -214,7 +232,49 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
       setIsSubmitting(false);
     }
   };
+  const handleEditCourse = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingCourse) return;
 
+    if (!editForm.code || !editForm.title || !editForm.duration || !editForm.category || (usesCourseFeePolicy && !editForm.fee)) {
+      toast.error('Vui lòng nhập đầy đủ thông tin khóa học.');
+      return;
+    }
+
+    if (usesCourseFeePolicy) {
+      const numericFee = editForm.fee.replace(/\D/g, '');
+      if (!numericFee || Number.isNaN(Number(numericFee))) {
+        toast.error('Học phí phải là một số hợp lệ.');
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        code: editForm.code.toUpperCase(),
+        title: editForm.title,
+        category: editForm.category,
+        fee: usesCourseFeePolicy ? `${formatVND(editForm.fee)}d` : '0d',
+        duration: editForm.duration,
+        maxLearners: editForm.maxLearners === '' ? 20 : editForm.maxLearners,
+      };
+
+      await apiFetch<MutationResponse>(`/courses/${editingCourse.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+
+      window.dispatchEvent(new Event('course-mutation'));
+      setEditingCourse(null);
+      toast.success(`Đã cập nhật khóa học ${payload.code} thành công!`);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Có lỗi xảy ra khi cập nhật khóa học.';
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   const handleToggleStatus = async (course: Course) => {
     const nextStatus: Course['status'] = course.status === ACTIVE_COURSE_STATUS ? PAUSED_COURSE_STATUS : ACTIVE_COURSE_STATUS;
     try {
@@ -427,6 +487,18 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
                         : <><Play className="w-3 h-3 text-brand-primary" /> Kích hoạt</>}
                     </button>
                     <button
+                      onClick={() => setEditingCourse(course)}
+                      title="Chỉnh sửa khóa học"
+                      className={cn(
+                        'p-1.5 rounded-xl transition-all border cursor-pointer',
+                        darkMode
+                          ? 'bg-slate-800 hover:bg-indigo-900/40 text-slate-400 hover:text-indigo-400 border-transparent'
+                          : 'bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-500 border-slate-200/60'
+                      )}
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                    <button
                       onClick={() => handleDelete(course)}
                       title="Xóa khóa học"
                       className={cn(
@@ -490,6 +562,16 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
                           )}
                         >
                           {course.status === ACTIVE_COURSE_STATUS ? <Pause className="w-3 h-3 text-amber-500" /> : <Play className="w-3 h-3 text-brand-primary" />}
+                        </button>
+                        <button
+                          onClick={() => setEditingCourse(course)}
+                          className={cn(
+                            'p-1.5 rounded-lg transition-all border cursor-pointer',
+                            darkMode ? 'bg-slate-800 hover:bg-indigo-900/40 text-slate-450 hover:text-indigo-450 border-transparent' : 'bg-slate-50 hover:bg-indigo-50 text-slate-450 hover:text-indigo-550 border-slate-200/60'
+                          )}
+                          title="Chỉnh sửa khóa học"
+                        >
+                          <Pencil className="w-3 h-3" />
                         </button>
                         <button
                           onClick={() => handleDelete(course)}
@@ -606,6 +688,98 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
             </div>
 
             <ErpSubmitButton>{isSubmitting ? 'Đang khởi tạo...' : 'Khởi tạo chương trình'}</ErpSubmitButton>
+          </form>
+        </ErpModal>
+      )}
+
+      {editingCourse && (
+        <ErpModal title={`Chỉnh sửa chương trình học: ${editingCourse.code}`} onClose={() => setEditingCourse(null)}>
+          <form onSubmit={handleEditCourse} className="space-y-4">
+            <ErpField label="Mã khóa học">
+              <ErpInput
+                type="text"
+                required
+                placeholder={courseCodePlaceholder}
+                value={editForm.code}
+                onChange={(e) => setEditForm({ ...editForm, code: e.target.value })}
+              />
+            </ErpField>
+
+            <ErpField label="Tên chương trình đào tạo">
+              <ErpInput
+                type="text"
+                required
+                placeholder={courseTitlePlaceholder}
+                value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+              />
+            </ErpField>
+
+            <div className="grid grid-cols-2 gap-4">
+              <ErpField label="Phân loại">
+                <ErpSelect
+                  value={editForm.category}
+                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                >
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </ErpSelect>
+              </ErpField>
+              <ErpField label="Thời lượng">
+                <ErpInput
+                  type="text"
+                  required
+                  placeholder={courseDurationPlaceholder}
+                  value={editForm.duration}
+                  onChange={(e) => setEditForm({ ...editForm, duration: e.target.value })}
+                />
+              </ErpField>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <ErpField label={usesCourseFeePolicy ? 'Học phí niêm yết (VND)' : 'Học phí khóa học (VND)'}>
+                {usesCourseFeePolicy ? (
+                  <ErpInput
+                    type="text"
+                    required
+                    placeholder="Vi du: 5.500.000"
+                    value={editForm.fee}
+                    onChange={(e) => setEditForm({ ...editForm, fee: formatVND(e.target.value) })}
+                  />
+                ) : (
+                  <div className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-500">
+                    {drivingFeeHint}
+                  </div>
+                )}
+              </ErpField>
+              <ErpField label="Tối đa học viên lớp">
+                <ErpInput
+                  type="number"
+                  min={0}
+                  value={editForm.maxLearners}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '') {
+                      setEditForm({ ...editForm, maxLearners: '' });
+                      return;
+                    }
+
+                    const parsed = parseInt(value, 10);
+                    setEditForm({ ...editForm, maxLearners: Number.isNaN(parsed) ? 20 : Math.max(0, parsed) });
+                  }}
+                  onBlur={() => {
+                    if (editForm.maxLearners === '' || typeof editForm.maxLearners !== 'number' || editForm.maxLearners < 0) {
+                      setEditForm({ ...editForm, maxLearners: 20 });
+                    }
+                  }}
+                />
+              </ErpField>
+            </div>
+
+            <ErpSubmitButton disabled={isSubmitting}>{isSubmitting ? 'Đang cập nhật...' : 'Cập nhật khóa học'}</ErpSubmitButton>
           </form>
         </ErpModal>
       )}
