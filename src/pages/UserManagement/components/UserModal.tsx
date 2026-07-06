@@ -142,6 +142,7 @@ export function UserModal({
               { key: 'Bot', label: 'BOT Thông báo' },
               { key: 'Courses', label: 'Khóa học' },
               { key: 'Batches', label: 'Lớp & Khai giảng' },
+              { key: 'Partners', label: 'Đối tác & CTV' },
               { key: 'Resources', label: 'Thiết bị' },
             ].map((p) => {
               const checked = fPermissions.includes(p.key);

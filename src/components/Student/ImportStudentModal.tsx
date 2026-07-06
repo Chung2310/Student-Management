@@ -38,6 +38,22 @@ interface ValidationRow {
 
 const DATE_PATTERN = /^([0-2][0-9]|3[0-1])\/(0[1-9]|1[0-2])\/\d{4}$/;
 
+const formatExcelPhone = (phoneVal: unknown): string => {
+  if (phoneVal === undefined || phoneVal === null) return '';
+  let clean = String(phoneVal).trim().replace(/[\s.-]/g, '');
+  if (!clean) return '';
+  if (clean.startsWith('84') && clean.length === 11) {
+    clean = '0' + clean.slice(2);
+  }
+  if (clean.startsWith('+84')) {
+    clean = '0' + clean.slice(3);
+  }
+  if (/^[1-9]\d{8}$/.test(clean)) {
+    clean = '0' + clean;
+  }
+  return clean;
+};
+
 export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudentModalProps) {
   const { user } = useAuth();
   const businessType = user?.businessType || 'driving';
@@ -193,7 +209,7 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
           const paidAmount = parseInt(getCellValue('paidAmount').replace(/\D/g, ''), 10) || 0;
           const studentData: ParsedStudent = {
             fullName: getCellValue('fullName'),
-            phone: getCellValue('phone'),
+            phone: formatExcelPhone(getCellValue('phone')),
             rank: getCellValue('rank').toUpperCase(),
             fee: feeNum > 0 ? feeNum.toLocaleString('vi-VN') : '0',
             paidAmount,
