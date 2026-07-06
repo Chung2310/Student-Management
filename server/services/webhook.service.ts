@@ -11,8 +11,6 @@ export class WebhookService {
    * Ưu tiên 2: Trích xuất SĐT (9-11 chữ số) và khớp SĐT học viên.
    */
   static async matchStudentByDescription(description: string, ownerId: string) {
-    logger.info(`[Webhook] Matching student for ownerId: ${ownerId}, description: "${description}"`);
-
     // Fetch the admin user
     const adminUser = await User.findById(ownerId);
     if (!adminUser) return null;
@@ -20,7 +18,6 @@ export class WebhookService {
     // Get all users in the center (including the admin themselves)
     const centerUsers = await User.find({ centerId: adminUser.centerId }).select("_id");
     const allowedOwnerIds = centerUsers.map(u => u._id.toString());
-    logger.info(`[Webhook] adminUser centerId: ${adminUser.centerId}, allowedOwnerIds: ${JSON.stringify(allowedOwnerIds)}`);
 
     // 1. Tìm ObjectID 24 ký tự hex
     const objectIdRegex = /[0-9a-fA-F]{24}/;
@@ -29,14 +26,13 @@ export class WebhookService {
       const studentId = objectIdMatch[0];
       const student = await Student.findOne({ _id: studentId, ownerId: { $in: allowedOwnerIds } });
       if (student) {
-        logger.info(`[Webhook] Matched student by ID: ${student.fullName} (${student._id})`);
         return student;
       }
       const studentAnyOwner = await Student.findById(studentId).select("fullName ownerId");
       if (studentAnyOwner) {
-        logger.warn(`[Webhook] Found studentId ${studentId} (${studentAnyOwner.fullName}) but its ownerId "${studentAnyOwner.ownerId}" is outside allowedOwnerIds for this center.`);
+        logger.warn(`[Webhook] Found studentId ${studentId} outside allowed owner scope.`);
       } else {
-        logger.warn(`[Webhook] Extracted studentId ${studentId} from description but no student exists with this ID at all.`);
+        logger.warn(`[Webhook] Extracted studentId ${studentId} but no student exists.`);
       }
     }
 
@@ -61,14 +57,12 @@ export class WebhookService {
             dbPhoneClean.endsWith(targetPhoneClean) ||
             targetPhoneClean.endsWith(dbPhoneClean)
           ) {
-            logger.info(`[Webhook] Matched student by Phone: ${student.fullName} (${student._id}) via SĐT match: ${num}`);
             return student;
           }
         }
       }
     }
-
-    logger.warn(`[Webhook] No student matched for description: "${description}"`);
+    logger.warn("[Webhook] No student matched for transfer description.");
     return null;
   }
 
@@ -86,8 +80,6 @@ export class WebhookService {
     accountNumber?: string | number;
     [key: string]: unknown;
   }) {
-    logger.info(`[Webhook] Processing incoming transaction payload: ${JSON.stringify(payload)}`);
-
     // Parse thông tin linh hoạt từ Casso hoặc SePay
     const description = payload.description || payload.content || "";
     const amount = Number(payload.amount || payload.transferAmount || 0);
@@ -126,7 +118,6 @@ export class WebhookService {
     const remaining = totalFee - paidSoFar;
 
     if (remaining <= 0) {
-      logger.info(`[Webhook] Student ${student.fullName} has already paid in full. No payment recorded.`);
       return { success: true, message: "Học viên đã hoàn thành học phí từ trước.", studentName: student.fullName };
     }
 

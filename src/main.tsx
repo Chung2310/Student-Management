@@ -49,7 +49,7 @@ class ErrorBoundary extends Component<Props, State> {
           url: window.location.href,
         },
       }),
-    }).catch(err => console.error("Failed to log error to server:", err));
+    }).catch(() => undefined);
   }
 
   public render() {
@@ -132,7 +132,7 @@ window.addEventListener("error", (event) => {
         url: window.location.href,
       },
     }),
-  }).catch(err => console.error(err));
+  }).catch(() => undefined);
 });
 
 window.addEventListener("unhandledrejection", (event) => {
@@ -153,7 +153,7 @@ window.addEventListener("unhandledrejection", (event) => {
         url: window.location.href,
       },
     }),
-  }).catch(err => console.error(err));
+  }).catch(() => undefined);
 });
 
 createRoot(document.getElementById('root')!).render(
