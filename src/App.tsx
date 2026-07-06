@@ -15,8 +15,7 @@ import { Loader2, Shield } from 'lucide-react';
 import { cn, toSlug } from './lib/utils';
 
 // Helper wrapper to handle dynamic import (chunk load) failures after server updates
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function lazyWithRetry<T extends React.ComponentType<any>>(
+function lazyWithRetry<T extends React.ComponentType<never>>(
   importFn: () => Promise<{ default: T }>
 ): React.LazyExoticComponent<T> {
   return lazy(async () => {

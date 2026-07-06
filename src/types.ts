@@ -59,7 +59,7 @@ export interface DrivingStudent {
       theory: number | 'Đạt' | 'Không đạt';
       practice: number | 'Đạt' | 'Không đạt';
       simulation?: number | 'Đạt' | 'Không đạt';
-      overall: 'Đậu' | 'Trượt' | 'Chưa có';
+      overall: 'Đậu' | 'Trượt' | 'Chưa có' | 'Sắp thi' | 'Vắng thi';
     };
   }[];
 

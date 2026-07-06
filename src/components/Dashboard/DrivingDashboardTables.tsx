@@ -205,8 +205,8 @@ export function DrivingDashboardTables({ onSelectStudent, onNavigate, selectedCe
                   </td>
                   <td className="px-3 py-3 text-center text-[10px] font-bold text-slate-500 whitespace-nowrap">{item.registrationDate}</td>
                   <td className="px-3 py-3 text-center">
-                    <span className={cn("px-3 py-1 rounded-full text-[10px] font-bold whitespace-nowrap", getStatusInfo(item.status))}>
-                      {item.status}
+                    <span className={cn("px-3 py-1 rounded-full text-[10px] font-bold whitespace-nowrap", getStatusInfo(item.status[0] || 'Đang học'))}>
+                      {item.status[0] || 'Đang học'}
                     </span>
                   </td>
                 </tr>

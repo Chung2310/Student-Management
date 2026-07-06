@@ -2,6 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '../lib/api';
 import { useAuth } from './useAuth';
 
+interface CourseCategoryApiItem {
+  _id: string;
+  name: string;
+}
+
+interface CourseCategoriesResponse {
+  success: boolean;
+  data: CourseCategoryApiItem[];
+}
+
 export interface CourseCategoryItem {
   id: string;
   name: string;
@@ -21,16 +31,20 @@ export function useCourseCategories(ownerFilter?: string) {
 
     try {
       const url = ownerFilter ? `/courses/categories?ownerFilter=${encodeURIComponent(ownerFilter)}` : "/courses/categories";
-      const res = await apiFetch(url);
-      if (res.success && res.data) {
-        const mapped = res.data.map((cat: { _id: string; name: string }) => ({
-          id: cat._id,
-          name: cat.name,
+      const res = await apiFetch<CourseCategoriesResponse>(url);
+
+      if (res.success) {
+        const mapped: CourseCategoryItem[] = res.data.map((category) => ({
+          id: category._id,
+          name: category.name,
         }));
         setCategories(mapped);
+      } else {
+        setCategories([]);
       }
     } catch (error) {
       console.error("Error fetching course categories:", error);
+      setCategories([]);
     } finally {
       setLoading(false);
     }

@@ -75,12 +75,12 @@ export function BusinessResults() {
 
     if (reportPeriod === 'Tháng này') {
       filteredStudents = filteredStudents.filter(s => {
-        const regDate = s.registrationDate ? parseDate(s.registrationDate) : (s.createdAt?.toDate ? s.createdAt.toDate() : null);
+        const regDate = s.registrationDate ? parseDate(s.registrationDate) : (s.createdAt ? new Date(s.createdAt) : null);
         return regDate && regDate >= startOfThisMonth;
       });
     } else if (reportPeriod === 'Tháng trước') {
       filteredStudents = filteredStudents.filter(s => {
-        const regDate = s.registrationDate ? parseDate(s.registrationDate) : (s.createdAt?.toDate ? s.createdAt.toDate() : null);
+        const regDate = s.registrationDate ? parseDate(s.registrationDate) : (s.createdAt ? new Date(s.createdAt) : null);
         return regDate && regDate >= startOfLastMonth && regDate <= endOfLastMonth;
       });
     }
@@ -100,12 +100,12 @@ export function BusinessResults() {
     let filteredPayments = payments;
     if (reportPeriod === 'Tháng này') {
       filteredPayments = filteredPayments.filter(p => {
-        const pDate = parseDate(p.date) || (p.createdAt?.toDate ? p.createdAt.toDate() : null);
+        const pDate = parseDate(p.date) || (p.createdAt ? new Date(p.createdAt) : null);
         return pDate && pDate >= startOfThisMonth;
       });
     } else if (reportPeriod === 'Tháng trước') {
       filteredPayments = filteredPayments.filter(p => {
-        const pDate = parseDate(p.date) || (p.createdAt?.toDate ? p.createdAt.toDate() : null);
+        const pDate = parseDate(p.date) || (p.createdAt ? new Date(p.createdAt) : null);
         return pDate && pDate >= startOfLastMonth && pDate <= endOfLastMonth;
       });
     }

@@ -38,7 +38,7 @@ export function ExamsPage({ selectedCenter }: { selectedCenter?: string }) {
     upcoming: exams.filter(e => e.status === 'Sắp diễn ra' || e.status === 'Đã xác nhận').length,
     confirmed: exams.filter(e => e.status === 'Đã xác nhận').length,
     completed: exams.filter(e => e.status === 'Đã hoàn thành').length,
-    unassignedStudents: students.filter(s => s.status === 'Đang học').length // Example logic
+    unassignedStudents: students.filter(s => s.status.includes('Đang học')).length // Example logic
   };
 
   // Filters
