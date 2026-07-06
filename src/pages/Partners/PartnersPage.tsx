@@ -11,6 +11,7 @@ import { formatVND } from '../../lib/utils';
 import { AddPartnerModal } from './components/AddPartnerModal';
 import { PartnerDetailModal } from './components/PartnerDetailModal';
 import { AddPayoutModal } from './components/AddPayoutModal';
+import { CommissionLevelModal } from './components/CommissionLevelModal';
 import { Partner } from '../../types';
 
 interface PartnersPageProps {
@@ -28,6 +29,7 @@ export function PartnersPage({ selectedCenter }: PartnersPageProps) {
 
   // Modal triggers
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showLevelModal, setShowLevelModal] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null);
   const [payingPartner, setPayingPartner] = useState<Partner | null>(null);
@@ -112,9 +114,18 @@ export function PartnersPage({ selectedCenter }: PartnersPageProps) {
         title="Quản lý Đối tác & Cộng tác viên"
         subtitle="Quản lý thông tin CTV, theo dõi số lượng học viên đã giới thiệu và ghi nhận chi trả tiền hoa hồng"
         action={
-          <ErpPrimaryButton onClick={() => { setEditingPartner(null); setShowAddModal(true); }}>
-            Khai báo đối tác mới
-          </ErpPrimaryButton>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setShowLevelModal(true)}
+              className="flex items-center gap-2 px-5 py-3 bg-slate-100 hover:bg-slate-200/80 text-slate-750 rounded-2xl text-xs font-black transition-all active:scale-95 cursor-pointer shadow-sm border border-slate-200/40"
+            >
+              <Landmark className="w-4 h-4 text-sky-600" />
+              Cấu hình Level Hoa hồng
+            </button>
+            <ErpPrimaryButton onClick={() => { setEditingPartner(null); setShowAddModal(true); }}>
+              Khai báo đối tác mới
+            </ErpPrimaryButton>
+          </div>
         }
       />
 
@@ -183,7 +194,7 @@ export function PartnersPage({ selectedCenter }: PartnersPageProps) {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-400">
                   <th className="py-4.5 px-6 text-left">Họ tên & SĐT</th>
-                  <th className="py-4.5 px-6 text-left">Quy tắc hoa hồng</th>
+                  <th className="py-4.5 px-6 text-left">Cấp bậc hoa hồng</th>
                   <th className="py-4.5 px-6 text-center">Đã giới thiệu</th>
                   <th className="py-4.5 px-6 text-right">Tổng hoa hồng</th>
                   <th className="py-4.5 px-6 text-right">Đã thanh toán</th>
@@ -200,16 +211,25 @@ export function PartnersPage({ selectedCenter }: PartnersPageProps) {
                       <div className="text-[10px] text-slate-400 mt-0.5">{partner.phone}</div>
                     </td>
                     <td className="py-4 px-6">
-                      {partner.commissionType === 'fixed' ? (
-                        <span>Cố định: <span className="font-bold text-slate-900">{formatVND(String(partner.commissionValue))}</span>/HV</span>
+                      {partner.levelName === 'Mặc định' ? (
+                        <>
+                          <div className="text-[10px] font-black text-slate-600 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full inline-block">Mặc định</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">Tỷ lệ: <span className="font-bold text-slate-700">1%</span> học phí</div>
+                        </>
                       ) : (
-                        <span>Phần trăm: <span className="font-bold text-slate-900">{partner.commissionValue}%</span> học phí</span>
+                        <>
+                          <div className="font-bold text-slate-900">{partner.levelName}</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">Tỷ lệ: <span className="font-bold text-slate-700">{partner.commissionValue}%</span> học phí</div>
+                        </>
                       )}
                     </td>
                     <td className="py-4 px-6 text-center font-bold">
                       <span className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full text-[10px]">
                         {partner.referredStudentsCount} học viên
                       </span>
+                      <div className="text-[10px] text-slate-400 font-mono mt-1">
+                        Học phí: {formatVND(String(partner.totalReferredTuition || 0))}
+                      </div>
                     </td>
                     <td className="py-4 px-6 text-right font-black text-slate-800">
                       {formatVND(String(partner.totalCommission))}
@@ -317,6 +337,13 @@ export function PartnersPage({ selectedCenter }: PartnersPageProps) {
           onCancel={() => setDeletingPartner(null)}
         />
       )}
+
+      {/* Commission Level Modal */}
+      <CommissionLevelModal
+        isOpen={showLevelModal}
+        onClose={() => setShowLevelModal(false)}
+        selectedCenter={selectedCenter}
+      />
     </div>
   );
 }

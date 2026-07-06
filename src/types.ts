@@ -288,6 +288,18 @@ export interface Partner {
   unpaidBalance: number;
   referredStudents: PartnerReferredStudent[];
   payoutHistory: PartnerPayout[];
+  levelName?: string;
+  totalReferredTuition?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CommissionLevel {
+  _id: string;
+  name: string;
+  minTuition: number;
+  commissionRate: number;
+  ownerId: string;
   createdAt?: string;
   updatedAt?: string;
 }

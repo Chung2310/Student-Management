@@ -79,15 +79,6 @@ export function AddPartnerModal({ isOpen, onClose, onSuccess, partner }: AddPart
       return;
     }
 
-    const valueNum = formData.commissionType === 'fixed'
-      ? parseInt(formData.commissionValue.replace(/\D/g, ''), 10) || 0
-      : parseFloat(formData.commissionValue) || 0;
-
-    if (formData.commissionType === 'percentage' && (valueNum < 0 || valueNum > 100)) {
-      toast.error('Phần trăm hoa hồng phải từ 0% đến 100%.');
-      return;
-    }
-
     if (user?.role === 'superadmin' && !partner && !formData.centerId) {
       toast.error('Vui lòng chọn trung tâm quản lý cho đối tác này.');
       return;
@@ -102,8 +93,6 @@ export function AddPartnerModal({ isOpen, onClose, onSuccess, partner }: AddPart
         name: formData.name,
         phone: formData.phone,
         email: formData.email,
-        commissionType: formData.commissionType,
-        commissionValue: valueNum,
         bankName: formData.bankName,
         bankAccountNo: formData.bankAccountNo,
         bankAccountName: formData.bankAccountName,
@@ -134,18 +123,7 @@ export function AddPartnerModal({ isOpen, onClose, onSuccess, partner }: AddPart
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'commissionValue' && formData.commissionType === 'fixed'
-        ? formatVND(value)
-        : value
-    }));
-  };
-
-  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const type = e.target.value as 'fixed' | 'percentage';
-    setFormData(prev => ({
-      ...prev,
-      commissionType: type,
-      commissionValue: '',
+      [name]: value
     }));
   };
 
@@ -211,25 +189,11 @@ export function AddPartnerModal({ isOpen, onClose, onSuccess, partner }: AddPart
         </ErpField>
 
         <div className="md:col-span-2 border-t border-slate-100 my-2 pt-2">
-          <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">Quy tắc tính hoa hồng</h4>
+          <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">Quy tắc tính hoa hồng</h4>
+          <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+            Hệ thống sẽ tự động xếp cấp bậc (Level) hoa hồng cho đối tác dựa trên tổng doanh số học phí tích lũy mà họ giới thiệu được. Tỷ lệ hoa hồng (%) sẽ thay đổi tương ứng theo từng mốc cấu hình chung.
+          </p>
         </div>
-
-        <ErpField label="Loại hoa hồng *">
-          <ErpSelect name="commissionType" value={formData.commissionType} onChange={handleTypeChange}>
-            <option value="fixed">Cố định (VND / học viên)</option>
-            <option value="percentage">Phần trăm (% học phí)</option>
-          </ErpSelect>
-        </ErpField>
-
-        <ErpField label={formData.commissionType === 'fixed' ? 'Số tiền hoa hồng (VND) *' : 'Phần trăm hoa hồng (%) *'}>
-          <ErpInput
-            name="commissionValue"
-            required
-            value={formData.commissionValue}
-            onChange={handleInputChange}
-            placeholder={formData.commissionType === 'fixed' ? 'Ví dụ: 1,000,000' : 'Ví dụ: 10'}
-          />
-        </ErpField>
 
         <div className="md:col-span-2 border-t border-slate-100 my-2 pt-2">
           <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">Tài khoản ngân hàng chi trả</h4>

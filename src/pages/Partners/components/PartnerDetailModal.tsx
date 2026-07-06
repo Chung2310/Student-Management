@@ -84,7 +84,13 @@ export function PartnerDetailModal({ isOpen, onClose, partnerId, onMutation }: P
             <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-slate-200/60 pt-3 sm:pt-0 sm:pl-4">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Giới thiệu</span>
               <h4 className="text-base font-black text-slate-800">{partner.referredStudentsCount} học viên</h4>
-              <p className="text-[10px] font-bold text-slate-500">Mức: {partner.commissionType === 'fixed' ? `${formatVND(String(partner.commissionValue))}/HV` : `${partner.commissionValue}%`}</p>
+              <p className="text-[10px] font-bold text-slate-500">
+                Cấp bậc: {' '}
+                {partner.levelName === 'Mặc định'
+                  ? 'Mặc định (1%)'
+                  : `${partner.levelName} (${partner.commissionValue}%)`
+                }
+              </p>
             </div>
             <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-slate-200/60 pt-3 sm:pt-0 sm:pl-4">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Đã chi trả</span>

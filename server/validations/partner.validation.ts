@@ -12,12 +12,10 @@ export const createPartnerSchema = Joi.object({
   email: Joi.string().email().allow("").optional().messages({
     "string.email": "Định dạng email không hợp lệ.",
   }),
-  commissionType: Joi.string().valid("percentage", "fixed").required().messages({
-    "any.required": "Loại hoa hồng là bắt buộc.",
+  commissionType: Joi.string().valid("percentage", "fixed").optional().messages({
     "any.only": "Loại hoa hồng chỉ được phép là 'fixed' hoặc 'percentage'.",
   }),
-  commissionValue: Joi.number().min(0).required().messages({
-    "any.required": "Giá trị hoa hồng là bắt buộc.",
+  commissionValue: Joi.number().min(0).optional().messages({
     "number.min": "Giá trị hoa hồng không được âm.",
   }),
   bankName: Joi.string().allow("").optional(),
@@ -25,6 +23,7 @@ export const createPartnerSchema = Joi.object({
   bankAccountName: Joi.string().allow("").optional(),
   isActive: Joi.boolean().optional(),
   notes: Joi.string().allow("").optional(),
+  centerId: Joi.string().allow("").optional(),
 });
 
 export const updatePartnerSchema = Joi.object({
@@ -53,4 +52,21 @@ export const createPayoutSchema = Joi.object({
     "any.only": "Phương thức chi trả chỉ được là 'Tiền mặt' hoặc 'Chuyển khoản'.",
   }),
   note: Joi.string().allow("").optional(),
+});
+
+export const createCommissionLevelSchema = Joi.object({
+  name: Joi.string().required().messages({
+    "any.required": "Tên cấp bậc hoa hồng là bắt buộc.",
+    "string.empty": "Tên cấp bậc hoa hồng không được để trống.",
+  }),
+  minTuition: Joi.number().min(0).required().messages({
+    "any.required": "Doanh số tối thiểu là bắt buộc.",
+    "number.min": "Doanh số tối thiểu không được nhỏ hơn 0.",
+  }),
+  commissionRate: Joi.number().min(0).max(100).required().messages({
+    "any.required": "Tỷ lệ hoa hồng là bắt buộc.",
+    "number.min": "Tỷ lệ hoa hồng không được nhỏ hơn 0%.",
+    "number.max": "Tỷ lệ hoa hồng không được vượt quá 100%.",
+  }),
+  centerId: Joi.string().optional(),
 });

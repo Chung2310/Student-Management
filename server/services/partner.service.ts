@@ -1,6 +1,8 @@
 import { Partner } from "../models/partner.model";
 import { Student } from "../models/student.model";
 import { User } from "../models/user.model";
+import { CommissionLevel } from "../models/commission-level.model";
+import { ICommissionLevel } from "../interfaces/commission-level.interface";
 import { IPartner } from "../interfaces/partner.interface";
 import { logger } from "../config/logger";
 
@@ -51,6 +53,8 @@ export interface EnrichedPartner {
   unpaidBalance: number;
   createdAt?: Date;
   updatedAt?: Date;
+  levelName?: string;
+  totalReferredTuition?: number;
 }
 
 function buildOwnerQuery(ownerId: string | string[]): Record<string, unknown> {
@@ -62,8 +66,15 @@ function parseCurrency(val: string | undefined): number {
   return parseInt(String(val || "").replace(/\D/g, ""), 10) || 0;
 }
 
+const DEFAULT_LEVELS = [
+  { name: "Cấp 1", minTuition: 0, commissionRate: 5 },
+  { name: "Cấp 2", minTuition: 50000000, commissionRate: 8 },
+  { name: "Cấp 3", minTuition: 100000000, commissionRate: 10 },
+];
+
 async function enrichPartners(partners: IPartner[]): Promise<EnrichedPartner[]> {
   const partnerIds = partners.map(p => p._id.toString());
+  const ownerIds = Array.from(new Set(partners.map(p => p.ownerId)));
   
   // Find all students referred by these partners
   const students = await Student.find({ partnerId: { $in: partnerIds } })
@@ -79,19 +90,44 @@ async function enrichPartners(partners: IPartner[]): Promise<EnrichedPartner[]> 
     }
   }
 
+  // Fetch commission levels for these centers
+  const levels = await CommissionLevel.find({ ownerId: { $in: ownerIds } }).sort({ minTuition: 1 });
+  const levelsMapByOwner = new Map<string, ICommissionLevel[]>();
+  for (const lvl of levels) {
+    if (!levelsMapByOwner.has(lvl.ownerId)) {
+      levelsMapByOwner.set(lvl.ownerId, []);
+    }
+    levelsMapByOwner.get(lvl.ownerId)!.push(lvl);
+  }
+
   return partners.map(p => {
     const pId = p._id.toString();
     const referredStudents = studentMapByPartner.get(pId) || [];
     
-    // Calculate total commission earned
+    // Calculate total referred tuition
+    const totalReferredTuition = referredStudents.reduce((sum, s) => sum + parseCurrency(s.fee), 0);
+
+    // Match commission level
+    const centerLevels = levelsMapByOwner.get(p.ownerId) || [];
+    const activeLevels = centerLevels.length > 0 ? centerLevels : DEFAULT_LEVELS;
+    
+    // Find the highest qualifying level (must meet minTuition threshold)
+    let matchedLevel: { name: string; minTuition: number; commissionRate: number } | null = null;
+    for (const lvl of activeLevels) {
+      if (totalReferredTuition >= lvl.minTuition) {
+        matchedLevel = lvl;
+      }
+    }
+
+    // If no level is qualified (below first tier's threshold), commission = 1%
+    const commissionRate = matchedLevel ? matchedLevel.commissionRate : 1;
+    const levelName = matchedLevel ? matchedLevel.name : "Mặc định";
+
+    // Calculate total commission earned using matched level's percentage rate
     let totalCommission = 0;
     for (const student of referredStudents) {
-      if (p.commissionType === "fixed") {
-        totalCommission += p.commissionValue;
-      } else {
-        const fee = parseCurrency(student.fee);
-        totalCommission += Math.round((fee * p.commissionValue) / 100);
-      }
+      const fee = parseCurrency(student.fee);
+      totalCommission += Math.round((fee * commissionRate) / 100);
     }
 
     // Calculate paid amount from payoutHistory
@@ -101,6 +137,10 @@ async function enrichPartners(partners: IPartner[]): Promise<EnrichedPartner[]> 
     return {
       ...p.toObject(),
       _id: pId,
+      commissionType: "percentage",
+      commissionValue: commissionRate,
+      levelName,
+      totalReferredTuition,
       referredStudentsCount: referredStudents.length,
       totalCommission,
       totalPaid,
@@ -266,6 +306,35 @@ export class PartnerService {
     const saved = await partner.save();
     const enriched = await enrichPartners([saved]);
     return enriched[0];
+  }
+
+  static async getCommissionLevels(ownerId: string | string[]): Promise<ICommissionLevel[]> {
+    logger.info(`[PartnerService] Fetching commission levels for ownerId: ${ownerId}`);
+    return await CommissionLevel.find(buildOwnerQuery(ownerId)).sort({ minTuition: 1 });
+  }
+
+  static async createCommissionLevel(
+    ownerId: string,
+    data: { name: string; minTuition: number; commissionRate: number }
+  ): Promise<ICommissionLevel> {
+    logger.info(`[PartnerService] Creating commission level for ownerId: ${ownerId}, name: ${data.name}`);
+    
+    // Check unique name per ownerId
+    const existing = await CommissionLevel.findOne({ name: data.name, ownerId });
+    if (existing) {
+      throw new Error(`Cấp bậc hoa hồng "${data.name}" đã tồn tại.`);
+    }
+
+    const level = new CommissionLevel({
+      ...data,
+      ownerId,
+    });
+    return await level.save();
+  }
+
+  static async deleteCommissionLevel(ownerId: string | string[], id: string): Promise<ICommissionLevel | null> {
+    logger.info(`[PartnerService] Deleting commission level id: ${id}`);
+    return await CommissionLevel.findOneAndDelete({ _id: id, ...buildOwnerQuery(ownerId) });
   }
 }
 
