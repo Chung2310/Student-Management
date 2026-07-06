@@ -90,6 +90,7 @@ export interface IStudent extends Document {
   examDate?: string;
   idCardFront?: string;
   idCardBack?: string;
+  partnerId?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

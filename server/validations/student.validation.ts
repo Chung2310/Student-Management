@@ -32,9 +32,7 @@ export const createStudentSchema = Joi.object({
   }),
   referral: Joi.string().allow("").optional(),
   birthday: Joi.string().allow("").optional(),
-  idCard: Joi.string().allow("").pattern(/^(?:\d{12})?$/).messages({
-    "string.pattern.base": "Số CCCD phải có đúng 12 chữ số.",
-  }).optional(),
+  idCard: Joi.string().allow("").optional(),
   rank: Joi.string().allow("").optional(),
   courseId: objectIdSchema.allow("").optional(),
   registrationDate: Joi.string().required().messages({
@@ -43,14 +41,8 @@ export const createStudentSchema = Joi.object({
   enrollmentDate: Joi.string().allow("").optional(),
   fee: Joi.string().allow("").optional(),
   address: Joi.string().allow("").optional(),
-  idCardFront: Joi.string().required().messages({
-    "any.required": "Ảnh mặt trước CCCD là bắt buộc.",
-    "string.empty": "Ảnh mặt trước CCCD không được để trống.",
-  }),
-  idCardBack: Joi.string().required().messages({
-    "any.required": "Ảnh mặt sau CCCD là bắt buộc.",
-    "string.empty": "Ảnh mặt sau CCCD không được để trống.",
-  }),
+  idCardFront: Joi.string().allow("").optional(),
+  idCardBack: Joi.string().allow("").optional(),
   idCardFrontFile: uploadedFileSchema.optional(),
   idCardBackFile: uploadedFileSchema.optional(),
   portraitFile: uploadedFileSchema.optional(),
@@ -58,6 +50,8 @@ export const createStudentSchema = Joi.object({
     Joi.array().items(Joi.string().valid("Chờ KSK", "Đã KSK", "Đã nộp HS", "Đang học", "Đang thi", "Đã đậu", "Thi lại", "Nghỉ học", "Nợ học phí")),
     Joi.string().valid("Chờ KSK", "Đã KSK", "Đã nộp HS", "Đang học", "Đang thi", "Đã đậu", "Thi lại", "Nghỉ học", "Nợ học phí")
   ).optional(),
+  centerId: Joi.string().allow("").optional(),
+  partnerId: Joi.string().allow("").optional(),
 });
 
 export const updateStudentSchema = Joi.object({
@@ -66,9 +60,7 @@ export const updateStudentSchema = Joi.object({
   email: Joi.string().email().allow("").optional(),
   referral: Joi.string().allow("").optional(),
   birthday: Joi.string().allow("").optional(),
-  idCard: Joi.string().allow("").pattern(/^(?:\d{12})?$/).messages({
-    "string.pattern.base": "Số CCCD phải có đúng 12 chữ số.",
-  }).optional(),
+  idCard: Joi.string().allow("").optional(),
   rank: Joi.string().allow("").optional(),
   courseId: objectIdSchema.allow("").optional(),
   registrationDate: Joi.string().optional(),
@@ -115,6 +107,8 @@ export const updateStudentSchema = Joi.object({
   examDate: Joi.string().allow("").optional(),
   idCardFront: Joi.string().allow("").optional(),
   idCardBack: Joi.string().allow("").optional(),
+  centerId: Joi.string().allow("").optional(),
+  partnerId: Joi.string().allow("").optional(),
 });
 
 export const publicRegisterStudentSchema = Joi.object({

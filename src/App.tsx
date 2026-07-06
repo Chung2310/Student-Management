@@ -15,8 +15,7 @@ import { Loader2, Shield } from 'lucide-react';
 import { cn, toSlug } from './lib/utils';
 
 // Helper wrapper to handle dynamic import (chunk load) failures after server updates
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function lazyWithRetry<T extends React.ComponentType<any>>(
+function lazyWithRetry<T extends React.ComponentType<never>>(
   importFn: () => Promise<{ default: T }>
 ): React.LazyExoticComponent<T> {
   return lazy(async () => {
@@ -58,6 +57,7 @@ const BatchesPage = lazyWithRetry(() => import('./pages/Batches/BatchesPage').th
 const ResourcesPage = lazyWithRetry(() => import('./pages/Resources/ResourcesPage').then(m => ({ default: m.ResourcesPage })));
 const UserManagementPage = lazyWithRetry(() => import('./pages/UserManagement/UserManagementPage').then(m => ({ default: m.UserManagementPage })));
 const SettingsPage = lazyWithRetry(() => import('./pages/Settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const PartnersPage = lazyWithRetry(() => import('./pages/Partners/PartnersPage').then(m => ({ default: m.PartnersPage })));
 
 // Lazy load modals and heavy widgets
 const AddStudentModal = lazyWithRetry(() => import('./components/Student/AddStudentModal').then(m => ({ default: m.AddStudentModal })));
@@ -71,7 +71,7 @@ const PageLoader = () => (
   </div>
 );
 
-export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'Courses' | 'Batches' | 'Resources' | 'UserManagement' | 'SettingsAdmin';
+export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'Courses' | 'Batches' | 'Resources' | 'UserManagement' | 'SettingsAdmin' | 'Partners';
 
 // Map đường dẫn của bản demo ERP (đã gỡ) về route chính thức để bookmark cũ không chết
 const LEGACY_ERP_PATH_MAP: Record<string, string> = {
@@ -128,6 +128,7 @@ export default function App() {
     if (path.startsWith('/batches')) return 'Batches';
     if (path.startsWith('/resources')) return 'Resources';
     if (path.startsWith('/user-management')) return 'UserManagement';
+    if (path.startsWith('/partners')) return 'Partners';
     if (path.startsWith('/settings')) return 'SettingsAdmin';
     if (path.startsWith('/dashboard')) return 'Dashboard';
     return 'Dashboard';
@@ -162,6 +163,7 @@ export default function App() {
     else if (view === 'Batches') path = '/batches';
     else if (view === 'Resources') path = '/resources';
     else if (view === 'UserManagement') path = '/user-management';
+    else if (view === 'Partners') path = '/partners';
     else if (view === 'SettingsAdmin') path = '/settings';
     else if (view === 'Dashboard') path = '/dashboard';
 
@@ -361,6 +363,8 @@ export default function App() {
         return <ResourcesPage />;
       case 'UserManagement':
         return <UserManagementPage />;
+      case 'Partners':
+        return <PartnersPage selectedCenter={selectedCenter} />;
       case 'SettingsAdmin':
         return <SettingsPage />;
       default:

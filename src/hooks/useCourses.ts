@@ -3,6 +3,15 @@ import { apiFetch } from '../lib/api';
 import { useAuth } from './useAuth';
 import { Course } from '../types';
 
+interface CourseApiItem extends Omit<Course, 'id'> {
+  _id: string;
+}
+
+interface CoursesResponse {
+  success: boolean;
+  courses: CourseApiItem[];
+}
+
 export function useCourses(ownerFilter?: string) {
   const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
@@ -17,16 +26,20 @@ export function useCourses(ownerFilter?: string) {
 
     try {
       const url = ownerFilter ? `/courses?ownerFilter=${encodeURIComponent(ownerFilter)}` : "/courses";
-      const res = await apiFetch(url);
-      if (res.success && res.courses) {
-        const mapped = res.courses.map((c: Omit<Course, 'id'> & { _id: string }) => ({
-          ...c,
-          id: c._id,
-        })) as Course[];
+      const res = await apiFetch<CoursesResponse>(url);
+
+      if (res.success) {
+        const mapped: Course[] = res.courses.map((course) => ({
+          ...course,
+          id: course._id,
+        }));
         setCourses(mapped);
+      } else {
+        setCourses([]);
       }
     } catch (error) {
       console.error("Error fetching courses:", error);
+      setCourses([]);
     } finally {
       setLoading(false);
     }
@@ -48,4 +61,5 @@ export function useCourses(ownerFilter?: string) {
 
   return { courses, loading, refetch: fetchCourses };
 }
+
 export type UseCoursesReturn = ReturnType<typeof useCourses>;

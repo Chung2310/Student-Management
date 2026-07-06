@@ -15,7 +15,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { ProfileTab } from './DetailTabs/ProfileTab';
 
 import { KskTab } from './DetailTabs/KskTab';
-import { ProgressTab } from './DetailTabs/ProgressTab';
+import { ProgressTab, ProgressData } from './DetailTabs/ProgressTab';
 import { ExamsTab } from './DetailTabs/ExamsTab';
 import { TuitionTab } from './DetailTabs/TuitionTab';
 import { AiAssistantTab } from './DetailTabs/AiAssistantTab';
@@ -51,12 +51,19 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
     files: student?.healthCheckFiles || []
   });
 
-  const [progressData, setProgressData] = React.useState({
-    theory: student?.progress?.theory || { completed: false, score: 0, lastDate: '' },
+  const [progressData, setProgressData] = React.useState<ProgressData>({
+    theory: {
+      completed: student?.progress?.theory?.completed ?? false,
+      score: student?.progress?.theory?.score ?? 0,
+      lastDate: student?.progress?.theory?.lastDate ?? ''
+    },
     practice: student?.progress?.practice || { hoursDone: 0, totalHours: 20 },
     cabin: student?.progress?.cabin || { hoursDone: 0, totalHours: 3 },
     dat: student?.progress?.dat || { kmDone: 0, totalKm: 810 },
-    sim: student?.progress?.sim || { completed: false, lastDate: '' }
+    sim: {
+      completed: student?.progress?.sim?.completed ?? false,
+      lastDate: student?.progress?.sim?.lastDate ?? ''
+    }
   });
 
   const [examData, setExamData] = React.useState(student?.exams || []);
@@ -124,11 +131,18 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
         }
         if (!isEditingProgress && !isUpdatingProgress) {
           setProgressData({
-            theory: student.progress?.theory || { completed: false, score: 0, lastDate: '' },
+            theory: {
+              completed: student.progress?.theory?.completed ?? false,
+              score: student.progress?.theory?.score ?? 0,
+              lastDate: student.progress?.theory?.lastDate ?? ''
+            },
             practice: student.progress?.practice || { hoursDone: 0, totalHours: 20 },
             cabin: student.progress?.cabin || { hoursDone: 0, totalHours: 3 },
             dat: student.progress?.dat || { kmDone: 0, totalKm: 810 },
-            sim: student.progress?.sim || { completed: false, lastDate: '' }
+            sim: {
+              completed: student.progress?.sim?.completed ?? false,
+              lastDate: student.progress?.sim?.lastDate ?? ''
+            }
           });
         }
         if (!isEditingExams && !isUpdatingExams) {

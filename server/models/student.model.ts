@@ -110,6 +110,7 @@ const studentSchema = new Schema<IStudent>(
     examDate: { type: String, default: "" },
     idCardFront: { type: String, default: "" },
     idCardBack: { type: String, default: "" },
+    partnerId: { type: String, default: "", index: true },
   },
   {
     timestamps: true,

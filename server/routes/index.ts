@@ -14,6 +14,7 @@ import courseRoutes from "./course.routes";
 import resourceRoutes from "./resource.routes";
 import batchRoutes from "./batch.routes";
 import scheduleRoutes from "./schedule.routes";
+import partnerRoutes from "./partner.routes";
 import { logger } from "../config/logger";
 
 const router = Router();
@@ -31,6 +32,7 @@ router.use("/courses", courseRoutes);
 router.use("/resources", resourceRoutes);
 router.use("/batches", batchRoutes);
 router.use("/schedule", scheduleRoutes);
+router.use("/partners", partnerRoutes);
 
 import { authMiddleware, AuthRequest } from "../middlewares/auth.middleware";
 import { EmailService } from "../services/email.service";

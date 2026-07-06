@@ -116,7 +116,14 @@ export function AddExamModal({ isOpen, onClose, onSuccess, initialData }: AddExa
         });
 
         toast.success('Đã tạo đợt thi thành công!');
-        onSuccess({ ...examData, id: res.data?._id || res.data?.id });
+        onSuccess({ 
+          ...examData, 
+          status: 'Sắp diễn ra',
+          studentCount: 0,
+          passCount: 0,
+          failCount: 0,
+          id: res.data?._id || res.data?.id 
+        });
       }
 
       window.dispatchEvent(new Event('exam-mutation'));

@@ -4,7 +4,7 @@ import { Check, Loader2, Save, Sparkles, Trophy } from 'lucide-react';
 import { Student } from '../../../types';
 import { cn, toInputDate, toDisplayDate } from '../../../lib/utils';
 
-interface ProgressData {
+export interface ProgressData {
   theory: { completed: boolean; score: number; lastDate: string };
   sim: { completed: boolean; lastDate: string };
   cabin: { hoursDone: number; totalHours: number };

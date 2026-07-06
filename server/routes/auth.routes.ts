@@ -4,6 +4,7 @@ import { authMiddleware, requireRoles } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
 import { loginSchema, registerSchema, bankSettingsSchema, smtpSettingsSchema, smsSettingsSchema, createManagedUserSchema } from "../validations/auth.validation";
 
+
 const router = Router();
 
 router.post("/register", validate(registerSchema), AuthController.register);
@@ -12,6 +13,7 @@ router.post("/refresh-token", AuthController.refreshToken);
 router.post("/logout", AuthController.logout);
 router.get("/teacher/:id", AuthController.getTeacherPublicInfo);
 router.get("/me", authMiddleware, AuthController.getMe);
+router.get("/users/:id/bank-settings", authMiddleware, AuthController.getUserBankSettings);
 router.patch("/bank-settings", authMiddleware, validate(bankSettingsSchema), AuthController.updateBankSettings);
 router.patch("/business-settings", authMiddleware, AuthController.updateBusinessSettings);
 router.patch("/smtp-settings", authMiddleware, validate(smtpSettingsSchema), AuthController.updateSmtpSettings);

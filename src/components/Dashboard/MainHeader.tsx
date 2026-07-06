@@ -29,6 +29,7 @@ export function MainHeader({ currentView, onMenuClick, selectedCenter = 'all', o
       Resources: 'Thiết bị',
       UserManagement: user?.role === 'superadmin' ? 'Quản lý người dùng' : 'Quản lý giảng viên',
       SettingsAdmin: 'Cài đặt & Quản trị',
+      Partners: 'Đối tác & CTV',
     };
     return names[view];
   };

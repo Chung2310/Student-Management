@@ -72,6 +72,15 @@ async function ensureUniqueFieldsInScope(
   data: StudentUpdateData,
   excludeId?: string
 ) {
+  const userId = Array.isArray(ownerScope) ? ownerScope[0] : ownerScope;
+  let isDriving = true;
+  if (userId) {
+    const ownerUser = await User.findById(userId).select("businessType");
+    if (ownerUser && ownerUser.businessType !== "driving") {
+      isDriving = false;
+    }
+  }
+
   const checks: Array<{ field: "email" | "phone" | "idCard"; value: string; message: string }> = [
     {
       field: "email",
@@ -91,6 +100,9 @@ async function ensureUniqueFieldsInScope(
   ];
 
   for (const check of checks) {
+    if (check.field === "idCard" && !isDriving) {
+      continue;
+    }
     if (!check.value) {
       continue;
     }
@@ -374,7 +386,7 @@ export class StudentService {
         continue;
       }
 
-      if (idCard && existingIdCards.has(idCard)) {
+      if (businessType === "driving" && idCard && existingIdCards.has(idCard)) {
         errors.push({ row: rowNum, name: fullName, phone, reason: "CCCD/CMND đã tồn tại trong trung tâm hiện tại." });
         skippedCount++;
         continue;
