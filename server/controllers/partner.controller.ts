@@ -81,4 +81,60 @@ export class PartnerController {
       next(error);
     }
   }
+
+  static async getCommissionLevels(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      let ownerId: string | string[];
+
+      if (req.user!.role === "superadmin") {
+        // For superadmin, allow filtering by specific center via ownerFilter query param
+        const ownerFilter = req.query.ownerFilter;
+        if (ownerFilter && typeof ownerFilter === "string") {
+          ownerId = ownerFilter;
+        } else {
+          ownerId = "ALL";
+        }
+      } else {
+        // For admin/staff, use their own ownerId (uid) since commission levels are scoped to owner uid
+        ownerId = req.user!.uid;
+      }
+
+      const levels = await PartnerService.getCommissionLevels(ownerId);
+      res.json({ success: true, data: levels });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  static async createCommissionLevel(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      let ownerId = req.user!.uid;
+
+      if (req.user!.role === "superadmin") {
+        const centerId = req.body.centerId || req.query.centerId;
+        if (!centerId || typeof centerId !== "string") {
+          return res.status(400).json({ success: false, error: "Vui lòng chọn trung tâm quản lý." });
+        }
+        ownerId = centerId;
+      }
+
+      const level = await PartnerService.createCommissionLevel(ownerId, req.body);
+      res.status(201).json({ success: true, data: level });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  static async deleteCommissionLevel(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const ownerId = await getAllowedOwnerIds(req.user!);
+      const level = await PartnerService.deleteCommissionLevel(ownerId, req.params.id);
+      if (!level) {
+        return res.status(404).json({ success: false, error: "Không tìm thấy cấp bậc hoa hồng để xóa." });
+      }
+      res.json({ success: true, data: level });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
 }

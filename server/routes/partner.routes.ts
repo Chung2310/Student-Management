@@ -2,12 +2,16 @@ import { Router } from "express";
 import { PartnerController } from "../controllers/partner.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
-import { createPartnerSchema, updatePartnerSchema, createPayoutSchema } from "../validations/partner.validation";
+import { createPartnerSchema, updatePartnerSchema, createPayoutSchema, createCommissionLevelSchema } from "../validations/partner.validation";
 import { idParamSchema } from "../validations/student.validation";
 
 const router = Router();
 
 router.use(authMiddleware);
+
+router.get("/commission-levels", PartnerController.getCommissionLevels);
+router.post("/commission-levels", validate(createCommissionLevelSchema), PartnerController.createCommissionLevel);
+router.delete("/commission-levels/:id", validate(idParamSchema, "params"), PartnerController.deleteCommissionLevel);
 
 router.post("/", validate(createPartnerSchema), PartnerController.create);
 router.get("/", PartnerController.getList);
