@@ -187,3 +187,23 @@ export async function compressImage(
   });
 }
 
+/**
+ * Maps lowercase bank IDs to official VietQR display names.
+ */
+export function getBankDisplayName(bankId: string | undefined): string {
+  if (!bankId) return '';
+  const map: Record<string, string> = {
+    mbbank: 'MBBank (MB)',
+    vietcombank: 'Vietcombank (VCB)',
+    techcombank: 'Techcombank (TCB)',
+    vietinbank: 'Vietinbank (CTG)',
+    bidv: 'BIDV',
+    agribank: 'Agribank (VBA)',
+    acb: 'ACB',
+    sacombank: 'Sacombank (STB)',
+    tpbank: 'TPBank (TPB)',
+    vpbank: 'VPBank (VPB)'
+  };
+  return map[bankId.toLowerCase()] || bankId;
+}
+

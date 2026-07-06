@@ -3,6 +3,7 @@ import { CreditCard, History, Trash2, Pencil, Zap, AlertCircle, QrCode, Copy, Ch
 import { Student } from '../../../types';
 import { cn, formatVND, parseVND, getVietQRBankCode } from '../../../lib/utils';
 import { useAuth } from '../../../hooks/useAuth';
+import { apiFetch } from '../../../lib/api';
 
 type PaymentHistoryItem = NonNullable<Student['paymentHistory']>[number];
 
@@ -26,17 +27,48 @@ export function TuitionTab({
   const [paymentAmount, setPaymentAmount] = useState<number>(remaining > 0 ? remaining : 0);
   const [paymentAmountInput, setPaymentAmountInput] = useState<string>(formatVND(remaining > 0 ? remaining : 0));
   const [copied, setCopied] = useState(false);
-  const [localQrConfig] = useState(() => {
+  const [vietqrConfig, setVietqrConfig] = useState(() => {
     const saved = localStorage.getItem('vietqrConfig');
+    let localConfig: {
+      bankId?: string;
+      accountNo?: string;
+      accountName?: string;
+      enabled?: boolean;
+    } | null = null;
     if (saved) {
       try {
-        return JSON.parse(saved);
+        localConfig = JSON.parse(saved);
       } catch (e) {
         console.error("Error loading vietqrConfig in TuitionTab", e);
       }
     }
-    return null;
+    const bankId = localConfig?.bankId || user?.bankId || '';
+    const accountNo = localConfig?.accountNo || user?.bankAccountNo || '';
+    const accountName = localConfig?.accountName || user?.bankAccountName || user?.displayName || '';
+    const enabled = user?.bankQrEnabled !== false;
+    return { enabled, bankId, accountNo, accountName };
   });
+
+  React.useEffect(() => {
+    if (student && student.ownerId) {
+      const fetchCenterBankSettings = async () => {
+        try {
+          const res = await apiFetch(`/auth/users/${student.ownerId}/bank-settings`);
+          if (res.success && res.data) {
+            setVietqrConfig({
+              enabled: res.data.bankQrEnabled !== false,
+              bankId: res.data.bankId || '',
+              accountNo: res.data.bankAccountNo || '',
+              accountName: res.data.bankAccountName || ''
+            });
+          }
+        } catch (error) {
+          console.error("Failed to fetch center bank settings:", error);
+        }
+      };
+      fetchCenterBankSettings();
+    }
+  }, [student]);
 
   // Adjust state when remaining changes
   const [prevRemaining, setPrevRemaining] = useState(remaining);
@@ -84,11 +116,10 @@ export function TuitionTab({
     }
   };
 
-  const bankId = localQrConfig?.bankId || user?.bankId || '';
-  const accountNo = localQrConfig?.accountNo || user?.bankAccountNo || '';
-  const accountName = localQrConfig?.accountName || user?.bankAccountName || user?.displayName || '';
-  // "enabled" luôn lấy từ backend (bankQrEnabled) để không bị kẹt theo giá trị cũ trong localStorage
-  const enabled = user?.bankQrEnabled !== false;
+  const bankId = vietqrConfig.bankId;
+  const accountNo = vietqrConfig.accountNo;
+  const accountName = vietqrConfig.accountName;
+  const enabled = vietqrConfig.enabled;
 
   const hasValidConfig = enabled && !!accountNo && !!bankId;
   const qrCodeUrl = hasValidConfig 

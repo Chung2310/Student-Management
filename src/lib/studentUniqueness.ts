@@ -23,9 +23,15 @@ function normalizeValue(field: UniqueField, value?: string) {
 export function findDuplicateStudentField(
   students: Student[],
   values: Partial<Record<UniqueField, string>>,
-  excludeStudentId?: string
+  excludeStudentId?: string,
+  businessType: string = 'driving'
 ) {
-  for (const field of ['email', 'phone', 'idCard'] as UniqueField[]) {
+  const fieldsToCheck: UniqueField[] = ['email', 'phone'];
+  if (businessType === 'driving') {
+    fieldsToCheck.push('idCard');
+  }
+
+  for (const field of fieldsToCheck) {
     const normalizedInput = normalizeValue(field, values[field]);
     if (!normalizedInput) continue;
 
