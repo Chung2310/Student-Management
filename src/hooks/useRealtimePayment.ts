@@ -17,8 +17,7 @@ export function useRealtimePayment() {
 
     eventSource.addEventListener("connected", (e: MessageEvent) => {
       try {
-        const data = JSON.parse(e.data);
-        console.log("[SSE] Connected:", data.message);
+        JSON.parse(e.data);
       } catch (err) {
         console.error("[SSE] Error parsing connection event:", err);
       }
@@ -27,7 +26,6 @@ export function useRealtimePayment() {
     eventSource.addEventListener("payment-received", (e: MessageEvent) => {
       try {
         const data = JSON.parse(e.data);
-        console.log("[SSE] Payment received:", data);
 
         // Kích hoạt các sự kiện mutation để reload danh sách học viên & học phí
         window.dispatchEvent(new Event("student-mutation"));
@@ -46,7 +44,6 @@ export function useRealtimePayment() {
     };
 
     return () => {
-      console.log("[SSE] Component unmounted or user changed. Closing SSE.");
       eventSource.close();
     };
   }, [user, toast]);

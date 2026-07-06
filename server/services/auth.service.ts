@@ -57,7 +57,6 @@ export class AuthService {
   }
 
   static async register(data: RegisterData): Promise<IUser> {
-    logger.info(`[Auth] Registration attempt for email: ${data.email}`);
     const existingUser = await User.findOne({ email: data.email });
     if (existingUser) {
       logger.warn(`[Auth] Registration failed - Email already exists: ${data.email}`);
@@ -72,13 +71,10 @@ export class AuthService {
       createdBy: "",
     });
     newUser.centerId = newUser._id.toString();
-    const savedUser = await newUser.save();
-    logger.info(`[Auth] User registered successfully: email=${savedUser.email}, uid=${savedUser._id}`);
-    return savedUser;
+    return await newUser.save();
   }
 
   static async login(data: LoginData) {
-    logger.info(`[Auth] Login attempt for email: ${data.email}`);
     const user = await User.findOne({ email: data.email });
     if (!user) {
       logger.warn(`[Auth] Login failed - User not found: ${data.email}`);
@@ -106,8 +102,6 @@ export class AuthService {
       { expiresIn: "7d" }
     );
 
-    logger.info(`[Auth] User logged in successfully: email=${user.email}, uid=${user._id}`);
-
     return {
       user: this.serializeUser(user),
       accessToken,
@@ -123,7 +117,6 @@ export class AuthService {
         role: "superadmin" | "admin" | "user";
         centerId: string;
       };
-      logger.info(`[Auth] Verifying refresh token for email: ${decoded.email}`);
       const user = await User.findById(decoded.uid);
       if (!user) {
         logger.warn(`[Auth] Refresh token verification failed - User not found for uid: ${decoded.uid}`);
@@ -139,8 +132,6 @@ export class AuthService {
         { expiresIn: "15m" }
       );
 
-      logger.info(`[Auth] Refresh token verified successfully for email: ${user.email}`);
-
       return {
         accessToken,
         user: this.serializeUser(user)
@@ -152,7 +143,6 @@ export class AuthService {
   }
 
   static async updateBankSettings(uid: string, data: { bankAccountNo?: string; bankId?: string; bankAccountName?: string; bankQrEnabled?: boolean }): Promise<IUser | null> {
-    logger.info(`[Auth] Updating bank settings for uid: ${uid}`);
     return await User.findByIdAndUpdate(
       uid,
       {
@@ -168,7 +158,6 @@ export class AuthService {
   }
 
   static async updateBusinessSettings(uid: string, data: { businessType: "driving" | "language" | "general" }): Promise<IUser | null> {
-    logger.info(`[Auth] Updating business settings for uid: ${uid} to ${data.businessType}`);
     return await User.findByIdAndUpdate(
       uid,
       {
@@ -181,7 +170,6 @@ export class AuthService {
   }
 
   static async updateSmtpSettings(uid: string, data: Partial<IUser>): Promise<IUser | null> {
-    logger.info(`[Auth] Updating SMTP settings for uid: ${uid}`);
     return await User.findByIdAndUpdate(
       uid,
       {
@@ -387,7 +375,6 @@ export class AuthService {
   }
 
   static async updateSmsSettings(uid: string, data: SmsSettingsPayload) {
-    logger.info(`[Auth] Updating SMS settings for uid: ${uid}`);
     return await SmsSettingsService.upsertByOwnerId(uid, data);
   }
 

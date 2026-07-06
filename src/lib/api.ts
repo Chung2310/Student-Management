@@ -1,5 +1,7 @@
 let accessToken: string | null = localStorage.getItem("accessToken");
 
+export const AUTH_REFRESHED_EVENT = "auth:refreshed";
+
 export function setAccessToken(token: string | null) {
   accessToken = token;
   if (token) {
@@ -25,6 +27,7 @@ interface RefreshTokenResponse {
   success: boolean;
   data?: {
     accessToken?: string;
+    user?: unknown;
   };
 }
 
@@ -61,6 +64,9 @@ export async function apiFetch<T = any>(endpoint: string, options: FetchOptions 
         const refreshData = await refreshRes.json() as RefreshTokenResponse;
         if (refreshData.success && refreshData.data?.accessToken) {
           setAccessToken(refreshData.data.accessToken);
+          if (typeof window !== "undefined" && refreshData.data.user) {
+            window.dispatchEvent(new CustomEvent(AUTH_REFRESHED_EVENT, { detail: refreshData.data.user }));
+          }
 
           headers.set("Authorization", `Bearer ${accessToken}`);
           const retryRes = await fetch(url.toString(), { ...options, headers });

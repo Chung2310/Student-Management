@@ -29,8 +29,6 @@ interface PaymentHistoryEntry {
 
 export class PaymentService {
   static async createPayment(ownerId: string | string[], data: PaymentCreateData): Promise<IPayment> {
-    logger.info(`[Payment] Creating payment: studentId=${data.studentId}, ownerId=${ownerId}, amount=${data.amount}`);
-    
     const studentQuery: Record<string, unknown> = { _id: data.studentId };
     if (ownerId !== "ALL") {
       studentQuery.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
@@ -58,7 +56,6 @@ export class PaymentService {
       ownerId: student.ownerId,
     });
     const savedPayment = await payment.save();
-    logger.info(`[Payment] Giao dịch thanh toán đã tạo: id=${savedPayment._id}, studentId=${savedPayment.studentId}`);
 
     // Update student paidAmount and append to paymentHistory array
     student.paidAmount = (student.paidAmount || 0) + payAmount;
@@ -88,7 +85,6 @@ export class PaymentService {
         exactMatch.status = 'Đã thu';
         exactMatch.amountDue = 0;
         exactMatch.paidAt = new Date().toISOString();
-        logger.info(`[Payment] Khớp chính xác đợt ${exactMatch.installmentNo} với số tiền ${payAmount}`);
       } else {
         // Chiến lược 2: Phân bổ tuần tự (FIFO)
         const unpaidInstallments = student.installmentStatus
@@ -112,13 +108,11 @@ export class PaymentService {
     }
 
     await student.save();
-    logger.info(`[Payment] Cập nhật thông tin học phí thành công cho học viên: id=${student._id}, đã đóng=${student.paidAmount}`);
 
     return savedPayment;
   }
 
   static async getPayments(ownerId: string | string[], filters: PaymentFilters) {
-    logger.info(`[Payment] Fetching payments for ownerId=${ownerId} with filters: ${JSON.stringify(filters)}`);
     const page = filters.page ? parseInt(String(filters.page)) : 1;
     const limit = filters.limit ? parseInt(String(filters.limit)) : 1000;
     const skip = (page - 1) * limit;
@@ -135,7 +129,6 @@ export class PaymentService {
       .skip(skip)
       .limit(limit);
 
-    logger.info(`[Payment] Fetched ${payments.length} payments (total=${total}) for ownerId=${ownerId}`);
     return {
       payments,
       total,
@@ -146,7 +139,6 @@ export class PaymentService {
   }
 
   static async deletePayment(ownerId: string | string[], id: string): Promise<IPayment | null> {
-    logger.info(`[Payment] Deleting payment: id=${id}, ownerId=${ownerId}`);
     const paymentQuery: Record<string, unknown> = { _id: id };
     if (ownerId !== "ALL") {
       paymentQuery.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
@@ -170,11 +162,9 @@ export class PaymentService {
         );
       }
       await student.save();
-      logger.info(`[Payment] Cập nhật hoàn tiền học phí thành công cho học viên: id=${student._id}`);
     }
 
     const deleted = await Payment.findOneAndDelete(paymentQuery);
-    logger.info(`[Payment] Giao dịch thanh toán đã xóa thành công: id=${id}`);
     return deleted;
   }
 }

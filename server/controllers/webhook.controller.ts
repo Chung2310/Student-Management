@@ -5,8 +5,6 @@ import { logger } from "../config/logger";
 export class WebhookController {
   static async handlePaymentWebhook(req: Request, res: Response, _next: NextFunction) {
     try {
-      logger.info("[WebhookController] Received payment webhook request.");
-
       // 1. Xác thực WEBHOOK_SECRET
       const authHeader = req.headers.authorization;
       const secret =
@@ -27,7 +25,7 @@ export class WebhookController {
       }
 
       if (secret !== expectedSecret) {
-        logger.warn(`[WebhookController] Unauthorized attempt. Received secret: "${secret}"`);
+        logger.warn("[WebhookController] Unauthorized webhook attempt.");
         return res.status(401).json({
           success: false,
           error: "Xác thực webhook thất bại. Token bí mật không hợp lệ.",
@@ -39,13 +37,11 @@ export class WebhookController {
 
       // 2. Kiểm tra cấu trúc payload: Casso (chứa array data) hay SePay (chứa flat object)
       if (payload && Array.isArray(payload.data)) {
-        logger.info(`[WebhookController] Casso format detected. Processing ${payload.data.length} items.`);
         for (const transaction of payload.data) {
           const result = await WebhookService.processIncomingTransaction(transaction);
           results.push(result);
         }
       } else {
-        logger.info("[WebhookController] SePay or flat format detected. Processing single item.");
         const result = await WebhookService.processIncomingTransaction(payload);
         results.push(result);
       }
