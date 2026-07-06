@@ -34,13 +34,13 @@ export function ExamsTab({
           {isEditingExams && (
             <button 
               onClick={() => {
-                const newExam = {
+                const newExam: StudentExam = {
                   id: `e${Date.now()}`,
                   name: 'Kỳ thi mới',
                   date: new Date().toLocaleDateString('vi-VN'),
                   type: 'Sát hạch',
                   status: 'Sắp thi',
-                  result: { theory: 0, practice: 0, simulation: 0, overall: 'Chờ kết quả' }
+                  result: { theory: 0, practice: 0, simulation: 0, overall: 'Chưa có' }
                 };
                 setExamData(prev => [...prev, newExam]);
               }}
@@ -164,7 +164,7 @@ export function ExamsTab({
                         value={exam.type}
                         onChange={(e) => {
                           const newExams = [...examData];
-                          newExams[idx].type = e.target.value;
+                          newExams[idx].type = e.target.value as 'Tốt nghiệp' | 'Sát hạch';
                           setExamData(newExams);
                         }}
                       >
@@ -267,7 +267,9 @@ export function ExamsTab({
                           value={exam.result?.overall}
                           onChange={(e) => {
                             const newExams = [...examData];
-                            newExams[idx].result.overall = e.target.value;
+                            if (newExams[idx].result) {
+                              newExams[idx].result.overall = e.target.value as 'Đậu' | 'Trượt' | 'Chưa có' | 'Sắp thi' | 'Vắng thi';
+                            }
                             setExamData(newExams);
                           }}
                         >

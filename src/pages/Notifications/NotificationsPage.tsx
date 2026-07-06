@@ -460,16 +460,16 @@ export function NotificationsPage() {
   const getTargetStudents = () => {
     switch (recipientFilter) {
       case 'Tất cả học viên đang học':
-        return students.filter(s => s.status === 'Đang học');
+        return students.filter(s => s.status.includes('Đang học'));
       case 'Học viên sắp thi':
-        return students.filter(s => s.status === 'Đang thi' || s.exams?.some(e => e.status === 'Sắp thi'));
+        return students.filter(s => s.status.includes('Đang thi') || s.exams?.some(e => e.status === 'Sắp thi'));
       case 'Học viên còn nợ học phí':
         return students.filter(s => {
           const totalFee = parseInt(parseVND(s.fee) || '0');
           return (s.paidAmount || 0) < totalFee;
         });
       case 'Học viên cần thi lại':
-        return students.filter(s => s.status === 'Thi lại');
+        return students.filter(s => s.status.includes('Thi lại'));
       default:
         return [];
     }
@@ -483,7 +483,7 @@ export function NotificationsPage() {
 
   const replaceVariables = (str: string, student: Student, installmentAmount?: number) => {
     const examDate = student.exams?.find(e => e.status === 'Sắp thi')?.date || 
-                    ((Array.isArray(student.status) ? student.status.includes('Đang thi') : student.status === 'Đang thi') ? student.examDate : '') || 
+                    (student.status.includes('Đang thi') ? student.examDate : '') || 
                     'Chưa có lịch';
     const totalFee = parseInt(parseVND(student.fee) || '0');
     const debtAmount = totalFee - (student.paidAmount || 0);
@@ -797,10 +797,10 @@ export function NotificationsPage() {
   };
 
   const recipientCounts = {
-    'Tất cả học viên đang học': students.filter(s => s.status === 'Đang học').length,
-    'Học viên sắp thi': students.filter(s => s.status === 'Đang thi' || s.exams?.some(e => e.status === 'Sắp thi')).length,
+    'Tất cả học viên đang học': students.filter(s => s.status.includes('Đang học')).length,
+    'Học viên sắp thi': students.filter(s => s.status.includes('Đang thi') || s.exams?.some(e => e.status === 'Sắp thi')).length,
     'Học viên còn nợ học phí': students.filter(s => (s.paidAmount || 0) < parseInt(parseVND(s.fee) || '0')).length,
-    'Học viên cần thi lại': students.filter(s => s.status === 'Thi lại').length,
+    'Học viên cần thi lại': students.filter(s => s.status.includes('Thi lại')).length,
   };
 
   const currentRecipientCount = recipientCounts[recipientFilter as keyof typeof recipientCounts] || 0;

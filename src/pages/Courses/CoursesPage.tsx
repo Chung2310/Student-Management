@@ -1,6 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Calendar, DollarSign, Users, Layers, Play, BookOpen, Trash2, Pause, Plus, Tag, List, LayoutGrid
+  BookOpen,
+  Calendar,
+  DollarSign,
+  Layers,
+  LayoutGrid,
+  List,
+  Pause,
+  Play,
+  Plus,
+  Tag,
+  Trash2,
+  Users,
 } from 'lucide-react';
 import { cn, formatVND } from '../../lib/utils';
 import { apiFetch } from '../../lib/api';
@@ -8,24 +19,112 @@ import { useToast } from '../../hooks/useToast';
 import { useCourses } from '../../hooks/useCourses';
 import { useCourseCategories } from '../../hooks/useCourseCategories';
 import { useAuth } from '../../hooks/useAuth';
-import { Course, CourseCategory } from '../../types';
+import { Course } from '../../types';
 import {
-  ErpPageHeader, ErpPrimaryButton, ErpSearchBar, ErpFilterTab, ErpFilterRail,
-  ErpModal, ErpField, ErpInput, ErpSelect, ErpSubmitButton,
-  ErpEmptyState, ErpLoadingState, ErpCard, ErpConfirmModal, ErpTableHead
+  ErpCard,
+  ErpConfirmModal,
+  ErpEmptyState,
+  ErpField,
+  ErpFilterRail,
+  ErpFilterTab,
+  ErpInput,
+  ErpLoadingState,
+  ErpModal,
+  ErpPageHeader,
+  ErpPrimaryButton,
+  ErpSearchBar,
+  ErpSelect,
+  ErpSubmitButton,
+  ErpTableHead,
 } from '../../components/Erp/ErpUI';
 import { Pagination } from '../../components/ui/Pagination';
+
+type CourseViewMode = 'list' | 'grid';
+
+interface DeleteConfirmState {
+  isOpen: boolean;
+  id: string;
+  name: string;
+}
+
+interface NewCourseFormState {
+  code: string;
+  title: string;
+  category: string;
+  fee: string;
+  duration: string;
+  maxLearners: number | '';
+}
+
+interface MutationResponse {
+  success: boolean;
+}
+
+interface CreateCoursePayload {
+  code: string;
+  title: string;
+  category: string;
+  fee: string;
+  duration: string;
+  maxLearners: number;
+}
+
+const ACTIVE_COURSE_STATUS: Course['status'] = 'Hoạt động';
+const PAUSED_COURSE_STATUS: Course['status'] = 'Tạm dừng';
+
+const DEFAULT_DELETE_CONFIRM: DeleteConfirmState = {
+  isOpen: false,
+  id: '',
+  name: '',
+};
+
+const DEFAULT_NEW_COURSE: NewCourseFormState = {
+  code: '',
+  title: '',
+  category: '',
+  fee: '',
+  duration: '',
+  maxLearners: 20,
+};
+
+const CATEGORY_COLORS = [
+  'bg-indigo-500/10 text-indigo-400 border border-indigo-500/15',
+  'bg-violet-500/10 text-violet-400 border border-violet-500/15',
+  'bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/15',
+  'bg-pink-500/10 text-pink-400 border border-pink-500/15',
+  'bg-amber-500/10 text-amber-400 border border-amber-500/15',
+  'bg-cyan-500/10 text-cyan-400 border border-cyan-500/15',
+] as const;
+
+function getStoredViewMode(): CourseViewMode {
+  const storedMode = localStorage.getItem('erp_view_mode_courses');
+  return storedMode === 'list' || storedMode === 'grid' ? storedMode : 'grid';
+}
+
+function getCategoryColor(category: string): string {
+  if (category === 'Lái xe') return 'bg-brand-primary/10 text-brand-primary border border-brand-primary/15';
+  if (category === 'Ngoại ngữ') return 'bg-sky-500/10 text-sky-400 border border-sky-500/15';
+  if (category === 'Kỹ năng') return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15';
+  if (category === 'Khác') return 'bg-slate-500/10 text-slate-400 border border-slate-500/15';
+
+  let hash = 0;
+  for (let i = 0; i < category.length; i++) {
+    hash = category.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  return CATEGORY_COLORS[Math.abs(hash) % CATEGORY_COLORS.length];
+}
 
 export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
   const darkMode = false;
   const { user } = useAuth();
   const businessType = user?.businessType || 'driving';
   const usesCourseFeePolicy = businessType !== 'driving';
-  const courseFeeLabel = usesCourseFeePolicy ? 'Học phí niêm yết' : 'Học phí';
+  const courseFeeLabel = usesCourseFeePolicy ? 'Học phí niêm yết' : 'Học phí khóa học';
   const courseCodePlaceholder = businessType === 'driving' ? 'Ví dụ: B2-CO-BAN' : 'Ví dụ: ENG-TOEIC';
   const courseTitlePlaceholder = businessType === 'driving'
-    ? 'Ví dụ: Khoá học lái xe B2 cơ bản'
-    : 'Ví dụ: Luyện thi TOEIC 650+ Cam Kết chuẩn đầu Ra';
+    ? 'Ví dụ: Khóa học lái xe B2 cơ bản'
+    : 'Ví dụ: Luyện thi TOEIC 650+ cam kết chuẩn đầu ra';
   const courseDurationPlaceholder = businessType === 'driving' ? 'Ví dụ: 3 tháng / 12 buổi' : 'Ví dụ: 3 tháng / 8 tuần';
   const drivingFeeHint = 'Học phí lấy trực tiếp từ hồ sơ học viên.';
   const { toast } = useToast();
@@ -40,42 +139,40 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isCategorySubmitting, setIsCategorySubmitting] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
-    return (localStorage.getItem('erp_view_mode_courses') as 'list' | 'grid') || 'grid';
-  });
+  const [viewMode, setViewMode] = useState<CourseViewMode>(getStoredViewMode);
   const [currentPage, setCurrentPage] = useState(1);
+  const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>(DEFAULT_DELETE_CONFIRM);
+  const [newCourse, setNewCourse] = useState<NewCourseFormState>(DEFAULT_NEW_COURSE);
+
   const pageSize = viewMode === 'grid' ? 6 : 8;
-  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id: string; name: string }>({
-    isOpen: false,
-    id: '',
-    name: '',
-  });
 
-  const [newCourse, setNewCourse] = useState<{
-    code: string;
-    title: string;
-    category: CourseCategory | '';
-    fee: string;
-    duration: string;
-    maxLearners: number | '';
-  }>({
-    code: '',
-    title: '',
-    category: '',
-    fee: '',
-    duration: '',
-    maxLearners: 20,
-  });
-
-  // Dong bo hoa phan loai dau tien lam mac dinh khi danh sach phan loai duoc tai
   useEffect(() => {
     if (categories.length > 0 && !newCourse.category) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setNewCourse(prev => ({ ...prev, category: categories[0].name }));
+      setNewCourse((prev) => ({ ...prev, category: categories[0].name }));
     }
   }, [categories, newCourse.category]);
 
-  const handleAddCourse = async (e: React.FormEvent) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [searchTerm, categoryFilter, viewMode]);
+
+  const updateViewMode = (nextViewMode: CourseViewMode) => {
+    setViewMode(nextViewMode);
+    localStorage.setItem('erp_view_mode_courses', nextViewMode);
+  };
+
+  const resetNewCourse = () => {
+    setNewCourse({
+      ...DEFAULT_NEW_COURSE,
+      category: categories[0]?.name || '',
+    });
+  };
+
+  const handleAddCourse = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newCourse.code || !newCourse.title || !newCourse.duration || !newCourse.category || (usesCourseFeePolicy && !newCourse.fee)) {
       toast.error('Vui lòng nhập đầy đủ thông tin khóa học.');
@@ -84,7 +181,7 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
 
     if (usesCourseFeePolicy) {
       const numericFee = newCourse.fee.replace(/\D/g, '');
-      if (!numericFee || isNaN(Number(numericFee))) {
+      if (!numericFee || Number.isNaN(Number(numericFee))) {
         toast.error('Học phí phải là một số hợp lệ.');
         return;
       }
@@ -92,29 +189,24 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
 
     setIsSubmitting(true);
     try {
-      const formattedFee = usesCourseFeePolicy
-        ? `${formatVND(newCourse.fee)}đ`
-        : '0đ';
-      await apiFetch('/courses', {
+      const payload: CreateCoursePayload = {
+        code: newCourse.code.toUpperCase(),
+        title: newCourse.title,
+        category: newCourse.category,
+        fee: usesCourseFeePolicy ? `${formatVND(newCourse.fee)}d` : '0d',
+        duration: newCourse.duration,
+        maxLearners: newCourse.maxLearners === '' ? 20 : newCourse.maxLearners,
+      };
+
+      await apiFetch<MutationResponse>('/courses', {
         method: 'POST',
-        body: JSON.stringify({
-          ...newCourse,
-          code: newCourse.code.toUpperCase(),
-          fee: formattedFee,
-          maxLearners: newCourse.maxLearners === '' ? 20 : newCourse.maxLearners,
-        }),
+        body: JSON.stringify(payload),
       });
+
       window.dispatchEvent(new Event('course-mutation'));
       setShowAddModal(false);
-      setNewCourse({
-        code: '',
-        title: '',
-        category: categories[0]?.name || '',
-        fee: '',
-        duration: '',
-        maxLearners: 20
-      });
-      toast.success(`Đã thêm mới khóa học ${newCourse.code.toUpperCase()} thành công!`);
+      resetNewCourse();
+      toast.success(`Đã thêm mới khóa học ${payload.code} thành công!`);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Có lỗi xảy ra khi tạo khóa học.';
       toast.error(msg);
@@ -124,9 +216,9 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
   };
 
   const handleToggleStatus = async (course: Course) => {
-    const nextStatus: Course['status'] = course.status === 'Hoạt động' ? 'Tạm dừng' : 'Hoạt động';
+    const nextStatus: Course['status'] = course.status === ACTIVE_COURSE_STATUS ? PAUSED_COURSE_STATUS : ACTIVE_COURSE_STATUS;
     try {
-      await apiFetch(`/courses/${course.id}`, {
+      await apiFetch<MutationResponse>(`/courses/${course.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ status: nextStatus }),
       });
@@ -140,7 +232,7 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
 
   const handleDelete = async (course: Course) => {
     try {
-      await apiFetch(`/courses/${course.id}`, { method: 'DELETE' });
+      await apiFetch<MutationResponse>(`/courses/${course.id}`, { method: 'DELETE' });
       window.dispatchEvent(new Event('course-mutation'));
       toast.success(`Đã xóa khóa học ${course.code}.`);
     } catch (error: unknown) {
@@ -149,13 +241,13 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
     }
   };
 
-  const handleAddCategory = async (e: React.FormEvent) => {
+  const handleAddCategory = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
 
     setIsCategorySubmitting(true);
     try {
-      await apiFetch('/courses/categories', {
+      await apiFetch<MutationResponse>('/courses/categories', {
         method: 'POST',
         body: JSON.stringify({ name: newCategoryName }),
       });
@@ -163,7 +255,7 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
       setNewCategoryName('');
       toast.success('Đã thêm phân loại mới thành công!');
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Lỗi khi tạo phân loại.';
+      const msg = error instanceof Error ? error.message : 'Có lỗi xảy ra khi tạo phân loại.';
       toast.error(msg);
     } finally {
       setIsCategorySubmitting(false);
@@ -173,7 +265,7 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
   const handleDeleteCategory = async () => {
     if (!deleteConfirm.id) return;
     try {
-      await apiFetch(`/courses/categories/${deleteConfirm.id}`, {
+      await apiFetch<MutationResponse>(`/courses/categories/${deleteConfirm.id}`, {
         method: 'DELETE',
       });
       window.dispatchEvent(new Event('course-category-mutation'));
@@ -182,61 +274,34 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
       const msg = error instanceof Error ? error.message : 'Có lỗi xảy ra khi xóa.';
       toast.error(msg);
     } finally {
-      setDeleteConfirm({ isOpen: false, id: '', name: '' });
+      setDeleteConfirm(DEFAULT_DELETE_CONFIRM);
     }
   };
 
-  const getCategoryColor = (cat: string) => {
-    if (cat === 'Lái xe') return "bg-brand-primary/10 text-brand-primary border border-brand-primary/15";
-    if (cat === 'Ngoại ngữ') return "bg-sky-500/10 text-sky-400 border border-sky-500/15";
-    if (cat === 'Kỹ năng') return "bg-emerald-500/10 text-emerald-400 border border-emerald-500/15";
-    if (cat === 'Khác') return "bg-slate-500/10 text-slate-400 border border-slate-500/15";
-
-    let hash = 0;
-    for (let i = 0; i < cat.length; i++) {
-      hash = cat.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const colors = [
-      "bg-indigo-500/10 text-indigo-400 border border-indigo-500/15",
-      "bg-violet-500/10 text-violet-400 border border-violet-500/15",
-      "bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/15",
-      "bg-pink-500/10 text-pink-400 border border-pink-500/15",
-      "bg-amber-500/10 text-amber-400 border border-amber-500/15",
-      "bg-cyan-500/10 text-cyan-400 border border-cyan-500/15",
-    ];
-    return colors[Math.abs(hash) % colors.length];
-  };
-
-  const filteredCourses = courses.filter(c => {
-    const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || c.category === categoryFilter;
+  const filteredCourses = courses.filter((course) => {
+    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.code.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = categoryFilter === 'all' || course.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
+
   const totalPages = Math.ceil(filteredCourses.length / pageSize);
   const paginatedCourses = filteredCourses.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setCurrentPage(1);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [searchTerm, categoryFilter, viewMode]);
 
   return (
     <div className="space-y-6 text-left">
       <ErpPageHeader
-        title="Danh mục Khóa học"
-        subtitle="Thiết lập chương trình đào tạo & lớp học hành chính"
+        title="Danh mục khóa học"
+        subtitle="Thiết lập chương trình đào tạo và lớp học hành chính"
         action={
           <div className="flex gap-2">
             <button
               onClick={() => setShowCategoryModal(true)}
               className={cn(
-                "px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border cursor-pointer shrink-0",
+                'px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border cursor-pointer shrink-0',
                 darkMode
-                  ? "bg-slate-800 hover:bg-slate-750 text-slate-200 border-slate-700"
-                  : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                  ? 'bg-slate-800 hover:bg-slate-750 text-slate-200 border-slate-700'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
               )}
             >
               Quản lý phân loại
@@ -248,7 +313,6 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
         }
       />
 
-      {/* Controls */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <ErpSearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Tìm theo tên hoặc mã khóa học..." />
         <div className="flex flex-wrap items-center gap-4">
@@ -263,15 +327,15 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
             ))}
           </ErpFilterRail>
 
-          <div className={cn("flex items-center border p-1 rounded-xl gap-0.5 shrink-0", darkMode ? "border-slate-800 bg-slate-900/50" : "border-slate-200 bg-slate-50")}>
+          <div className={cn('flex items-center border p-1 rounded-xl gap-0.5 shrink-0', darkMode ? 'border-slate-800 bg-slate-900/50' : 'border-slate-200 bg-slate-50')}>
             <button
               type="button"
-              onClick={() => { setViewMode('list'); localStorage.setItem('erp_view_mode_courses', 'list'); }}
+              onClick={() => updateViewMode('list')}
               className={cn(
-                "p-1.5 rounded-lg active:scale-95 transition-all cursor-pointer",
+                'p-1.5 rounded-lg active:scale-95 transition-all cursor-pointer',
                 viewMode === 'list'
-                  ? (darkMode ? "bg-slate-800 text-white" : "bg-white text-slate-850 shadow-sm")
-                  : "text-slate-400 hover:text-slate-600"
+                  ? (darkMode ? 'bg-slate-800 text-white' : 'bg-white text-slate-850 shadow-sm')
+                  : 'text-slate-400 hover:text-slate-600'
               )}
               title="Hiển thị dạng danh sách"
             >
@@ -279,12 +343,12 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
             </button>
             <button
               type="button"
-              onClick={() => { setViewMode('grid'); localStorage.setItem('erp_view_mode_courses', 'grid'); }}
+              onClick={() => updateViewMode('grid')}
               className={cn(
-                "p-1.5 rounded-lg active:scale-95 transition-all cursor-pointer",
+                'p-1.5 rounded-lg active:scale-95 transition-all cursor-pointer',
                 viewMode === 'grid'
-                  ? (darkMode ? "bg-slate-800 text-white" : "bg-white text-slate-850 shadow-sm")
-                  : "text-slate-400 hover:text-slate-600"
+                  ? (darkMode ? 'bg-slate-800 text-white' : 'bg-white text-slate-850 shadow-sm')
+                  : 'text-slate-400 hover:text-slate-600'
               )}
               title="Hiển thị dạng lưới"
             >
@@ -294,7 +358,6 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
         </div>
       </div>
 
-      {/* Grid or List Content */}
       {loading && courses.length === 0 ? (
         <ErpCard><ErpLoadingState message="Đang tải danh mục khóa học..." /></ErpCard>
       ) : filteredCourses.length === 0 ? (
@@ -308,69 +371,69 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
       ) : viewMode === 'grid' ? (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {paginatedCourses.map((c) => (
+            {paginatedCourses.map((course) => (
               <div
-                key={c.id}
+                key={course.id}
                 className={cn(
-                  "p-6 rounded-[2.5rem] border flex flex-col justify-between transition-all duration-300 group",
+                  'p-6 rounded-[2.5rem] border flex flex-col justify-between transition-all duration-300 group',
                   darkMode
-                    ? "bg-slate-900/60 border-slate-800/80 backdrop-blur-md hover:border-brand-primary/20"
-                    : "bg-white border-slate-100 hover:border-brand-primary/20 shadow-sm shadow-slate-100/50"
+                    ? 'bg-slate-900/60 border-slate-800/80 backdrop-blur-md hover:border-brand-primary/20'
+                    : 'bg-white border-slate-100 hover:border-brand-primary/20 shadow-sm shadow-slate-100/50'
                 )}
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className={cn("text-[10px] font-black uppercase tracking-widest", darkMode ? "text-slate-500" : "text-slate-400")}>{c.code}</span>
+                    <span className={cn('text-[10px] font-black uppercase tracking-widest', darkMode ? 'text-slate-500' : 'text-slate-400')}>{course.code}</span>
                     <span className={cn(
-                      "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider",
-                      getCategoryColor(c.category)
+                      'px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider',
+                      getCategoryColor(course.category)
                     )}>
-                      {c.category}
+                      {course.category}
                     </span>
                   </div>
 
-                  <h4 className={cn("text-sm font-black line-clamp-1 transition-colors", darkMode ? "text-slate-100 group-hover:text-white" : "text-slate-850 group-hover:text-slate-950")}>{c.title}</h4>
+                  <h4 className={cn('text-sm font-black line-clamp-1 transition-colors', darkMode ? 'text-slate-100 group-hover:text-white' : 'text-slate-850 group-hover:text-slate-950')}>{course.title}</h4>
 
-                  <div className={cn("grid grid-cols-2 gap-y-3 gap-x-2 pt-2 text-[10px] font-bold border-t", darkMode ? "text-slate-400 border-slate-800/30" : "text-slate-550 border-slate-100")}>
-                    <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-slate-400" /> {c.duration}</div>
+                  <div className={cn('grid grid-cols-2 gap-y-3 gap-x-2 pt-2 text-[10px] font-bold border-t', darkMode ? 'text-slate-400 border-slate-800/30' : 'text-slate-550 border-slate-100')}>
+                    <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-slate-400" /> {course.duration}</div>
                     {usesCourseFeePolicy && (
-                      <div className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-slate-400" /> {c.fee}</div>
+                      <div className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-slate-400" /> {course.fee}</div>
                     )}
-                    <div className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-slate-400" /> Max: {c.maxLearners} HV</div>
-                    <div className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-slate-400" /> {c.activeBatches} lớp đang chạy</div>
+                    <div className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-slate-400" /> Max: {course.maxLearners} HV</div>
+                    <div className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-slate-400" /> {course.activeBatches} lop dang chay</div>
                   </div>
                 </div>
 
-                <div className={cn("flex items-center justify-between pt-4 mt-2 border-t", darkMode ? "border-slate-800/30" : "border-slate-100")}>
+                <div className={cn('flex items-center justify-between pt-4 mt-2 border-t', darkMode ? 'border-slate-800/30' : 'border-slate-100')}>
                   <span className={cn(
-                    "px-2 py-0.5 rounded-lg text-[9px] font-black uppercase border",
-                    c.status === 'Hoạt động' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/15" : "bg-rose-500/10 text-rose-400 border-rose-500/15"
+                    'px-2 py-0.5 rounded-lg text-[9px] font-black uppercase border',
+                    course.status === ACTIVE_COURSE_STATUS ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/15' : 'bg-rose-500/10 text-rose-400 border-rose-500/15'
                   )}>
-                    {c.status}
+                    {course.status}
                   </span>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleToggleStatus(c)}
-                      title={c.status === 'Hoạt động' ? 'Tạm dừng khóa học' : 'Kích hoạt lại khóa học'}
+                      onClick={() => handleToggleStatus(course)}
+                      title={course.status === ACTIVE_COURSE_STATUS ? 'Tạm dừng khóa học' : 'Kích hoạt lại khóa học'}
                       className={cn(
-                        "flex items-center gap-1 px-3 py-1.5 text-[10px] font-black uppercase rounded-xl transition-all border cursor-pointer",
+                        'flex items-center gap-1 px-3 py-1.5 text-[10px] font-black uppercase rounded-xl transition-all border cursor-pointer',
                         darkMode
-                          ? "bg-slate-800 hover:bg-slate-700 text-slate-300 border-transparent"
-                          : "bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/60"
+                          ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-transparent'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/60'
                       )}
                     >
-                      {c.status === 'Hoạt động'
+                      {course.status === ACTIVE_COURSE_STATUS
                         ? <><Pause className="w-3 h-3 text-amber-500" /> Tạm dừng</>
                         : <><Play className="w-3 h-3 text-brand-primary" /> Kích hoạt</>}
                     </button>
                     <button
-                      onClick={() => handleDelete(c)}
+                      onClick={() => handleDelete(course)}
                       title="Xóa khóa học"
                       className={cn(
-                        "p-1.5 rounded-xl transition-all border cursor-pointer",
+                        'p-1.5 rounded-xl transition-all border cursor-pointer',
                         darkMode
-                          ? "bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 border-transparent"
-                          : "bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-500 border-slate-200/60"
+                          ? 'bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 border-transparent'
+                          : 'bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-500 border-slate-200/60'
                       )}
                     >
                       <Trash2 className="w-3 h-3" />
@@ -396,43 +459,43 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
               <ErpTableHead columns={['Mã', 'Tên khóa học', 'Phân loại', 'Thời lượng', courseFeeLabel, 'Quy mô', 'Trạng thái', 'Thao tác']} />
-              <tbody className={cn("divide-y", darkMode ? "divide-slate-800/30" : "divide-slate-100")}>
-                {paginatedCourses.map((c) => (
-                  <tr key={c.id} className={cn("transition-colors", darkMode ? "text-slate-350 hover:bg-slate-800/10" : "text-slate-600 hover:bg-slate-50/40")}>
-                    <td className="py-4 px-6 font-black text-sm">{c.code}</td>
-                    <td className="py-4 px-6 font-bold">{c.title}</td>
+              <tbody className={cn('divide-y', darkMode ? 'divide-slate-800/30' : 'divide-slate-100')}>
+                {paginatedCourses.map((course) => (
+                  <tr key={course.id} className={cn('transition-colors', darkMode ? 'text-slate-350 hover:bg-slate-800/10' : 'text-slate-600 hover:bg-slate-50/40')}>
+                    <td className="py-4 px-6 font-black text-sm">{course.code}</td>
+                    <td className="py-4 px-6 font-bold">{course.title}</td>
                     <td className="py-4 px-6">
-                      <span className={cn("px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider", getCategoryColor(c.category))}>
-                        {c.category}
+                      <span className={cn('px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider', getCategoryColor(course.category))}>
+                        {course.category}
                       </span>
                     </td>
-                    <td className="py-4 px-6 font-bold">{c.duration}</td>
-                    <td className="py-4 px-6 font-bold">{usesCourseFeePolicy ? c.fee : 'Không áp dụng'}</td>
-                    <td className="py-4 px-6 font-bold">{c.maxLearners} HV ({c.activeBatches} lớp)</td>
+                    <td className="py-4 px-6 font-bold">{course.duration}</td>
+                    <td className="py-4 px-6 font-bold">{usesCourseFeePolicy ? course.fee : 'Không áp dụng'}</td>
+                    <td className="py-4 px-6 font-bold">{course.maxLearners} HV ({course.activeBatches} lớp)</td>
                     <td className="py-4 px-6">
                       <span className={cn(
-                        "px-2 py-0.5 rounded-lg text-[9px] font-black uppercase border",
-                        c.status === 'Hoạt động' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/15" : "bg-rose-500/10 text-rose-400 border-rose-500/15"
+                        'px-2 py-0.5 rounded-lg text-[9px] font-black uppercase border',
+                        course.status === ACTIVE_COURSE_STATUS ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/15' : 'bg-rose-500/10 text-rose-400 border-rose-500/15'
                       )}>
-                        {c.status}
+                        {course.status}
                       </span>
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handleToggleStatus(c)}
+                          onClick={() => handleToggleStatus(course)}
                           className={cn(
-                            "flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all border cursor-pointer",
-                            darkMode ? "bg-slate-800 hover:bg-slate-700 text-slate-300 border-transparent" : "bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/60"
+                            'flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all border cursor-pointer',
+                            darkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-transparent' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/60'
                           )}
                         >
-                          {c.status === 'Hoạt động' ? <Pause className="w-3 h-3 text-amber-500" /> : <Play className="w-3 h-3 text-brand-primary" />}
+                          {course.status === ACTIVE_COURSE_STATUS ? <Pause className="w-3 h-3 text-amber-500" /> : <Play className="w-3 h-3 text-brand-primary" />}
                         </button>
                         <button
-                          onClick={() => handleDelete(c)}
+                          onClick={() => handleDelete(course)}
                           className={cn(
-                            "p-1.5 rounded-lg transition-all border cursor-pointer",
-                            darkMode ? "bg-slate-800 hover:bg-rose-900/40 text-slate-450 hover:text-rose-450 border-transparent" : "bg-slate-50 hover:bg-rose-50 text-slate-450 hover:text-rose-550 border-slate-200/60"
+                            'p-1.5 rounded-lg transition-all border cursor-pointer',
+                            darkMode ? 'bg-slate-800 hover:bg-rose-900/40 text-slate-450 hover:text-rose-450 border-transparent' : 'bg-slate-50 hover:bg-rose-50 text-slate-450 hover:text-rose-550 border-slate-200/60'
                           )}
                         >
                           <Trash2 className="w-3 h-3" />
@@ -455,11 +518,10 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
         </ErpCard>
       )}
 
-      {/* Add Course Modal */}
       {showAddModal && (
         <ErpModal title="Thêm chương trình học mới" onClose={() => setShowAddModal(false)}>
           <form onSubmit={handleAddCourse} className="space-y-4">
-            <ErpField label="Mã khóa học (Viết tắt)">
+            <ErpField label="Mã khóa học">
               <ErpInput
                 type="text"
                 required
@@ -504,12 +566,12 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <ErpField label={usesCourseFeePolicy ? 'Học phí niêm yết (VND)' : 'Học phí khóa học'}>
+              <ErpField label={usesCourseFeePolicy ? 'Học phí niêm yết (VND)' : 'Học phí khóa học (VND)'}>
                 {usesCourseFeePolicy ? (
                   <ErpInput
                     type="text"
                     required
-                    placeholder="Ví dụ: 5.500.000"
+                    placeholder="Vi du: 5.500.000"
                     value={newCourse.fee}
                     onChange={(e) => setNewCourse({ ...newCourse, fee: formatVND(e.target.value) })}
                   />
@@ -519,19 +581,20 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
                   </div>
                 )}
               </ErpField>
-              <ErpField label="Tối đa học viên/Lớp">
+              <ErpField label="Tối đa học viên lớp">
                 <ErpInput
                   type="number"
                   min={0}
                   value={newCourse.maxLearners}
                   onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '') {
+                    const value = e.target.value;
+                    if (value === '') {
                       setNewCourse({ ...newCourse, maxLearners: '' });
-                    } else {
-                      const parsed = parseInt(val, 10);
-                      setNewCourse({ ...newCourse, maxLearners: isNaN(parsed) ? 20 : Math.max(0, parsed) });
+                      return;
                     }
+
+                    const parsed = parseInt(value, 10);
+                    setNewCourse({ ...newCourse, maxLearners: Number.isNaN(parsed) ? 20 : Math.max(0, parsed) });
                   }}
                   onBlur={() => {
                     if (newCourse.maxLearners === '' || typeof newCourse.maxLearners !== 'number' || newCourse.maxLearners < 0) {
@@ -547,17 +610,15 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
         </ErpModal>
       )}
 
-      {/* Manage Categories Modal */}
       {showCategoryModal && (
         <ErpModal title="Quản lý phân loại khóa học" onClose={() => setShowCategoryModal(false)}>
           <div className="space-y-6">
-            {/* Add New Category Form */}
             <form onSubmit={handleAddCategory} className="flex gap-2">
               <div className="flex-1">
                 <ErpInput
                   type="text"
                   required
-                  placeholder="Nhập tên phân loại mới (VD: Nâng hạng B2-C)..."
+                  placeholder="Nhập tên phân loại mới..."
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                 />
@@ -571,30 +632,29 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
               </button>
             </form>
 
-            {/* List of Categories */}
             <div className="space-y-2">
-              <h5 className={cn("text-xs font-black uppercase tracking-wider", darkMode ? "text-slate-400" : "text-slate-500")}>Danh sách phân loại hiện tại</h5>
+              <h5 className={cn('text-xs font-black uppercase tracking-wider', darkMode ? 'text-slate-400' : 'text-slate-500')}>Danh sách phân loại hiện tại</h5>
               {categoriesLoading ? (
                 <p className="text-xs text-slate-400">Đang tải...</p>
               ) : categories.length === 0 ? (
-                <p className="text-xs text-slate-400">Chua co phan loai nao.</p>
+                <p className="text-xs text-slate-400">Chưa có phân loại nào.</p>
               ) : (
-                <div className={cn("border rounded-2xl p-2 max-h-60 overflow-y-auto divide-y", darkMode ? "border-slate-800 divide-slate-800/40" : "border-slate-100 divide-slate-100/60")}>
+                <div className={cn('border rounded-2xl p-2 max-h-60 overflow-y-auto divide-y', darkMode ? 'border-slate-800 divide-slate-800/40' : 'border-slate-100 divide-slate-100/60')}>
                   {categories.map((cat) => (
                     <div key={cat.id} className="flex items-center justify-between py-2.5 px-3">
                       <div className="flex items-center gap-2">
                         <Tag className="w-3.5 h-3.5 text-slate-400" />
-                        <span className={cn("text-xs font-bold", darkMode ? "text-slate-200" : "text-slate-700")}>{cat.name}</span>
+                        <span className={cn('text-xs font-bold', darkMode ? 'text-slate-200' : 'text-slate-700')}>{cat.name}</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => setDeleteConfirm({ isOpen: true, id: cat.id, name: cat.name })}
                         title="Xóa phân loại"
                         className={cn(
-                          "p-1.5 rounded-lg transition-all border cursor-pointer",
+                          'p-1.5 rounded-lg transition-all border cursor-pointer',
                           darkMode
-                            ? "bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 border-transparent"
-                            : "bg-slate-50 hover:bg-rose-55 text-slate-450 hover:text-rose-600 border-slate-200/60"
+                            ? 'bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 border-transparent'
+                            : 'bg-slate-50 hover:bg-rose-55 text-slate-450 hover:text-rose-600 border-slate-200/60'
                         )}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -608,13 +668,12 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
         </ErpModal>
       )}
 
-      {/* Confirm Delete Category Modal */}
       <ErpConfirmModal
         isOpen={deleteConfirm.isOpen}
         title="Xóa phân loại khóa học"
-        message={`Ban co chac chan muon xoa phan loai "${deleteConfirm.name}" khong? Hanh dong nay khong the hoan tac.`}
+        message={`Bạn có chắc chắn muốn xóa phân loại "${deleteConfirm.name}" không? Hành động này không thể hoàn tác.`}
         onConfirm={handleDeleteCategory}
-        onCancel={() => setDeleteConfirm({ isOpen: false, id: '', name: '' })}
+        onCancel={() => setDeleteConfirm(DEFAULT_DELETE_CONFIRM)}
         confirmText="Xác nhận xóa"
         cancelText="Hủy bỏ"
       />

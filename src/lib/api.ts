@@ -14,14 +14,24 @@ export function getAccessToken() {
 }
 
 interface FetchOptions extends RequestInit {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  params?: Record<string, any>;
+  params?: Record<string, string | number | boolean | null | undefined>;
+}
+
+interface ApiErrorResponse {
+  error?: string;
+}
+
+interface RefreshTokenResponse {
+  success: boolean;
+  data?: {
+    accessToken?: string;
+  };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function apiFetch(endpoint: string, options: FetchOptions = {}): Promise<any> {
+export async function apiFetch<T = any>(endpoint: string, options: FetchOptions = {}): Promise<T> {
   const url = new URL(`/api/v1${endpoint}`, window.location.origin);
-  
+
   if (options.params) {
     Object.entries(options.params).forEach(([key, val]) => {
       if (val !== undefined && val !== null && val !== "") {
@@ -34,7 +44,7 @@ export async function apiFetch(endpoint: string, options: FetchOptions = {}): Pr
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
-  
+
   if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
@@ -45,37 +55,38 @@ export async function apiFetch(endpoint: string, options: FetchOptions = {}): Pr
   });
 
   if (response.status === 401 && endpoint !== "/auth/refresh-token" && endpoint !== "/auth/login") {
-    // Attempt silent token refresh
     try {
       const refreshRes = await fetch("/api/v1/auth/refresh-token", { method: "POST" });
       if (refreshRes.ok) {
-        const refreshData = await refreshRes.json();
-        if (refreshData.success && refreshData.data.accessToken) {
+        const refreshData = await refreshRes.json() as RefreshTokenResponse;
+        if (refreshData.success && refreshData.data?.accessToken) {
           setAccessToken(refreshData.data.accessToken);
-          
-          // Retry the original request
+
           headers.set("Authorization", `Bearer ${accessToken}`);
           const retryRes = await fetch(url.toString(), { ...options, headers });
           if (!retryRes.ok) {
-            const errData = await retryRes.json();
+            const errData = await retryRes.json() as ApiErrorResponse;
             throw new Error(errData.error || "Yêu cầu thử lại thất bại.");
           }
-          return await retryRes.json();
+          return await retryRes.json() as T;
         }
       }
     } catch (refreshErr) {
       console.error("Lỗi tự động làm mới token:", refreshErr);
     }
-    
+
     setAccessToken(null);
     window.dispatchEvent(new Event("unauthorized"));
     throw new Error("Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.");
   }
 
-  const data = await response.json();
+  const data = await response.json() as T | ApiErrorResponse;
   if (!response.ok) {
-    throw new Error(data.error || "Yêu cầu thất bại.");
+    const errorMessage = typeof data === 'object' && data !== null && 'error' in data
+      ? data.error
+      : undefined;
+    throw new Error(errorMessage || "Yêu cầu thất bại.");
   }
 
-  return data;
+  return data as T;
 }

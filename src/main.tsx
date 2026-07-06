@@ -1,4 +1,4 @@
-import React, {StrictMode, ErrorInfo, ReactNode} from 'react';
+import React, {Component, StrictMode, ErrorInfo, ReactNode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
@@ -16,7 +16,7 @@ interface State {
   errorInfo: ErrorInfo | null;
 }
 
-class ErrorBoundary extends React.Component<Props, State> {
+class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null,
@@ -28,8 +28,7 @@ class ErrorBoundary extends React.Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this as any).setState({ errorInfo });
+    this.setState({ errorInfo });
     console.error("Uncaught error:", error, errorInfo);
     
     const errString = error.stack || error.toString();
@@ -74,8 +73,7 @@ class ErrorBoundary extends React.Component<Props, State> {
       );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (this as any).props.children;
+    return this.props.children;
   }
 }
 
