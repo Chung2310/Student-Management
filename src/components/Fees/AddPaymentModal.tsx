@@ -44,7 +44,7 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState('');
-  const getMergedVietqrConfig = React.useCallback(() => {
+  const [vietqrConfig, setVietqrConfig] = useState(() => {
     const saved = localStorage.getItem('vietqrConfig');
     let localConfig: {
       bankId?: string;
@@ -63,22 +63,44 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
     const bankId = localConfig?.bankId || user?.bankId || '';
     const accountNo = localConfig?.accountNo || user?.bankAccountNo || '';
     const accountName = localConfig?.accountName || user?.bankAccountName || user?.displayName || '';
-    // "enabled" luôn lấy từ backend (bankQrEnabled) để không bị kẹt theo giá trị cũ trong localStorage
     const enabled = user?.bankQrEnabled !== false;
     const template = localConfig?.template || '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}';
     return { enabled, bankId, accountNo, accountName, template };
-  }, [user]);
-
-  const [vietqrConfig, setVietqrConfig] = useState(getMergedVietqrConfig);
+  });
 
   React.useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => {
-        setVietqrConfig(getMergedVietqrConfig());
-      }, 0);
-      return () => clearTimeout(timer);
+    if (isOpen && student?.ownerId) {
+      const fetchCenterBankSettings = async () => {
+        try {
+          const res = await apiFetch(`/auth/users/${student.ownerId}/bank-settings`);
+          if (res.success && res.data) {
+            const saved = localStorage.getItem('vietqrConfig');
+            let template = '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}';
+            if (saved) {
+              try {
+                const localConfig = JSON.parse(saved);
+                if (localConfig?.template) {
+                  template = localConfig.template;
+                }
+              } catch {
+                // Ignore parse errors
+              }
+            }
+            setVietqrConfig({
+              enabled: res.data.bankQrEnabled !== false,
+              bankId: res.data.bankId || '',
+              accountNo: res.data.bankAccountNo || '',
+              accountName: res.data.bankAccountName || '',
+              template
+            });
+          }
+        } catch (error) {
+          console.error("Failed to fetch center bank settings:", error);
+        }
+      };
+      fetchCenterBankSettings();
     }
-  }, [isOpen, getMergedVietqrConfig]);
+  }, [isOpen, student]);
 
   React.useEffect(() => {
     if (isOpen && student) {
@@ -92,9 +114,8 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
         }
 
         // Set initial note from VietQR template if enabled
-        const config = getMergedVietqrConfig();
-        if (config && config.enabled && config.template) {
-          const compiled = config.template
+        if (vietqrConfig && vietqrConfig.enabled && vietqrConfig.template) {
+          const compiled = vietqrConfig.template
             .replace(/\[Mã HV\]|\[Ma HV\]/gi, student.id || student.idCard || '')
             .replace(/\[Họ tên\]|\[Ho ten\]/gi, student.fullName || '')
             .replace(/\{hang\}|\{rank\}/gi, student.rank || '');
@@ -106,7 +127,7 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [isOpen, student, getMergedVietqrConfig]);
+  }, [isOpen, student, vietqrConfig]);
 
   if (!isOpen || !student || !user) return null;
 

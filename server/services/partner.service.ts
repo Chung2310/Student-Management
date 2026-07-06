@@ -1,0 +1,272 @@
+import { Partner } from "../models/partner.model";
+import { Student } from "../models/student.model";
+import { User } from "../models/user.model";
+import { IPartner } from "../interfaces/partner.interface";
+import { logger } from "../config/logger";
+
+interface PartnerFilters {
+  page?: number | string;
+  limit?: number | string;
+  search?: string;
+  isActive?: boolean | string;
+  ownerFilter?: string;
+}
+
+interface PartnerData {
+  name: string;
+  phone: string;
+  email?: string;
+  commissionType: "percentage" | "fixed";
+  commissionValue: number;
+  bankName?: string;
+  bankAccountNo?: string;
+  bankAccountName?: string;
+  isActive?: boolean;
+  notes?: string;
+}
+
+export interface EnrichedPartner {
+  _id: string;
+  name: string;
+  phone: string;
+  email: string;
+  commissionType: "percentage" | "fixed";
+  commissionValue: number;
+  bankName: string;
+  bankAccountNo: string;
+  bankAccountName: string;
+  isActive: boolean;
+  ownerId: string;
+  notes: string;
+  payoutHistory: Array<{
+    id: string;
+    amount: number;
+    date: string;
+    method: "Tiền mặt" | "Chuyển khoản";
+    note?: string;
+  }>;
+  referredStudentsCount: number;
+  totalCommission: number;
+  totalPaid: number;
+  unpaidBalance: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+function buildOwnerQuery(ownerId: string | string[]): Record<string, unknown> {
+  if (ownerId === "ALL") return {};
+  return { ownerId: Array.isArray(ownerId) ? { $in: ownerId } : ownerId };
+}
+
+function parseCurrency(val: string | undefined): number {
+  return parseInt(String(val || "").replace(/\D/g, ""), 10) || 0;
+}
+
+async function enrichPartners(partners: IPartner[]): Promise<EnrichedPartner[]> {
+  const partnerIds = partners.map(p => p._id.toString());
+  
+  // Find all students referred by these partners
+  const students = await Student.find({ partnerId: { $in: partnerIds } })
+    .select("_id partnerId fee status");
+
+  const studentMapByPartner = new Map<string, typeof students>();
+  for (const s of students) {
+    if (s.partnerId) {
+      if (!studentMapByPartner.has(s.partnerId)) {
+        studentMapByPartner.set(s.partnerId, []);
+      }
+      studentMapByPartner.get(s.partnerId)!.push(s);
+    }
+  }
+
+  return partners.map(p => {
+    const pId = p._id.toString();
+    const referredStudents = studentMapByPartner.get(pId) || [];
+    
+    // Calculate total commission earned
+    let totalCommission = 0;
+    for (const student of referredStudents) {
+      if (p.commissionType === "fixed") {
+        totalCommission += p.commissionValue;
+      } else {
+        const fee = parseCurrency(student.fee);
+        totalCommission += Math.round((fee * p.commissionValue) / 100);
+      }
+    }
+
+    // Calculate paid amount from payoutHistory
+    const totalPaid = (p.payoutHistory || []).reduce((sum, pay) => sum + pay.amount, 0);
+    const unpaidBalance = totalCommission - totalPaid;
+
+    return {
+      ...p.toObject(),
+      _id: pId,
+      referredStudentsCount: referredStudents.length,
+      totalCommission,
+      totalPaid,
+      unpaidBalance,
+    } as EnrichedPartner;
+  });
+}
+
+export interface ReferredStudentItem {
+  _id: string;
+  fullName: string;
+  phone: string;
+  status: string[];
+  fee: string;
+  registrationDate: string;
+  commission: number;
+}
+
+export class PartnerService {
+  static async createPartner(ownerId: string, data: PartnerData): Promise<EnrichedPartner> {
+    logger.info(`[Partner] Creating partner name=${data.name}, phone=${data.phone} for ownerId=${ownerId}`);
+    
+    const existing = await Partner.findOne({ ownerId, phone: data.phone });
+    if (existing) {
+      throw new Error(`Số điện thoại "${data.phone}" đã tồn tại cho đối tác của trung tâm.`);
+    }
+
+    const partner = new Partner({ ...data, ownerId });
+    const saved = await partner.save();
+    logger.info(`[Partner] Partner created: id=${saved._id}`);
+    
+    const enriched = await enrichPartners([saved]);
+    return enriched[0];
+  }
+
+  static async getPartners(ownerId: string | string[], filters: PartnerFilters) {
+    const page = filters.page ? parseInt(String(filters.page)) : 1;
+    const limit = filters.limit ? parseInt(String(filters.limit)) : 1000;
+    const skip = (page - 1) * limit;
+
+    let resolvedOwnerId = ownerId;
+    if (ownerId === "ALL" && filters.ownerFilter) {
+      const centerUsers = await User.find({ centerId: filters.ownerFilter }).select("_id");
+      const ids = centerUsers.map(u => u._id.toString());
+      ids.push(filters.ownerFilter);
+      resolvedOwnerId = [...new Set(ids)];
+    }
+
+    const query: Record<string, unknown> = buildOwnerQuery(resolvedOwnerId);
+    if (filters.isActive !== undefined && filters.isActive !== "") {
+      query.isActive = String(filters.isActive) === "true";
+    }
+    if (filters.search) {
+      query.$or = [
+        { name: { $regex: filters.search, $options: "i" } },
+        { phone: { $regex: filters.search, $options: "i" } },
+      ];
+    }
+
+    const total = await Partner.countDocuments(query);
+    const partners = await Partner.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const enriched = await enrichPartners(partners);
+
+    return { partners: enriched, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+  
+
+  static async getPartnerById(
+    ownerId: string | string[],
+    id: string
+  ): Promise<(EnrichedPartner & { referredStudents: ReferredStudentItem[] }) | null> {
+    const partner = await Partner.findOne({ _id: id, ...buildOwnerQuery(ownerId) });
+    if (!partner) return null;
+
+    const enriched = (await enrichPartners([partner]))[0];
+
+    // Fetch detailed list of referred students
+    const students = await Student.find({ partnerId: id }).sort({ createdAt: -1 });
+    const studentsList = students.map(student => {
+      const commission = partner.commissionType === "fixed"
+        ? partner.commissionValue
+        : Math.round((parseCurrency(student.fee) * partner.commissionValue) / 100);
+
+      return {
+        _id: student._id.toString(),
+        fullName: student.fullName,
+        phone: student.phone,
+        status: student.status,
+        fee: student.fee,
+        registrationDate: student.registrationDate,
+        commission,
+      };
+    });
+
+    return {
+      ...enriched,
+      referredStudents: studentsList,
+    };
+  }
+
+  static async updatePartner(
+    ownerId: string | string[],
+    id: string,
+    data: Partial<PartnerData>
+  ): Promise<EnrichedPartner | null> {
+    logger.info(`[Partner] Updating partner: id=${id}`);
+    
+    const partner = await Partner.findOne({ _id: id, ...buildOwnerQuery(ownerId) });
+    if (!partner) {
+      throw new Error("Không tìm thấy đối tác.");
+    }
+
+    if (data.phone && data.phone !== partner.phone) {
+      const dup = await Partner.findOne({ ownerId: partner.ownerId, phone: data.phone });
+      if (dup) {
+        throw new Error(`Số điện thoại "${data.phone}" đã tồn tại cho một đối tác khác.`);
+      }
+    }
+
+    partner.set(data);
+    const saved = await partner.save();
+    
+    const enriched = await enrichPartners([saved]);
+    return enriched[0];
+  }
+
+  static async deletePartner(ownerId: string | string[], id: string): Promise<IPartner | null> {
+    logger.info(`[Partner] Deleting partner: id=${id}`);
+    
+    // Check if partner has referred students
+    const studentCount = await Student.countDocuments({ partnerId: id });
+    if (studentCount > 0) {
+      throw new Error(`Không thể xóa đối tác vì đã giới thiệu ${studentCount} học viên. Vui lòng vô hiệu hóa thay vì xóa.`);
+    }
+
+    return await Partner.findOneAndDelete({ _id: id, ...buildOwnerQuery(ownerId) });
+  }
+
+  static async addPayout(
+    ownerId: string | string[],
+    id: string,
+    payoutData: { amount: number; date: string; method: "Tiền mặt" | "Chuyển khoản"; note?: string }
+  ): Promise<EnrichedPartner> {
+    logger.info(`[Partner] Adding payout for partner: id=${id}, amount=${payoutData.amount}`);
+    
+    const partner = await Partner.findOne({ _id: id, ...buildOwnerQuery(ownerId) });
+    if (!partner) {
+      throw new Error("Không tìm thấy đối tác.");
+    }
+
+    const newPayout = {
+      id: new mongoose.Types.ObjectId().toString(),
+      ...payoutData,
+    };
+
+    partner.payoutHistory = partner.payoutHistory || [];
+    partner.payoutHistory.push(newPayout);
+    
+    const saved = await partner.save();
+    const enriched = await enrichPartners([saved]);
+    return enriched[0];
+  }
+}
+
+import mongoose from "mongoose";

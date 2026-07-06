@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard, Users, Calendar, Wallet, MessageSquare, Settings,
-  Shield, LogOut, LogIn, RefreshCcw, X, BookOpen, Warehouse, School, LucideIcon
+  Shield, LogOut, LogIn, RefreshCcw, X, BookOpen, Warehouse, School, LucideIcon, Handshake
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
@@ -37,6 +37,7 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
     { icon: MessageSquare, label: 'BOT Thông báo', view: 'Bot' },
     { icon: BookOpen, label: 'Khóa học', view: 'Courses' },
     { icon: School, label: 'Lớp & Khai giảng', view: 'Batches' },
+    { icon: Handshake, label: 'Đối tác & CTV', view: 'Partners' },
     { icon: Warehouse, label: 'Thiết bị', view: 'Resources' },
     { icon: Shield, label: user?.role === 'superadmin' ? 'Quản lý người dùng' : 'Quản lý giảng viên', view: 'UserManagement' },
     { icon: Settings, label: 'Cài đặt & Quản trị', view: 'SettingsAdmin' },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Save, ChevronDown, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
@@ -7,7 +7,7 @@ import { useToast } from '../../hooks/useToast';
 import { useBatches } from '../../hooks/useBatches';
 import { useAdminCenters } from '../../hooks/useAdminCenters';
 import { formatVND, toInputDate, toDisplayDate, compressImage } from '../../lib/utils';
-import { DrivingStudent, Student, UploadedFile } from '../../types';
+import { DrivingStudent, Student, UploadedFile, Partner } from '../../types';
 import { findDuplicateStudentField } from '../../lib/studentUniqueness';
 import { FormInput, UploadCard } from './components/StudentFormFields';
 
@@ -42,10 +42,34 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
     setSelectedCenterId(selectedCenter && selectedCenter !== 'all' ? selectedCenter : '');
   }
 
+  const [referralMode, setReferralMode] = useState<'none' | 'partner' | 'custom'>('none');
+  const [partners, setPartners] = useState<Partner[]>([]);
+
+  useEffect(() => {
+    const fetchPartners = async () => {
+      try {
+        const ownerId = user?.role === 'superadmin' ? selectedCenterId : undefined;
+        const params = new URLSearchParams({ isActive: 'true' });
+        if (ownerId) params.append('ownerFilter', ownerId);
+
+        const res = await apiFetch(`/partners?${params.toString()}`);
+        if (res.success && res.partners) {
+          setPartners(res.partners);
+        }
+      } catch (error) {
+        console.error('Failed to fetch partners:', error);
+      }
+    };
+    if (isOpen) {
+      fetchPartners();
+    }
+  }, [isOpen, selectedCenterId, user]);
+
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
     referral: '',
+    partnerId: '',
     birthday: '',
     idCard: '',
     rank: '',
@@ -120,12 +144,19 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
     const missingFields: string[] = [];
     if (requiredFields.fullName && !formData.fullName) missingFields.push('Họ và tên');
     if (requiredFields.phone && !formData.phone) missingFields.push('Số điện thoại');
-    if (requiredFields.rank && !formData.rank) missingFields.push('Hạng bằng');
     if (requiredFields.birthday && !formData.birthday) missingFields.push('Ngày sinh');
     if (requiredFields.idCard && !formData.idCard) missingFields.push('CCCD/CMND');
     if (requiredFields.email && !formData.email) missingFields.push('Email');
 
-    if (formData.idCard && formData.idCard.trim().length !== 12) {
+    if (requiredFields.rank && !formData.rank) {
+      if (businessType === 'driving') {
+        missingFields.push('Hạng bằng');
+      } else if (businessType === 'language') {
+        missingFields.push('Khóa học đăng ký');
+      }
+    }
+
+    if (businessType === 'driving' && formData.idCard && formData.idCard.trim().length !== 12) {
       const message = "Số CCCD phải có đúng 12 ký tự.";
       setErrorMsg(message);
       toast.error(message);
@@ -152,7 +183,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
       email: formData.email,
       phone: formData.phone,
       idCard: formData.idCard,
-    });
+    }, undefined, businessType);
     if (duplicateField) {
       const message = `${duplicateField.label} đã tồn tại trong hệ thống, không được trùng.`;
       setErrorMsg(message);
@@ -181,6 +212,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
           status: businessType === 'driving' ? ['Chờ KSK'] : ['Đang học'],
           registrationDate: new Date().toLocaleDateString('vi-VN'),
           centerId: selectedCenterId || undefined,
+          partnerId: formData.partnerId || undefined,
         }),
       });
 
@@ -209,6 +241,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
           fullName: '',
           phone: '',
           referral: '',
+          partnerId: '',
           birthday: '',
           idCard: '',
           rank: '',
@@ -221,6 +254,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
           idCardBackFile: undefined,
           portraitFile: undefined,
         });
+        setReferralMode('none');
         setBatchId('');
         setSelectedCenterId(selectedCenter && selectedCenter !== 'all' ? selectedCenter : '');
       }
@@ -324,14 +358,70 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
                   placeholder="Nhập địa chỉ email..."
                   className="sm:col-span-2"
                 />
-                <FormInput
-                  label="Người giới thiệu"
-                  name="referral"
-                  value={formData.referral}
-                  onChange={handleInputChange}
-                  placeholder="Nhập tên người giới thiệu..."
-                  className="sm:col-span-2"
-                />
+
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                    Nguồn giới thiệu
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="relative">
+                      <select
+                        value={referralMode}
+                        onChange={(e) => {
+                          const mode = e.target.value as 'none' | 'partner' | 'custom';
+                          setReferralMode(mode);
+                          if (mode === 'none') {
+                            setFormData(prev => ({ ...prev, partnerId: '', referral: '' }));
+                          } else if (mode === 'custom') {
+                            setFormData(prev => ({ ...prev, partnerId: '', referral: '' }));
+                          } else {
+                            setFormData(prev => ({ ...prev, partnerId: partners[0]?._id || '', referral: partners[0]?.name || '' }));
+                          }
+                        }}
+                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all cursor-pointer"
+                      >
+                        <option value="none">Không có giới thiệu</option>
+                        <option value="partner">Đối tác / CTV hệ thống</option>
+                        <option value="custom">Nhập người giới thiệu khác</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
+
+                    {referralMode === 'partner' && (
+                      <div className="relative">
+                        <select
+                          value={formData.partnerId}
+                          onChange={(e) => {
+                            const pId = e.target.value;
+                            const pObj = partners.find(p => p._id === pId);
+                            setFormData(prev => ({ ...prev, partnerId: pId, referral: pObj ? pObj.name : '' }));
+                          }}
+                          className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all cursor-pointer"
+                        >
+                          <option value="">-- Chọn đối tác --</option>
+                          {partners.map(p => (
+                            <option key={p._id} value={p._id}>
+                              {p.name} ({p.phone})
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      </div>
+                    )}
+
+                    {referralMode === 'custom' && (
+                      <input
+                        type="text"
+                        name="referral"
+                        value={formData.referral}
+                        onChange={handleInputChange}
+                        placeholder="Nhập tên người giới thiệu..."
+                        className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-cyan-600 transition-all"
+                      />
+                    )}
+                  </div>
+                </div>
+
                 <FormInput
                   label="Ngày sinh"
                   name="birthday"

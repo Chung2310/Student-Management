@@ -32,6 +32,8 @@ export interface DrivingStudent {
   address: string;
   status: StudentStatus[];
   ownerId: string;
+  centerId?: string;
+  partnerId?: string;
   healthCheckDate?: string;
   healthCheckNotes?: string;
   healthCheckFiles?: UploadedFile[];
@@ -248,4 +250,44 @@ export interface StudentStats {
   averageGPA: number;
   attendanceRate: number;
   atRiskCount: number;
+}
+
+export interface PartnerPayout {
+  id: string;
+  amount: number;
+  date: string;
+  method: string;
+  note?: string;
+}
+
+export interface PartnerReferredStudent {
+  _id: string;
+  fullName: string;
+  phone: string;
+  registrationDate: string;
+  status: string[];
+  commission: number;
+}
+
+export interface Partner {
+  _id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  commissionType: 'fixed' | 'percentage';
+  commissionValue: number;
+  bankName?: string;
+  bankAccountNo?: string;
+  bankAccountName?: string;
+  isActive: boolean;
+  notes?: string;
+  ownerId: string;
+  referredStudentsCount: number;
+  totalCommission: number;
+  totalPaid: number;
+  unpaidBalance: number;
+  referredStudents: PartnerReferredStudent[];
+  payoutHistory: PartnerPayout[];
+  createdAt?: string;
+  updatedAt?: string;
 }

@@ -159,6 +159,38 @@ export class AuthController {
     }
   }
 
+  static async getUserBankSettings(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: "Chưa xác thực." });
+      }
+      const targetUser = await AuthService.getUserProfile(req.params.id);
+      if (!targetUser) {
+        return res.status(404).json({ success: false, error: "Không tìm thấy người dùng." });
+      }
+
+      let adminUser = targetUser;
+      if (targetUser.role === "user" && targetUser.centerId) {
+        const resolvedAdmin = await AuthService.getUserProfile(targetUser.centerId);
+        if (resolvedAdmin) {
+          adminUser = resolvedAdmin;
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          bankAccountNo: adminUser.bankAccountNo || "",
+          bankId: adminUser.bankId || "",
+          bankAccountName: adminUser.bankAccountName || adminUser.displayName || "",
+          bankQrEnabled: adminUser.bankQrEnabled !== false,
+        }
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
   static async updateBankSettings(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       if (!req.user) {
