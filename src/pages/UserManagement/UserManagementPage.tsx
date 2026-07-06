@@ -53,7 +53,7 @@ export function UserManagementPage() {
     localStorage.setItem('erp_view_mode_users', mode);
   };
 
-  const ALL_PERMISSIONS = ['Students', 'Exams', 'Fees', 'Bot', 'Courses', 'Batches', 'Resources'];
+  const ALL_PERMISSIONS = ['Students', 'Exams', 'Fees', 'Bot', 'Courses', 'Batches', 'Partners', 'Resources'];
 
   // Form fields
   const [fName, setFName] = useState('');

@@ -125,16 +125,16 @@ export class ExamController {
     try {
       const ownerId = await getAllowedOwnerIds(req.user!);
       const examId = req.params.id;
-      const { results } = req.body;
+      const { results, preview } = req.body;
 
       if (!results || !Array.isArray(results)) {
         return res.status(400).json({ success: false, error: "Dữ liệu kết quả không hợp lệ." });
       }
 
-      const outcome = await ExamService.importResults(ownerId, examId, results);
+      const outcome = await ExamService.importResults(ownerId, examId, results, !!preview);
       res.json({ 
         success: true, 
-        message: "Nhập kết quả thi hàng loạt thành công.",
+        message: preview ? "Xem trước kết quả nhập thành công." : "Nhập kết quả thi hàng loạt thành công.",
         ...outcome
       });
     } catch (error: unknown) {

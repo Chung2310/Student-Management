@@ -8,25 +8,63 @@ import {
 import * as XLSX from 'xlsx';
 import { cn } from '../../lib/utils';
 import { DrivingStudent, ExamSession, ExamStatus } from '../../types';
+import { apiFetch } from '../../lib/api';
+import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
+import { ExcelImportPreviewModal, PreviewStudent, InvalidStudent } from './ExcelImportPreviewModal';
 
-const handleDownloadTemplate = (exam: ExamSession, students: DrivingStudent[]) => {
+const handleDownloadTemplate = (exam: ExamSession, students: DrivingStudent[], businessType: string) => {
   try {
-    const headers = ['Họ và tên', 'Số điện thoại', 'Hạng bằng', 'Kết quả thi'];
-    const data = students.map(s => {
-      const examEntry = s.exams?.find(e => e.id === exam.id);
-      const overall = examEntry?.result?.overall || 'Chưa có';
-      return [s.fullName, s.phone, s.rank, overall];
-    });
+    let headers: string[] = [];
+    let data: (string | number)[][] = [];
+    let cols: { wch: number }[] = [];
+
+    if (businessType === 'driving') {
+      headers = ['Họ và tên', 'Số điện thoại', 'Hạng bằng', 'Kết quả thi'];
+      data = students.map(s => {
+        const examEntry = s.exams?.find(e => e.id === exam.id);
+        const overall = examEntry?.result?.overall || 'Chưa có';
+        return [s.fullName, s.phone, s.rank || '', overall];
+      });
+      if (data.length === 0) {
+        data = [
+          ['Nguyễn Văn A (Mẫu)', '0987654321', exam.rank || 'B2', 'Đậu'],
+          ['Trần Thị B (Mẫu)', '0912345678', exam.rank || 'B2', 'Chưa có']
+        ];
+      }
+      cols = [{ wch: 25 }, { wch: 18 }, { wch: 12 }, { wch: 15 }];
+    } else if (businessType === 'language') {
+      headers = ['Họ và tên', 'Số điện thoại', 'Khóa học', 'Kết quả thi'];
+      data = students.map(s => {
+        const examEntry = s.exams?.find(e => e.id === exam.id);
+        const overall = examEntry?.result?.overall || 'Chưa có';
+        return [s.fullName, s.phone, s.rank || '', overall];
+      });
+      if (data.length === 0) {
+        data = [
+          ['Nguyễn Văn A (Mẫu)', '0987654321', exam.rank || 'IELTS', 'Đậu'],
+          ['Trần Thị B (Mẫu)', '0912345678', exam.rank || 'TOEIC', 'Chưa có']
+        ];
+      }
+      cols = [{ wch: 25 }, { wch: 18 }, { wch: 20 }, { wch: 15 }];
+    } else {
+      headers = ['Họ và tên', 'Số điện thoại', 'Kết quả thi'];
+      data = students.map(s => {
+        const examEntry = s.exams?.find(e => e.id === exam.id);
+        const overall = examEntry?.result?.overall || 'Chưa có';
+        return [s.fullName, s.phone, overall];
+      });
+      if (data.length === 0) {
+        data = [
+          ['Nguyễn Văn A (Mẫu)', '0987654321', 'Đậu'],
+          ['Trần Thị B (Mẫu)', '0912345678', 'Chưa có']
+        ];
+      }
+      cols = [{ wch: 25 }, { wch: 18 }, { wch: 15 }];
+    }
 
     const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-    
-    // Set column widths
-    ws['!cols'] = [
-      { wch: 25 }, // Họ và tên
-      { wch: 18 }, // Số điện thoại
-      { wch: 12 }, // Hạng bằng
-      { wch: 15 }  // Kết quả thi
-    ];
+    ws['!cols'] = cols;
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Kết quả thi");
@@ -36,25 +74,40 @@ const handleDownloadTemplate = (exam: ExamSession, students: DrivingStudent[]) =
   }
 };
 
-const handleExportResults = (exam: ExamSession, students: DrivingStudent[]) => {
+const handleExportResults = (exam: ExamSession, students: DrivingStudent[], businessType: string) => {
   try {
-    const headers = ['Họ và tên', 'Số điện thoại', 'Hạng bằng', 'Trạng thái học', 'Kết quả thi'];
-    const data = students.map(s => {
-      const examEntry = s.exams?.find(e => e.id === exam.id);
-      const overall = examEntry?.result?.overall || 'Chưa có';
-      return [s.fullName, s.phone, s.rank, Array.isArray(s.status) ? s.status.join(', ') : s.status, overall];
-    });
+    let headers: string[] = [];
+    let data: (string | number | undefined)[][] = [];
+    let cols: { wch: number }[] = [];
+
+    if (businessType === 'driving') {
+      headers = ['Họ và tên', 'Số điện thoại', 'Hạng bằng', 'Trạng thái học', 'Kết quả thi'];
+      data = students.map(s => {
+        const examEntry = s.exams?.find(e => e.id === exam.id);
+        const overall = examEntry?.result?.overall || 'Chưa có';
+        return [s.fullName, s.phone, s.rank, Array.isArray(s.status) ? s.status.join(', ') : s.status, overall];
+      });
+      cols = [{ wch: 25 }, { wch: 18 }, { wch: 12 }, { wch: 18 }, { wch: 15 }];
+    } else if (businessType === 'language') {
+      headers = ['Họ và tên', 'Số điện thoại', 'Khóa học', 'Trạng thái học', 'Kết quả thi'];
+      data = students.map(s => {
+        const examEntry = s.exams?.find(e => e.id === exam.id);
+        const overall = examEntry?.result?.overall || 'Chưa có';
+        return [s.fullName, s.phone, s.rank, Array.isArray(s.status) ? s.status.join(', ') : s.status, overall];
+      });
+      cols = [{ wch: 25 }, { wch: 18 }, { wch: 20 }, { wch: 18 }, { wch: 15 }];
+    } else {
+      headers = ['Họ và tên', 'Số điện thoại', 'Trạng thái học', 'Kết quả thi'];
+      data = students.map(s => {
+        const examEntry = s.exams?.find(e => e.id === exam.id);
+        const overall = examEntry?.result?.overall || 'Chưa có';
+        return [s.fullName, s.phone, Array.isArray(s.status) ? s.status.join(', ') : s.status, overall];
+      });
+      cols = [{ wch: 25 }, { wch: 18 }, { wch: 18 }, { wch: 15 }];
+    }
 
     const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-    
-    // Set column widths
-    ws['!cols'] = [
-      { wch: 25 }, // Họ và tên
-      { wch: 18 }, // Số điện thoại
-      { wch: 12 }, // Hạng bằng
-      { wch: 18 }, // Trạng thái học
-      { wch: 15 }  // Kết quả thi
-    ];
+    ws['!cols'] = cols;
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Danh sách học viên");
@@ -64,75 +117,20 @@ const handleExportResults = (exam: ExamSession, students: DrivingStudent[]) => {
   }
 };
 
-const handleUploadExcel = (
-  e: React.ChangeEvent<HTMLInputElement>, 
-  onImport: ((results: { phone: string; overallResult: 'Đậu' | 'Trượt' | 'Chưa có' }[]) => void) | undefined
-) => {
-  const files = e.target.files;
-  if (!files || files.length === 0) return;
-  const file = files[0];
-
-  const reader = new FileReader();
-  reader.onload = (evt) => {
-    try {
-      const bstr = evt.target?.result;
-      const wb = XLSX.read(bstr, { type: 'binary' });
-      const wsname = wb.SheetNames[0];
-      const ws = wb.Sheets[wsname];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }) as (string | number | boolean | null | undefined)[][];
-
-      if (rows.length < 2) {
-        alert("File Excel rỗng hoặc thiếu dữ liệu.");
-        return;
-      }
-
-      // Map columns
-      const headers = rows[0].map(h => String(h).trim().toLowerCase());
-      const phoneIdx = headers.findIndex(h => h.includes("điện thoại") || h.includes("sđt") || h.includes("phone"));
-      const resultIdx = headers.findIndex(h => h.includes("kết quả") || h.includes("result") || h.includes("overall"));
-
-      if (phoneIdx === -1 || resultIdx === -1) {
-        alert("Không tìm thấy các cột 'Số điện thoại' và 'Kết quả thi' trong file Excel.");
-        return;
-      }
-
-      const resultsList: { phone: string; overallResult: 'Đậu' | 'Trượt' | 'Chưa có' }[] = [];
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || row.length === 0) continue;
-        const phone = row[phoneIdx] ? String(row[phoneIdx]).trim() : '';
-        let overallResult = row[resultIdx] ? String(row[resultIdx]).trim() : 'Chưa có';
-
-        if (!phone) continue;
-
-        // Normalise result values
-        if (overallResult.toLowerCase() === 'đậu' || overallResult.toLowerCase() === 'pass') {
-          overallResult = 'Đậu';
-        } else if (overallResult.toLowerCase() === 'trượt' || overallResult.toLowerCase() === 'fail' || overallResult.toLowerCase() === 'rớt') {
-          overallResult = 'Trượt';
-        } else {
-          overallResult = 'Chưa có';
-        }
-
-        resultsList.push({
-          phone,
-          overallResult: overallResult as 'Đậu' | 'Trượt' | 'Chưa có'
-        });
-      }
-
-      if (resultsList.length === 0) {
-        alert("Không tìm thấy dòng dữ liệu nào hợp lệ trong file Excel.");
-        return;
-      }
-
-      onImport?.(resultsList);
-    } catch (err) {
-      console.error("Failed to process Excel file:", err);
-      alert("Lỗi xử lý file Excel.");
-    }
-  };
-  reader.readAsBinaryString(file);
-  e.target.value = ''; // Reset input element
+const formatExcelPhone = (phoneVal: unknown): string => {
+  if (phoneVal === undefined || phoneVal === null) return '';
+  let clean = String(phoneVal).trim().replace(/[\s.-]/g, '');
+  if (!clean) return '';
+  if (clean.startsWith('84') && clean.length === 11) {
+    clean = '0' + clean.slice(2);
+  }
+  if (clean.startsWith('+84')) {
+    clean = '0' + clean.slice(3);
+  }
+  if (/^[1-9]\d{8}$/.test(clean)) {
+    clean = '0' + clean;
+  }
+  return clean;
 };
 
 export interface ExamCardProps {
@@ -149,7 +147,6 @@ export interface ExamCardProps {
   onAssignClick: () => void | Promise<unknown>;
   onUnassignStudent?: (studentId: string) => void | Promise<unknown>;
   onUpdateStudentResult?: (studentId: string, result: 'Đậu' | 'Trượt' | 'Chưa có') => void | Promise<unknown>;
-  onImportExcelResults?: (results: { phone: string; overallResult: 'Đậu' | 'Trượt' | 'Chưa có' }[]) => void | Promise<unknown>;
 }
 
 export const ExamCard: React.FC<ExamCardProps> = ({ 
@@ -161,12 +158,176 @@ export const ExamCard: React.FC<ExamCardProps> = ({
   onStatusClick, 
   onAssignClick, 
   onUnassignStudent, 
-  onUpdateStudentResult, 
-  onImportExcelResults 
+  onUpdateStudentResult 
 }) => {
+  const { user } = useAuth();
+  const businessType = user?.businessType || 'driving';
   const status = getStatusInfo(exam.status);
   const [isExpanded, setIsExpanded] = useState(false);
-  const showStudentRank = !!exam.rank || assignedStudents.some(s => s.rank);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [validPreviewList, setValidPreviewList] = useState<PreviewStudent[]>([]);
+  const [invalidPreviewList, setInvalidPreviewList] = useState<InvalidStudent[]>([]);
+  const [rawResults, setRawResults] = useState<{ phone: string; overallResult: 'Đậu' | 'Trượt' | 'Chưa có' }[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
+  const { toast } = useToast();
+
+  const handleUploadExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }) as (string | number | boolean | null | undefined)[][];
+
+        if (rows.length < 2) {
+          alert("File Excel rỗng hoặc thiếu dữ liệu.");
+          return;
+        }
+
+        // Map columns
+        const headers = rows[0].map(h => h ? String(h).trim().toLowerCase() : '');
+        const phoneIdx = headers.findIndex(h => h.includes("điện thoại") || h.includes("sđt") || h.includes("phone"));
+        const resultIdx = headers.findIndex(h => h.includes("kết quả") || h.includes("result") || h.includes("overall"));
+
+        if (phoneIdx === -1 || resultIdx === -1) {
+          const foundHeaders = headers.filter(Boolean).join(", ");
+          alert(`Không tìm thấy các cột cần thiết ('Số điện thoại' và 'Kết quả thi') trong file Excel.\n\nCác cột tìm thấy trong file của bạn: ${foundHeaders || "Không có cột nào"}`);
+          return;
+        }
+
+        const resultsList: { phone: string; overallResult: 'Đậu' | 'Trượt' | 'Chưa có' }[] = [];
+        const importErrors: string[] = [];
+
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row || row.length === 0 || row.every(cell => cell === null || cell === undefined || String(cell).trim() === '')) {
+            continue;
+          }
+
+          const phone = formatExcelPhone(row[phoneIdx]);
+          let overallResult = row[resultIdx] ? String(row[resultIdx]).trim() : 'Chưa có';
+
+          if (!phone) {
+            importErrors.push(`Dòng ${i + 1}: Thiếu Số điện thoại.`);
+            continue;
+          }
+
+          if (phone.includes("0987654321") || phone.includes("0912345678")) {
+            continue;
+          }
+
+          const rawResult = overallResult.toLowerCase().trim();
+          if (rawResult === 'đậu' || rawResult === 'pass') {
+            overallResult = 'Đậu';
+          } else if (rawResult === 'trượt' || rawResult === 'fail' || rawResult === 'rớt') {
+            overallResult = 'Trượt';
+          } else if (rawResult === 'chưa có' || rawResult === 'pending' || rawResult === '') {
+            overallResult = 'Chưa có';
+          } else {
+            importErrors.push(`Dòng ${i + 1} (SĐT ${phone}): Kết quả thi "${overallResult}" không hợp lệ (chỉ chấp nhận: Đậu, Trượt, Chưa có).`);
+            continue;
+          }
+
+          resultsList.push({
+            phone,
+            overallResult: overallResult as 'Đậu' | 'Trượt' | 'Chưa có'
+          });
+        }
+
+        if (importErrors.length > 0 && resultsList.length === 0) {
+          alert(`File Excel không hợp lệ. Chi tiết các dòng lỗi:\n- ${importErrors.join('\n- ')}`);
+          return;
+        }
+
+        if (resultsList.length === 0) {
+          alert("Không tìm thấy dòng dữ liệu nào hợp lệ trong file Excel.");
+          return;
+        }
+
+        // Call validation API to get previews
+        setIsImporting(true);
+        try {
+          interface ImportPreviewResponse {
+            success: boolean;
+            error?: string;
+            valid?: PreviewStudent[];
+            invalid?: InvalidStudent[];
+          }
+          const res = await apiFetch<ImportPreviewResponse>(`/exams/${exam.id}/import-results`, {
+            method: 'POST',
+            body: JSON.stringify({ results: resultsList, preview: true })
+          });
+
+          if (res.success) {
+            // Include client-side format errors in the invalid list for previewing
+            const clientInvalid = importErrors.map(err => ({
+              phone: '—',
+              fullName: 'Lỗi định dạng dòng',
+              reason: err
+            }));
+
+            setValidPreviewList(res.valid || []);
+            setInvalidPreviewList([...(res.invalid || []), ...clientInvalid]);
+            setRawResults(resultsList);
+            setIsPreviewOpen(true);
+          } else {
+            toast.error(res.error || "Không thể kiểm tra dữ liệu Excel.");
+          }
+        } catch (error: unknown) {
+          console.error("Error previewing import:", error);
+          const msg = error instanceof Error ? error.message : "Lỗi kết nối khi tải dữ liệu lên.";
+          toast.error(msg);
+        } finally {
+          setIsImporting(false);
+        }
+
+      } catch (err) {
+        console.error("Failed to process Excel file:", err);
+        alert("Lỗi xử lý file Excel.");
+      }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = ''; // Reset input element
+  };
+
+  const handleConfirmImport = async () => {
+    setIsImporting(true);
+    try {
+      interface ConfirmImportResponse {
+        success: boolean;
+        error?: string;
+        successCount?: number;
+        failedCount?: number;
+      }
+      const res = await apiFetch<ConfirmImportResponse>(`/exams/${exam.id}/import-results`, {
+        method: 'POST',
+        body: JSON.stringify({ results: rawResults, preview: false })
+      });
+
+      if (res.success) {
+        toast.success(`Đã cập nhật kết quả: ${res.successCount} thành công, ${res.failedCount} thất bại.`);
+        window.dispatchEvent(new Event("student-mutation"));
+        window.dispatchEvent(new Event("exam-mutation"));
+        setIsPreviewOpen(false);
+      } else {
+        toast.error(res.error || "Nhập kết quả thi từ Excel thất bại.");
+      }
+    } catch (error: unknown) {
+      console.error("Error confirming import:", error);
+      const msg = error instanceof Error ? error.message : "Lỗi khi nhập kết quả thi.";
+      toast.error(msg);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const showStudentRank = businessType !== 'general' && (!!exam.rank || assignedStudents.some(s => s.rank));
   
   return (
     <motion.div 
@@ -302,37 +463,42 @@ export const ExamCard: React.FC<ExamCardProps> = ({
           >
             <div className="p-6 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                  Danh sách học viên đăng ký ({assignedStudents.length} học viên)
-                </h4>
-                {assignedStudents.length > 0 && (
-                  <div className="flex items-center gap-2">
+                <div>
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                    Danh sách học viên đăng ký ({assignedStudents.length} học viên)
+                  </h4>
+                  <p className="text-[10px] text-slate-400 font-medium mt-0.5 max-w-md">
+                    * File Excel nhập cần chứa các cột: <strong className="text-slate-500">Số điện thoại</strong> và <strong className="text-slate-500">Kết quả thi</strong> (Đậu / Trượt / Chưa có). Tải file mẫu bên cạnh để xem ví dụ.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleDownloadTemplate(exam, assignedStudents, businessType)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-700 text-xs font-bold transition-all border border-cyan-100/50 cursor-pointer shadow-sm active:scale-95"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Tải mẫu Excel
+                  </button>
+                  {assignedStudents.length > 0 && (
                     <button
-                      onClick={() => handleDownloadTemplate(exam, assignedStudents)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-700 text-xs font-bold transition-all border border-cyan-100/50 cursor-pointer shadow-sm active:scale-95"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Tải mẫu Excel
-                    </button>
-                    <button
-                      onClick={() => handleExportResults(exam, assignedStudents)}
+                      onClick={() => handleExportResults(exam, assignedStudents, businessType)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold transition-all border border-blue-100/50 cursor-pointer shadow-sm active:scale-95"
                     >
                       <Download className="w-3.5 h-3.5" />
                       Xuất kết quả
                     </button>
-                    <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition-all border border-emerald-100/50 cursor-pointer shadow-sm active:scale-95">
-                      <Upload className="w-3.5 h-3.5" />
-                      Nhập từ Excel
-                      <input
-                        type="file"
-                        accept=".xlsx, .xls"
-                        onChange={(e) => handleUploadExcel(e, onImportExcelResults)}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                )}
+                  )}
+                  <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition-all border border-emerald-100/50 cursor-pointer shadow-sm active:scale-95">
+                    <Upload className="w-3.5 h-3.5" />
+                    Nhập từ Excel
+                    <input
+                      type="file"
+                      accept=".xlsx, .xls"
+                      onChange={handleUploadExcel}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               </div>
 
               {assignedStudents.length === 0 ? (
@@ -423,6 +589,15 @@ export const ExamCard: React.FC<ExamCardProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ExcelImportPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        validList={validPreviewList}
+        invalidList={invalidPreviewList}
+        onConfirm={handleConfirmImport}
+        isSubmitting={isImporting}
+      />
     </motion.div>
   );
 }

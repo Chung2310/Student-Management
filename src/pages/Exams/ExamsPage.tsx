@@ -430,22 +430,6 @@ export function ExamsPage({ selectedCenter }: { selectedCenter?: string }) {
                     toast.error("Có lỗi xảy ra khi cập nhật kết quả thi.");
                   }
                 }}
-                onImportExcelResults={async (results) => {
-                  try {
-                    const res = await apiFetch(`/exams/${exam.id}/import-results`, {
-                      method: 'POST',
-                      body: JSON.stringify({ results })
-                    });
-                    window.dispatchEvent(new Event("student-mutation"));
-                    window.dispatchEvent(new Event("exam-mutation"));
-                    if (res.success) {
-                      toast.success(`Đã cập nhật kết quả: ${res.successCount} thành công, ${res.failedCount} thất bại.`);
-                    }
-                  } catch (error) {
-                    console.error("Error importing exam results:", error);
-                    toast.error("Có lỗi xảy ra khi nhập kết quả thi từ Excel.");
-                  }
-                }}
               />
             ))}
           </div>

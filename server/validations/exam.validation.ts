@@ -77,4 +77,5 @@ export const importResultsSchema = Joi.object({
   ).required().messages({
     "any.required": "Danh sách kết quả cập nhật là bắt buộc.",
   }),
+  preview: Joi.boolean().optional(),
 });
