@@ -67,6 +67,16 @@ export function SettingsPage() {
   };
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const visibleTabs = isAdmin
+    ? (['Cấu hình hệ thống', 'Quản lý dữ liệu', 'Quản trị'] as SettingsTab[])
+    : (['Cấu hình hệ thống'] as SettingsTab[]);
+  const currentTab: SettingsTab = visibleTabs.includes(activeTab) ? activeTab : 'Cấu hình hệ thống';
+
+  const ensureAdminAccess = () => {
+    if (isAdmin) return true;
+    toast.error('Tài khoản nhân viên chỉ được dùng phần Cấu hình hệ thống.');
+    return false;
+  };
 
 
 
@@ -273,9 +283,11 @@ export function SettingsPage() {
     { id: 'Quản lý dữ liệu', icon: Database, label: 'Quản lý dữ liệu' },
     { id: 'Quản trị', icon: ShieldCheck, label: 'Quản trị' },
   ];
+  const allowedTabs = tabs.filter((tab) => visibleTabs.includes(tab.id));
 
   // Backup data
   const handleBackup = async () => {
+    if (!ensureAdminAccess()) return;
     setIsProcessing(true);
     setProgress({ current: 0, total: 3, message: 'Đang chuẩn bị sao lưu...' });
     
@@ -328,6 +340,7 @@ export function SettingsPage() {
 
   // Pre-confirm before opening file picker
   const triggerRestore = () => {
+    if (!ensureAdminAccess()) return;
     if (!user) {
       toast.warning("Vui lòng đăng nhập để thực hiện chức năng này.");
       return;
@@ -338,6 +351,7 @@ export function SettingsPage() {
 
   // Restore file selection
   const handleRestoreFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!ensureAdminAccess()) return;
     const file = e.target.files?.[0];
     if (!file || !user) return;
     setRestoreFileToConfirm(file);
@@ -345,9 +359,9 @@ export function SettingsPage() {
 
   // Restore data execution
   const executeRestore = async (file: File) => {
+    if (!ensureAdminAccess()) return;
     setRestoreFileToConfirm(null);
     setRestoreFileName(file.name);
-    console.log(">>> [RESTORE] File selected:", file.name);
 
     setIsProcessing(true);
     setProgress({ current: 0, total: 0, message: 'Đang đọc file...' });
@@ -636,7 +650,6 @@ export function SettingsPage() {
           window.dispatchEvent(new Event('storage'));
         }
 
-        console.log(`>>> [RESTORE] Successfully restored database.`);
         setShowResult({ show: true, count: addedStudCount, type: 'Restore' });
         window.dispatchEvent(new Event('student-mutation'));
         window.dispatchEvent(new Event('payment-mutation'));
@@ -656,6 +669,7 @@ export function SettingsPage() {
 
   // Import data
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!ensureAdminAccess()) return;
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
@@ -793,7 +807,7 @@ export function SettingsPage() {
 
       {/* Tabs */}
       <div className="flex items-center gap-2 p-1.5 bg-slate-100/50 rounded-2xl w-fit">
-        {tabs.map((tab) => (
+        {allowedTabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
@@ -811,7 +825,7 @@ export function SettingsPage() {
       </div>
 
       <div className="space-y-6">
-        {activeTab === 'Cấu hình hệ thống' && (
+        {currentTab === 'Cấu hình hệ thống' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Form Fields Required Settings */}
             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 p-6 space-y-6">
@@ -876,8 +890,8 @@ export function SettingsPage() {
                     <button
                       type="button"
                       onClick={handleSaveVietqrConfig}
-                      disabled={isSavingVietqr}
-                      className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-850 active:scale-95 text-xs font-bold text-white transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                      disabled={!isAdmin || isSavingVietqr}
+                      className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-850 active:scale-95 text-xs font-bold text-white transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {isSavingVietqr ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -894,9 +908,10 @@ export function SettingsPage() {
                     <label className="text-xs font-bold text-slate-600">Trạng thái VietQR</label>
                     <button 
                       type="button"
+                      disabled={!isAdmin}
                       onClick={() => setVietqrEnabled(!vietqrEnabled)}
                       className={cn(
-                        "font-bold text-xs flex items-center gap-1 transition-all",
+                        "font-bold text-xs flex items-center gap-1 transition-all disabled:opacity-60 disabled:cursor-not-allowed",
                         vietqrEnabled ? "text-emerald-500" : "text-slate-400"
                       )}
                     >
@@ -923,9 +938,10 @@ export function SettingsPage() {
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ngân hàng</label>
                       <select 
+                        disabled={!isAdmin}
                         value={vietqrBankId}
                         onChange={(e) => setVietqrBankId(e.target.value)}
-                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all"
+                        className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <option value="mbbank">MBBank (MB)</option>
                         <option value="vietcombank">Vietcombank (VCB)</option>
@@ -966,6 +982,7 @@ export function SettingsPage() {
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Nội dung chuyển khoản mặc định</label>
                     <textarea 
+                      disabled={!isAdmin}
                       className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600"
                       rows={3}
                       placeholder="Mẫu nội dung (Ví dụ: [Mã HV] - [Họ tên] - Nộp học phí khóa {hang})..."
@@ -998,8 +1015,8 @@ export function SettingsPage() {
                     <button
                       type="button"
                       onClick={handleTestSmtpConnection}
-                      disabled={isTestingSmtp}
-                      className="h-9 px-4 rounded-xl border border-slate-200 hover:border-slate-300 text-xs font-bold text-slate-600 hover:text-slate-800 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                      disabled={!isAdmin || isTestingSmtp}
+                      className="h-9 px-4 rounded-xl border border-slate-200 hover:border-slate-300 text-xs font-bold text-slate-600 hover:text-slate-800 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {isTestingSmtp ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" />
@@ -1011,8 +1028,8 @@ export function SettingsPage() {
                     <button
                       type="button"
                       onClick={handleSaveSmtpSettings}
-                      disabled={isSavingSmtp}
-                      className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-850 active:scale-95 text-xs font-bold text-white transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                      disabled={!isAdmin || isSavingSmtp}
+                      className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-850 active:scale-95 text-xs font-bold text-white transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {isSavingSmtp ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1043,30 +1060,33 @@ export function SettingsPage() {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tài khoản SMTP (User)</label>
                     <input
                       type="text"
+                      disabled={!isAdmin}
                       placeholder="VD: account@gmail.com"
                       value={smtpUser}
                       onChange={(e) => setSmtpUser(e.target.value)}
-                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mật khẩu ứng dụng (Password)</label>
                     <input
                       type="password"
+                      disabled={!isAdmin}
                       placeholder="Nhập mật khẩu ứng dụng 16 ký tự..."
                       value={smtpPass}
                       onChange={(e) => setSmtpPass(e.target.value)}
-                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email gửi đi (From)</label>
                     <input
                       type="text"
+                      disabled={!isAdmin}
                       placeholder='VD: "Hệ thống" <account@gmail.com>'
                       value={smtpFrom}
                       onChange={(e) => setSmtpFrom(e.target.value)}
-                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all"
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-rose-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     />
                   </div>
                 </div>
@@ -1092,8 +1112,8 @@ export function SettingsPage() {
                   <button
                     type="button"
                     onClick={handleTestSmsConnection}
-                    disabled={isTestingSms}
-                    className="h-9 px-4 rounded-xl border border-slate-200 hover:border-slate-300 text-xs font-bold text-slate-600 hover:text-slate-800 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                    disabled={!isAdmin || isTestingSms}
+                    className="h-9 px-4 rounded-xl border border-slate-200 hover:border-slate-300 text-xs font-bold text-slate-600 hover:text-slate-800 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isTestingSms ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-600" />
@@ -1105,8 +1125,8 @@ export function SettingsPage() {
                   <button
                     type="button"
                     onClick={handleSaveSmsSettings}
-                    disabled={isSavingSms}
-                    className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-850 active:scale-95 text-xs font-bold text-white transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                    disabled={!isAdmin || isSavingSms}
+                    className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-850 active:scale-95 text-xs font-bold text-white transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isSavingSms ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1123,9 +1143,10 @@ export function SettingsPage() {
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nhà cung cấp SMS</label>
                     <select
+                      disabled={!isAdmin}
                       value={smsProvider}
                       onChange={(e) => setSmsProvider(e.target.value as 'twilio' | 'stringee' | 'tingting')}
-                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all"
+                      className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <option value="tingting">TingTing (SpeedSMS)</option>
                       <option value="twilio">Twilio (Quốc tế - Chưa hỗ trợ)</option>
@@ -1142,10 +1163,11 @@ export function SettingsPage() {
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">TingTing API Key</label>
                           <input
                             type="text"
+                            disabled={!isAdmin}
                             placeholder="Nhập API Key từ TingTing..."
                             value={tingtingApiKey}
                             onChange={(e) => setTingtingApiKey(e.target.value)}
-                            className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all"
+                            className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                           />
                         </div>
                       </div>
@@ -1154,10 +1176,11 @@ export function SettingsPage() {
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tên Sender (Nếu cần)</label>
                         <input
                           type="text"
+                          disabled={!isAdmin}
                           placeholder="VD: Brandname hoặc Device ID (Để trống nếu dùng mặc định)..."
                           value={tingtingSender}
                           onChange={(e) => setTingtingSender(e.target.value)}
-                          className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all"
+                          className="w-full h-11 bg-slate-50 px-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-800 outline-none focus:border-cyan-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         />
                       </div>
 
@@ -1185,7 +1208,7 @@ export function SettingsPage() {
           </div>
         )}
 
-        {activeTab === 'Quản lý dữ liệu' && (
+        {currentTab === 'Quản lý dữ liệu' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
             {isProcessing && (
               <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 px-10">
@@ -1386,7 +1409,7 @@ export function SettingsPage() {
           </div>
         )}
 
-        {activeTab === 'Quản trị' && (
+        {currentTab === 'Quản trị' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               {/* Sys Info */}

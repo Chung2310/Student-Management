@@ -125,8 +125,6 @@ async function ensureUniqueFieldsInScope(
 
 export class StudentService {
   static async createStudent(ownerId: string, ownerScope: string | string[], data: StudentCreateData): Promise<IStudent> {
-    logger.info(`[Student] Creating student for ownerId=${ownerId}, phone=${data.phone}`);
-
     const normalizedPayload = {
       ...data,
       email: typeof data.email === "string" ? normalizeEmail(data.email) : data.email,
@@ -142,13 +140,10 @@ export class StudentService {
       ...normalizedPayload,
       ownerId,
     });
-    const savedStudent = await student.save();
-    logger.info(`[Student] Student created successfully: id=${savedStudent._id}, phone=${savedStudent.phone}`);
-    return savedStudent;
+    return await student.save();
   }
 
   static async getStudents(ownerId: string | string[], filters: StudentFilters) {
-    logger.info(`[Student] Fetching students list for ownerId=${ownerId} with filters: ${JSON.stringify(filters)}`);
     const page = filters.page ? parseInt(String(filters.page)) : 1;
     const limit = filters.limit ? parseInt(String(filters.limit)) : 1000;
     const skip = (page - 1) * limit;
@@ -186,7 +181,6 @@ export class StudentService {
       .skip(skip)
       .limit(limit);
 
-    logger.info(`[Student] Fetched ${students.length} students (total=${total}) for ownerId=${ownerId}`);
     return {
       students,
       total,
@@ -197,7 +191,6 @@ export class StudentService {
   }
 
   static async getStudentById(ownerId: string | string[], id: string): Promise<IStudent | null> {
-    logger.info(`[Student] Fetching student detail: id=${id}, ownerId=${ownerId}`);
     const query: Record<string, unknown> = {
       _id: id,
       ...buildOwnerScopeQuery(ownerId),
@@ -211,8 +204,6 @@ export class StudentService {
     id: string,
     data: StudentUpdateData
   ): Promise<IStudent | null> {
-    logger.info(`[Student] Updating student: id=${id}, ownerId=${ownerId}`);
-
     if (data.fullName) {
       data.slug = slugify(String(data.fullName));
     }
@@ -289,32 +280,25 @@ export class StudentService {
       { $set: data },
       { new: true, runValidators: true }
     );
-    if (updatedStudent) {
-      logger.info(`[Student] Student updated successfully: id=${id}`);
-    } else {
+    if (!updatedStudent) {
       logger.warn(`[Student] Student update failed/not found: id=${id}, ownerId=${ownerId}`);
     }
     return updatedStudent;
   }
 
   static async deleteStudent(ownerId: string | string[], id: string): Promise<IStudent | null> {
-    logger.info(`[Student] Deleting student: id=${id}, ownerId=${ownerId}`);
     const query: Record<string, unknown> = {
       _id: id,
       ...buildOwnerScopeQuery(ownerId),
     };
     const deletedStudent = await Student.findOneAndDelete(query);
-    if (deletedStudent) {
-      logger.info(`[Student] Student deleted successfully: id=${id}`);
-    } else {
+    if (!deletedStudent) {
       logger.warn(`[Student] Student delete failed/not found: id=${id}, ownerId=${ownerId}`);
     }
     return deletedStudent;
   }
 
   static async bulkCreateStudents(creatorId: string, ownerId: string | string[], studentsData: BulkStudentInput[], targetOwnerId?: string) {
-    logger.info(`[Student] Bulk importing ${studentsData.length} students: creatorId=${creatorId}, ownerId=${ownerId}, targetOwnerId=${targetOwnerId}`);
-
     const creator = await User.findById(creatorId).lean();
     const businessType = creator?.businessType || "driving";
 
@@ -434,9 +418,9 @@ export class StudentService {
     if (validStudents.length > 0) {
       const results = await Student.insertMany(validStudents);
       importedCount = results.length;
-      logger.info(`[Student] Bulk import complete: successfully imported ${importedCount} students, skipped ${skippedCount} students`);
+      logger.info(`[Student] Bulk import complete: imported=${importedCount}, skipped=${skippedCount}`);
     } else {
-      logger.info(`[Student] Bulk import complete: no valid students to import. Skipped ${skippedCount} students`);
+      logger.info(`[Student] Bulk import complete: imported=0, skipped=${skippedCount}`);
     }
 
     return {
@@ -451,8 +435,6 @@ export class StudentService {
     studentId: string,
     installmentNo: number
   ): Promise<{ success: boolean; error?: string }> {
-    logger.info(`[Student] Mark installment paid: studentId=${studentId}, installmentNo=${installmentNo}, ownerId=${ownerId}`);
-
     const query: Record<string, unknown> = {
       _id: studentId,
       ...buildOwnerScopeQuery(ownerId),
@@ -491,12 +473,10 @@ export class StudentService {
     student.markModified("installmentStatus");
     await student.save();
 
-    logger.info(`[Student] Installment ${installmentNo} marked as paid for student ${studentId}`);
     return { success: true };
   }
 
   static async getStudentByIdCard(idCard: string): Promise<IStudent | null> {
-    logger.info(`[Student] Public lookup by idCard=${idCard}`);
     const normalizedIdCard = normalizeIdCard(idCard);
     if (!normalizedIdCard) {
       return null;

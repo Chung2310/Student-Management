@@ -85,18 +85,14 @@ interface InvalidImportPreview {
 
 export class ExamService {
   static async createExam(ownerId: string, data: ExamCreateData): Promise<IExam> {
-    logger.info(`[Exam] Creating exam for ownerId=${ownerId}, data=${JSON.stringify(data)}`);
     const exam = new Exam({
       ...data,
       ownerId,
     });
-    const savedExam = await exam.save();
-    logger.info(`[Exam] Exam created successfully: id=${savedExam._id}, name=${savedExam.name}`);
-    return savedExam;
+    return await exam.save();
   }
 
   static async getExams(ownerId: string | string[], filters: ExamFilters) {
-    logger.info(`[Exam] Fetching exams for ownerId=${ownerId} with filters: ${JSON.stringify(filters)}`);
     const page = filters.page ? parseInt(String(filters.page)) : 1;
     const limit = filters.limit ? parseInt(String(filters.limit)) : 1000;
     const skip = (page - 1) * limit;
@@ -123,7 +119,6 @@ export class ExamService {
       .skip(skip)
       .limit(limit);
 
-    logger.info(`[Exam] Fetched ${exams.length} exams (total=${total}) for ownerId=${ownerId}`);
     return {
       exams,
       total,
@@ -134,7 +129,6 @@ export class ExamService {
   }
 
   static async getExamById(ownerId: string | string[], id: string): Promise<IExam | null> {
-    logger.info(`[Exam] Fetching exam detail: id=${id}, ownerId=${ownerId}`);
     const query: Record<string, unknown> = { _id: id };
     if (ownerId !== "ALL") {
       query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
@@ -143,7 +137,6 @@ export class ExamService {
   }
 
   static async updateExam(ownerId: string | string[], id: string, data: ExamUpdateData): Promise<IExam | null> {
-    logger.info(`[Exam] Updating exam: id=${id}, ownerId=${ownerId}`);
     const query: Record<string, unknown> = { _id: id };
     if (ownerId !== "ALL") {
       query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
@@ -153,31 +146,25 @@ export class ExamService {
       { $set: data },
       { new: true, runValidators: true }
     );
-    if (updatedExam) {
-      logger.info(`[Exam] Exam updated successfully: id=${id}`);
-    } else {
+    if (!updatedExam) {
       logger.warn(`[Exam] Exam update failed/not found: id=${id}, ownerId=${ownerId}`);
     }
     return updatedExam;
   }
 
   static async deleteExam(ownerId: string | string[], id: string): Promise<IExam | null> {
-    logger.info(`[Exam] Deleting exam: id=${id}, ownerId=${ownerId}`);
     const query: Record<string, unknown> = { _id: id };
     if (ownerId !== "ALL") {
       query.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
     }
     const deletedExam = await Exam.findOneAndDelete(query);
-    if (deletedExam) {
-      logger.info(`[Exam] Exam deleted successfully: id=${id}`);
-    } else {
+    if (!deletedExam) {
       logger.warn(`[Exam] Exam delete failed/not found: id=${id}, ownerId=${ownerId}`);
     }
     return deletedExam;
   }
 
   static async assignStudents(ownerId: string | string[], examId: string, studentIds: string[]): Promise<{ success: boolean }> {
-    logger.info(`[Exam] Assigning ${studentIds.length} students to examId=${examId}, ownerId=${ownerId}`);
     const examQuery: Record<string, unknown> = { _id: examId };
     if (ownerId !== "ALL") {
       examQuery.ownerId = Array.isArray(ownerId) ? { $in: ownerId } : ownerId;
@@ -194,7 +181,7 @@ export class ExamService {
     }
 
     // Update students (assign to exam and add to history)
-    const updateResult = await Student.updateMany(
+    await Student.updateMany(
       studentQuery,
       {
         $set: {
@@ -215,8 +202,6 @@ export class ExamService {
         }
       }
     );
-    logger.info(`[Exam] Assigned students updated database: matchedCount=${updateResult.matchedCount}, modifiedCount=${updateResult.modifiedCount}`);
-
     // Update exam student count
     exam.studentCount += studentIds.length;
     await exam.save();

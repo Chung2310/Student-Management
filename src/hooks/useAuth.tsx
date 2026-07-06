@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { apiFetch, setAccessToken } from '../lib/api';
+import { apiFetch, AUTH_REFRESHED_EVENT, setAccessToken } from '../lib/api';
 import { useToast } from './useToast';
 
 export interface AuthUser {
@@ -55,6 +55,32 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function normalizeAuthUser(rawUser: Record<string, unknown>): AuthUser {
+  return {
+    uid: String(rawUser.uid || ''),
+    email: String(rawUser.email || ''),
+    displayName: String(rawUser.displayName || ''),
+    photoURL: typeof rawUser.photoURL === 'string' ? rawUser.photoURL : undefined,
+    role: rawUser.role as AuthUser['role'],
+    centerId: String(rawUser.centerId || ''),
+    createdBy: typeof rawUser.createdBy === 'string' ? rawUser.createdBy : undefined,
+    bankAccountNo: typeof rawUser.bankAccountNo === 'string' ? rawUser.bankAccountNo : undefined,
+    bankId: typeof rawUser.bankId === 'string' ? rawUser.bankId : undefined,
+    bankAccountName: typeof rawUser.bankAccountName === 'string' ? rawUser.bankAccountName : undefined,
+    bankQrEnabled: typeof rawUser.bankQrEnabled === 'boolean' ? rawUser.bankQrEnabled : undefined,
+    smtpHost: typeof rawUser.smtpHost === 'string' ? rawUser.smtpHost : undefined,
+    smtpPort: typeof rawUser.smtpPort === 'number' ? rawUser.smtpPort : undefined,
+    smtpSecure: typeof rawUser.smtpSecure === 'boolean' ? rawUser.smtpSecure : undefined,
+    smtpUser: typeof rawUser.smtpUser === 'string' ? rawUser.smtpUser : undefined,
+    smtpPass: typeof rawUser.smtpPass === 'string' ? rawUser.smtpPass : undefined,
+    smtpFrom: typeof rawUser.smtpFrom === 'string' ? rawUser.smtpFrom : undefined,
+    smtpSandboxEmail: typeof rawUser.smtpSandboxEmail === 'string' ? rawUser.smtpSandboxEmail : undefined,
+    businessType: (rawUser.businessType as AuthUser['businessType']) || "driving",
+    smsSettings: (rawUser.smsSettings as AuthUser['smsSettings']) || null,
+    permissions: Array.isArray(rawUser.permissions) ? (rawUser.permissions as string[]) : [],
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,29 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await apiFetch("/auth/me");
       if (res.success && res.data.user) {
-        setUser({
-          uid: res.data.user.uid,
-          email: res.data.user.email,
-          displayName: res.data.user.displayName,
-          photoURL: res.data.user.photoURL,
-          role: res.data.user.role,
-          centerId: res.data.user.centerId,
-          createdBy: res.data.user.createdBy,
-          bankAccountNo: res.data.user.bankAccountNo,
-          bankId: res.data.user.bankId,
-          bankAccountName: res.data.user.bankAccountName,
-          bankQrEnabled: res.data.user.bankQrEnabled,
-          smtpHost: res.data.user.smtpHost,
-          smtpPort: res.data.user.smtpPort,
-          smtpSecure: res.data.user.smtpSecure,
-          smtpUser: res.data.user.smtpUser,
-          smtpPass: res.data.user.smtpPass,
-          smtpFrom: res.data.user.smtpFrom,
-          smtpSandboxEmail: res.data.user.smtpSandboxEmail,
-          businessType: res.data.user.businessType || "driving",
-          smsSettings: res.data.user.smsSettings || null,
-          permissions: res.data.user.permissions || [],
-        });
+        setUser(normalizeAuthUser(res.data.user));
       } else {
         setUser(null);
       }
@@ -106,11 +110,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const handleUnauthorized = () => {
       setUser(null);
     };
+    const handleAuthRefreshed = (event: Event) => {
+      const customEvent = event as CustomEvent<Record<string, unknown>>;
+      if (customEvent.detail) {
+        setUser(normalizeAuthUser(customEvent.detail));
+      }
+    };
 
     window.addEventListener("unauthorized", handleUnauthorized);
+    window.addEventListener(AUTH_REFRESHED_EVENT, handleAuthRefreshed as EventListener);
     return () => {
       clearTimeout(timer);
       window.removeEventListener("unauthorized", handleUnauthorized);
+      window.removeEventListener(AUTH_REFRESHED_EVENT, handleAuthRefreshed as EventListener);
     };
   }, []);
 
@@ -128,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.success && res.data) {
         setAccessToken(res.data.accessToken);
-        setUser(res.data.user);
+        setUser(normalizeAuthUser(res.data.user));
       }
     } catch (error: unknown) {
       throw new Error(error instanceof Error ? error.message : "Đăng nhập thất bại.", { cause: error });

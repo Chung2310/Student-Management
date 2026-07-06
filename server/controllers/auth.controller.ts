@@ -123,6 +123,7 @@ export class AuthController {
             displayName: user.displayName,
             role: user.role,
             centerId: user.centerId,
+            createdBy: user.createdBy,
             bankAccountNo,
             bankId,
             bankAccountName,
@@ -135,6 +136,7 @@ export class AuthController {
             smtpFrom,
             smtpSandboxEmail,
             businessType: user.businessType || "driving",
+            permissions: user.permissions || [],
             smsSettings: smsSettings ? {
               provider: smsSettings.provider,
               twilioAccountSid: smsSettings.twilioAccountSid,
