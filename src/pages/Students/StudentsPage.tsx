@@ -157,10 +157,12 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
 
   // Hạng bằng là dữ liệu riêng ngành lái xe — chỉ hiện filter/cột khi còn học viên có hạng
   const hasRankData = useMemo(() => students.some(s => s.rank), [students]);
-  const rankOptions = useMemo(() => {
-    const ranks = [...new Set(students.map(s => s.rank).filter(Boolean))] as string[];
-    return ['Tất cả hạng', ...ranks.sort()];
-  }, [students]);
+  const rankOptions = [
+    'Tất cả hạng',
+    'A1', 'A2', 'A3', 'A4',
+    'B1', 'B2', 'C', 'D', 'E',
+    'FB2', 'FC', 'FD', 'FE'
+  ];
 
   const filteredStudents = students.filter(student => {
     // 1. Category Filter (theo phân loại khóa học của lớp học viên đang tham gia)

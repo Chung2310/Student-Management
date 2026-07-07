@@ -531,16 +531,44 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
                     error={errors.rank}
                   />
                 ) : (user?.businessType || 'driving') === 'driving' ? (
-                  <FormInput
-                    label="Hạng bằng (lái xe — tùy chọn)"
-                    name="rank"
-                    value={formData.rank}
-                    onChange={handleInputChange}
-                    onBlur={handleInputBlur}
-                    required={requiredFields.rank}
-                    placeholder="Ví dụ: A1, B2, C... hoặc để trống"
-                    error={errors.rank}
-                  />
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                      Hạng bằng (lái xe — tùy chọn)
+                    </label>
+                    <div className="relative">
+                      <select
+                        name="rank"
+                        value={formData.rank}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all cursor-pointer font-semibold"
+                      >
+                        <option value="">-- Chọn hạng bằng --</option>
+                        <optgroup label="Xe máy (Mô tô)">
+                          <option value="A1">A1</option>
+                          <option value="A2">A2</option>
+                          <option value="A3">A3</option>
+                          <option value="A4">A4</option>
+                        </optgroup>
+                        <optgroup label="Ô tô / Xe tải">
+                          <option value="B1">B1</option>
+                          <option value="B2">B2</option>
+                          <option value="C">C</option>
+                        </optgroup>
+                        <optgroup label="Xe khách / Nâng hạng">
+                          <option value="D">D</option>
+                          <option value="E">E</option>
+                        </optgroup>
+                        <optgroup label="Xe đầu kéo / Rơ-moóc">
+                          <option value="FB2">FB2</option>
+                          <option value="FC">FC</option>
+                          <option value="FD">FD</option>
+                          <option value="FE">FE</option>
+                        </optgroup>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
+                    {errors.rank && <p className="text-[11px] font-bold text-rose-500 ml-1">{errors.rank}</p>}
+                  </div>
                 ) : null}
 
                 <FormInput

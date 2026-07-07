@@ -139,11 +139,7 @@ export const publicRegisterStudentSchema = Joi.object({
     "string.empty": "Ngày sinh không được để trống.",
     "string.pattern.base": "Ngày sinh không đúng định dạng DD/MM/YYYY.",
   }),
-  idCard: Joi.string().required().pattern(/^\d{12}$/).messages({
-    "any.required": "Số CCCD/CMND là bắt buộc.",
-    "string.empty": "Số CCCD/CMND không được để trống.",
-    "string.pattern.base": "Số CCCD phải có đúng 12 chữ số.",
-  }),
+  idCard: Joi.string().allow("").optional(),
   rank: Joi.string().allow("").optional(),
   enrollmentDate: Joi.string().required().pattern(/^\d{1,2}\/\d{1,2}\/\d{4}$/).messages({
     "any.required": "Ngày nhập học là bắt buộc.",
@@ -154,15 +150,9 @@ export const publicRegisterStudentSchema = Joi.object({
     "any.required": "Địa chỉ là bắt buộc.",
     "string.empty": "Địa chỉ không được để trống.",
   }),
-  idCardFrontFile: uploadedFileSchema.required().messages({
-    "any.required": "Ảnh CCCD mặt trước là bắt buộc.",
-  }),
-  idCardBackFile: uploadedFileSchema.required().messages({
-    "any.required": "Ảnh CCCD mặt sau là bắt buộc.",
-  }),
-  portraitFile: uploadedFileSchema.required().messages({
-    "any.required": "Ảnh chân dung là bắt buộc.",
-  }),
+  idCardFrontFile: uploadedFileSchema.optional(),
+  idCardBackFile: uploadedFileSchema.optional(),
+  portraitFile: uploadedFileSchema.optional(),
   teacherId: objectIdSchema.required().messages({
     "any.required": "ID giáo viên là bắt buộc.",
     "string.empty": "ID giáo viên không được để trống.",

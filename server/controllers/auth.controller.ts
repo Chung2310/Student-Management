@@ -398,11 +398,19 @@ export class AuthController {
       if (!user || user.isActive === false) {
         return res.status(404).json({ success: false, error: "Không tìm thấy thông tin giáo viên hoặc tài khoản đã bị khóa." });
       }
+      let businessType = user.businessType || "driving";
+      if (user.role === "user" && user.centerId) {
+        const adminUser = await AuthService.getUserProfile(user.centerId);
+        if (adminUser) {
+          businessType = adminUser.businessType || "driving";
+        }
+      }
       res.json({
         success: true,
         data: {
           displayName: user.displayName,
           centerId: user.centerId,
+          businessType,
         },
       });
     } catch (error: unknown) {
