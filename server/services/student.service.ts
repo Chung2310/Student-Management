@@ -4,6 +4,7 @@ import { IStudent, StudentStatus } from "../interfaces/student.interface";
 import { Student, slugify } from "../models/student.model";
 import { Payment } from "../models/payment.model";
 import { User } from "../models/user.model";
+import { Partner } from "../models/partner.model";
 
 interface StudentFilters {
   page?: number | string;
@@ -28,6 +29,7 @@ interface BulkStudentInput {
   fullName?: string;
   phone?: string;
   rank?: string;
+  courseId?: string;
   birthday?: string;
   idCard?: string;
   email?: string;
@@ -322,7 +324,10 @@ export class StudentService {
       const data = studentsData[i];
       const fullName = String(data.fullName || "").trim();
       const phone = normalizePhone(String(data.phone || ""));
-      const rank = String(data.rank || "").trim().toUpperCase();
+      const rank = businessType === "driving"
+        ? String(data.rank || "").trim().toUpperCase()
+        : String(data.rank || "").trim();
+      const courseId = String(data.courseId || "").trim();
 
       if (!fullName) {
         errors.push({ row: rowNum, name: fullName, phone, reason: "Họ và tên không được để trống." });
@@ -358,6 +363,22 @@ export class StudentService {
       const email = normalizeEmail(String(data.email || ""));
       const referral = String(data.referral || "").trim();
       const address = String(data.address || "").trim();
+
+      // Lookup partner if referral is provided
+      let partnerId = "";
+      if (referral) {
+        const ownerQuery = buildOwnerScopeQuery(ownerId);
+        const partner = await Partner.findOne({
+          ...ownerQuery,
+          $or: [
+            { name: { $regex: new RegExp(`^${referral.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, "i") } },
+            { code: { $regex: new RegExp(`^${referral.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, "i") } }
+          ]
+        }).select("_id");
+        if (partner) {
+          partnerId = partner._id.toString();
+        }
+      }
       const fee = String(data.fee || "0").trim();
       const registrationDate = String(data.registrationDate || new Date().toLocaleDateString("vi-VN")).trim();
       const enrollmentDate = String(data.enrollmentDate || "").trim();
@@ -397,9 +418,11 @@ export class StudentService {
         phone,
         email: email || undefined,
         referral,
+        partnerId,
         birthday,
         idCard,
         rank,
+        courseId,
         registrationDate,
         enrollmentDate,
         fee,

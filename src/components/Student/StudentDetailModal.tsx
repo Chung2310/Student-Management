@@ -11,6 +11,7 @@ import { cn, toDisplayDate, compressImage } from '../../lib/utils';
 import { analyzeStudentPerformance } from '../../services/geminiService';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
+import { useCourses } from '../../hooks/useCourses';
 
 import { ProfileTab } from './DetailTabs/ProfileTab';
 
@@ -32,6 +33,7 @@ type TabType = 'Hồ sơ' | 'KSK' | 'Tiến độ học' | 'Lịch thi & KQ' | '
 export function StudentDetailModal({ student: initialStudent, onClose, initialTab = 'Hồ sơ' }: StudentDetailModalProps) {
   const { user } = useAuth();
   const [student, setStudent] = React.useState<Student | null>(initialStudent);
+  const { courses } = useCourses(student?.centerId || student?.ownerId || undefined);
   const [activeTab, setActiveTab] = React.useState<TabType>(initialTab);
   const [analysis, setAnalysis] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -412,6 +414,8 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
     }
 
     const businessType = user?.businessType || 'driving';
+    const course = courses.find(c => c.id === student.courseId);
+    const displayCourseTitle = course ? course.title : student.rank;
 
     // Format money
     const totalFeeNum = parseInt(String(student.fee).replace(/\D/g, ''), 10) || 0;
@@ -579,8 +583,8 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
             <div class="section-title">THÔNG TIN ĐÀO TẠO & HỌC PHÍ</div>
             <div class="grid-2">
               <div class="info-item">
-                <div class="info-label">${businessType === 'language' ? 'Khóa học:' : 'Hạng bằng:'}</div>
-                <div class="info-value">${student.rank || 'Chưa xếp lớp'}</div>
+                <div class="info-label">${businessType === 'driving' ? 'Hạng bằng:' : 'Khóa học:'}</div>
+                <div class="info-value">${displayCourseTitle || 'Chưa xếp lớp'}</div>
               </div>
               <div class="info-item">
                 <div class="info-label">Trạng thái học tập:</div>

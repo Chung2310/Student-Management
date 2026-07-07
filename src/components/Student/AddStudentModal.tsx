@@ -4,8 +4,8 @@ import { X, Save, ChevronDown, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
-import { useBatches } from '../../hooks/useBatches';
 import { useAdminCenters } from '../../hooks/useAdminCenters';
+import { useCourses } from '../../hooks/useCourses';
 import { formatVND, toInputDate, toDisplayDate, compressImage } from '../../lib/utils';
 import { DrivingStudent, Student, UploadedFile, Partner } from '../../types';
 import { findDuplicateStudentField } from '../../lib/studentUniqueness';
@@ -25,24 +25,21 @@ type FileField = 'idCardFrontFile' | 'idCardBackFile' | 'portraitFile';
 export function AddStudentModal({ isOpen, onClose, onSuccess, students, selectedCenter }: AddStudentModalProps) {
   const { user, login } = useAuth();
   const { toast } = useToast();
-  const { batches } = useBatches();
   const { centers } = useAdminCenters();
   const businessType = user?.businessType || 'driving';
-  const usesCourseFeePolicy = businessType !== 'driving';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingField, setUploadingField] = useState<FileField | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [batchId, setBatchId] = useState('');
   const [selectedCenterId, setSelectedCenterId] = useState<string>(() => {
     return selectedCenter && selectedCenter !== 'all' ? selectedCenter : '';
   });
-  const [prevSelectedCenter, setPrevSelectedCenter] = useState(selectedCenter);
+  const { courses } = useCourses(user?.role === 'superadmin' ? selectedCenterId : undefined);
 
-  if (selectedCenter !== prevSelectedCenter) {
-    setPrevSelectedCenter(selectedCenter);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedCenterId(selectedCenter && selectedCenter !== 'all' ? selectedCenter : '');
-  }
+  }, [selectedCenter]);
 
   const [referralMode, setReferralMode] = useState<'none' | 'partner' | 'custom'>('none');
   const [partners, setPartners] = useState<Partner[]>([]);
@@ -75,6 +72,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
     birthday: '',
     idCard: '',
     rank: '',
+    courseId: '',
     registrationDate: new Date().toLocaleDateString('vi-VN'),
     enrollmentDate: '',
     fee: '',
@@ -185,7 +183,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
           ...formData,
           birthday: toDisplayDate(formData.birthday),
           enrollmentDate: toDisplayDate(formData.enrollmentDate),
-          fee: businessType === 'driving' ? formData.fee : '',
+          fee: formData.fee,
           idCardFront: formData.idCardFrontFile?.url || '',
           idCardBack: formData.idCardBackFile?.url || '',
           status: businessType === 'driving' ? ['Chờ KSK'] : ['Đang học'],
@@ -197,19 +195,6 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
 
       if (res.success && res.data) {
         const studentWithId = { id: res.data._id, ...res.data };
-
-        if (batchId) {
-          try {
-            await apiFetch(`/batches/${batchId}/learners`, {
-              method: 'POST',
-              body: JSON.stringify({ studentId: res.data._id }),
-            });
-            window.dispatchEvent(new Event('batch-mutation'));
-          } catch (batchError: unknown) {
-            const msg = batchError instanceof Error ? batchError.message : 'Không thể xếp lớp.';
-            toast.warning(`Đã tạo học viên nhưng chưa xếp được vào lớp: ${msg}`);
-          }
-        }
 
         window.dispatchEvent(new Event('student-mutation'));
         toast.success('Đã lưu hồ sơ học viên thành công!');
@@ -224,6 +209,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
           birthday: '',
           idCard: '',
           rank: '',
+          courseId: '',
           registrationDate: new Date().toLocaleDateString('vi-VN'),
           enrollmentDate: '',
           fee: '',
@@ -234,7 +220,6 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
           portraitFile: undefined,
         });
         setReferralMode('none');
-        setBatchId('');
         setSelectedCenterId(selectedCenter && selectedCenter !== 'all' ? selectedCenter : '');
       }
     } catch (error: unknown) {
@@ -259,6 +244,22 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
     }
   };
 
+  const handleCourseChange = (courseId: string) => {
+    const course = courses.find(c => c.id === courseId);
+    setFormData(prev => ({
+      ...prev,
+      courseId: courseId,
+      rank: course ? course.title : '',
+      fee: course ? formatVND(course.fee) : '',
+    }));
+    setErrors(prev => {
+      const copy = { ...prev };
+      delete copy.rank;
+      delete copy.fee;
+      return copy;
+    });
+  };
+
   const validateField = (name: string, value: string): string => {
     if (requiredFields[name as keyof typeof requiredFields] && !value.trim()) {
       if (name === 'fullName') return 'Họ và tên không được để trống.';
@@ -267,8 +268,8 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
       if (name === 'idCard') return 'CCCD/CMND không được để trống.';
       if (name === 'email') return 'Email không được để trống.';
       if (name === 'rank') {
-        return businessType === 'driving' 
-          ? 'Hạng bằng không được để trống.' 
+        return businessType === 'driving'
+          ? 'Hạng bằng không được để trống.'
           : 'Khóa học đăng ký không được để trống.';
       }
     }
@@ -496,92 +497,84 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
                   placeholder="Nhập số CCCD (12 số)..."
                   error={errors.idCard}
                 />
-                
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                    Xếp vào lớp (tùy chọn)
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={batchId}
-                      onChange={(e) => setBatchId(e.target.value)}
-                      className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all cursor-pointer"
-                    >
-                      <option value="">-- Chưa xếp lớp --</option>
-                      {batches
-                        .filter(b => b.status !== 'Đã kết thúc')
-                        .map(b => (
-                          <option key={b.id} value={b.id}>
-                            {b.code} — {b.courseTitle}
+
+
+
+                {user?.businessType === 'language' || user?.businessType === 'general' ? (
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                      Khóa học đăng ký {requiredFields.rank && '*'}
+                    </label>
+                    <div className="relative">
+                      <select
+                        name="courseId"
+                        value={formData.courseId}
+                        onChange={(e) => handleCourseChange(e.target.value)}
+                        className={`w-full px-4 py-2 bg-white border rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all cursor-pointer ${errors.rank ? 'border-rose-300 bg-rose-50/10 focus:border-rose-500' : 'border-slate-200'
+                          }`}
+                      >
+                        <option value="">-- Chọn khóa học --</option>
+                        {courses.map(c => (
+                          <option key={c.id} value={c.id}>
+                            {c.code} — {c.title}
                           </option>
                         ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                    </div>
+                    {errors.rank && <p className="text-[10px] text-rose-500 font-bold">{errors.rank}</p>}
                   </div>
-                </div>
-                
-                {user?.businessType === 'language' ? (
-                  <FormInput
-                    label="Khóa học đăng ký"
-                    name="rank"
-                    value={formData.rank}
-                    onChange={handleInputChange}
-                    onBlur={handleInputBlur}
-                    required={requiredFields.rank}
-                    placeholder="Ví dụ: IELTS, TOEIC, Giao tiếp..."
-                    error={errors.rank}
-                  />
                 ) : (user?.businessType || 'driving') === 'driving' ? (
-                    <CustomSelect
-                      label="Hạng bằng (lái xe — tùy chọn)"
-                      value={formData.rank}
-                      onChange={(val) => {
-                        setFormData(prev => ({ ...prev, rank: val }));
-                        if (errors.rank) {
-                          setErrors(prev => {
-                            const copy = { ...prev };
-                            delete copy.rank;
-                            return copy;
-                          });
-                        }
-                      }}
-                      groups={[
-                        {
-                          label: "Xe máy (Mô tô)",
-                          options: [
-                            { value: "A1", label: "A1" },
-                            { value: "A2", label: "A2" }
-                          ]
-                        },
-                        {
-                          label: "Ô tô / Xe tải",
-                          options: [
-                            { value: "B1", label: "B1" },
-                            { value: "B2", label: "B2" },
-                            { value: "C", label: "C" }
-                          ]
-                        },
-                        {
-                          label: "Xe khách / Nâng hạng",
-                          options: [
-                            { value: "D", label: "D" },
-                            { value: "E", label: "E" }
-                          ]
-                        },
-                        {
-                          label: "Xe đầu kéo / Rơ-moóc",
-                          options: [
-                            { value: "FB2", label: "FB2" },
-                            { value: "FC", label: "FC" },
-                            { value: "FD", label: "FD" },
-                            { value: "FE", label: "FE" }
-                          ]
-                        }
-                      ]}
-                      placeholder="-- Chọn hạng bằng --"
-                      error={errors.rank}
-                      theme="modal"
-                    />
+                  <CustomSelect
+                    label="Hạng bằng (lái xe — tùy chọn)"
+                    value={formData.rank}
+                    onChange={(val) => {
+                      setFormData(prev => ({ ...prev, rank: val }));
+                      if (errors.rank) {
+                        setErrors(prev => {
+                          const copy = { ...prev };
+                          delete copy.rank;
+                          return copy;
+                        });
+                      }
+                    }}
+                    groups={[
+                      {
+                        label: "Xe máy (Mô tô)",
+                        options: [
+                          { value: "A1", label: "A1" },
+                          { value: "A2", label: "A2" }
+                        ]
+                      },
+                      {
+                        label: "Ô tô / Xe tải",
+                        options: [
+                          { value: "B1", label: "B1" },
+                          { value: "B2", label: "B2" },
+                          { value: "C", label: "C" }
+                        ]
+                      },
+                      {
+                        label: "Xe khách / Nâng hạng",
+                        options: [
+                          { value: "D", label: "D" },
+                          { value: "E", label: "E" }
+                        ]
+                      },
+                      {
+                        label: "Xe đầu kéo / Rơ-moóc",
+                        options: [
+                          { value: "FB2", label: "FB2" },
+                          { value: "FC", label: "FC" },
+                          { value: "FD", label: "FD" },
+                          { value: "FE", label: "FE" }
+                        ]
+                      }
+                    ]}
+                    placeholder="-- Chọn hạng bằng --"
+                    error={errors.rank}
+                    theme="modal"
+                  />
                 ) : null}
 
                 <FormInput
@@ -599,26 +592,15 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
                   onChange={handleInputChange}
                   onBlur={handleInputBlur}
                 />
-                {usesCourseFeePolicy ? (
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                      Học phí đã chốt
-                    </label>
-                    <div className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-500">
-                      Sẽ lấy tự động từ khóa học khi xếp lớp.
-                    </div>
-                  </div>
-                ) : (
-                  <FormInput
-                    label="Học phí (VND)"
-                    name="fee"
-                    value={formData.fee}
-                    onChange={handleInputChange}
-                    onBlur={handleInputBlur}
-                    placeholder="Nhập học phí..."
-                    error={errors.fee}
-                  />
-                )}
+                <FormInput
+                  label="Học phí (VND)"
+                  name="fee"
+                  value={formData.fee}
+                  onChange={handleInputChange}
+                  onBlur={handleInputBlur}
+                  placeholder="Nhập học phí..."
+                  error={errors.fee}
+                />
                 <FormInput
                   label="Địa chỉ"
                   name="address"

@@ -213,7 +213,7 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
         category: newCourse.category,
         fee: usesCourseFeePolicy ? `${formatVND(newCourse.fee)}d` : '0d',
         duration: newCourse.duration,
-        maxLearners: newCourse.maxLearners === '' ? 20 : newCourse.maxLearners,
+        maxLearners: businessType === 'driving' ? (newCourse.maxLearners === '' ? 20 : newCourse.maxLearners) : 0,
       };
 
       await apiFetch<MutationResponse>('/courses', {
@@ -257,7 +257,7 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
         category: editForm.category,
         fee: usesCourseFeePolicy ? `${formatVND(editForm.fee)}d` : '0d',
         duration: editForm.duration,
-        maxLearners: editForm.maxLearners === '' ? 20 : editForm.maxLearners,
+        maxLearners: businessType === 'driving' ? (editForm.maxLearners === '' ? 20 : editForm.maxLearners) : 0,
       };
 
       await apiFetch<MutationResponse>(`/courses/${editingCourse.id}`, {
@@ -459,7 +459,9 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
                     {usesCourseFeePolicy && (
                       <div className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-slate-400" /> {course.fee}</div>
                     )}
-                    <div className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-slate-400" /> Max: {course.maxLearners} HV</div>
+                    {businessType === 'driving' && (
+                      <div className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-slate-400" /> Max: {course.maxLearners} HV</div>
+                    )}
                     <div className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-slate-400" /> {course.activeBatches} lop dang chay</div>
                   </div>
                 </div>
@@ -543,7 +545,9 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
                     </td>
                     <td className="py-4 px-6 font-bold">{course.duration}</td>
                     <td className="py-4 px-6 font-bold">{usesCourseFeePolicy ? course.fee : 'Không áp dụng'}</td>
-                    <td className="py-4 px-6 font-bold">{course.maxLearners} HV ({course.activeBatches} lớp)</td>
+                    <td className="py-4 px-6 font-bold">
+                      {businessType === 'driving' ? `${course.maxLearners} HV` : 'Không giới hạn'} ({course.activeBatches} lớp)
+                    </td>
                     <td className="py-4 px-6">
                       <span className={cn(
                         'px-2 py-0.5 rounded-lg text-[9px] font-black uppercase border',
@@ -663,28 +667,30 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
                   </div>
                 )}
               </ErpField>
-              <ErpField label="Tối đa học viên lớp">
-                <ErpInput
-                  type="number"
-                  min={0}
-                  value={newCourse.maxLearners}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === '') {
-                      setNewCourse({ ...newCourse, maxLearners: '' });
-                      return;
-                    }
+              {businessType === 'driving' && (
+                <ErpField label="Tối đa học viên lớp">
+                  <ErpInput
+                    type="number"
+                    min={0}
+                    value={newCourse.maxLearners}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        setNewCourse({ ...newCourse, maxLearners: '' });
+                        return;
+                      }
 
-                    const parsed = parseInt(value, 10);
-                    setNewCourse({ ...newCourse, maxLearners: Number.isNaN(parsed) ? 20 : Math.max(0, parsed) });
-                  }}
-                  onBlur={() => {
-                    if (newCourse.maxLearners === '' || typeof newCourse.maxLearners !== 'number' || newCourse.maxLearners < 0) {
-                      setNewCourse({ ...newCourse, maxLearners: 20 });
-                    }
-                  }}
-                />
-              </ErpField>
+                      const parsed = parseInt(value, 10);
+                      setNewCourse({ ...newCourse, maxLearners: Number.isNaN(parsed) ? 20 : Math.max(0, parsed) });
+                    }}
+                    onBlur={() => {
+                      if (newCourse.maxLearners === '' || typeof newCourse.maxLearners !== 'number' || newCourse.maxLearners < 0) {
+                        setNewCourse({ ...newCourse, maxLearners: 20 });
+                      }
+                    }}
+                  />
+                </ErpField>
+              )}
             </div>
 
             <ErpSubmitButton>{isSubmitting ? 'Đang khởi tạo...' : 'Khởi tạo chương trình'}</ErpSubmitButton>
@@ -755,28 +761,30 @@ export function CoursesPage({ selectedCenter }: { selectedCenter?: string }) {
                   </div>
                 )}
               </ErpField>
-              <ErpField label="Tối đa học viên lớp">
-                <ErpInput
-                  type="number"
-                  min={0}
-                  value={editForm.maxLearners}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === '') {
-                      setEditForm({ ...editForm, maxLearners: '' });
-                      return;
-                    }
+              {businessType === 'driving' && (
+                <ErpField label="Tối đa học viên lớp">
+                  <ErpInput
+                    type="number"
+                    min={0}
+                    value={editForm.maxLearners}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        setEditForm({ ...editForm, maxLearners: '' });
+                        return;
+                      }
 
-                    const parsed = parseInt(value, 10);
-                    setEditForm({ ...editForm, maxLearners: Number.isNaN(parsed) ? 20 : Math.max(0, parsed) });
-                  }}
-                  onBlur={() => {
-                    if (editForm.maxLearners === '' || typeof editForm.maxLearners !== 'number' || editForm.maxLearners < 0) {
-                      setEditForm({ ...editForm, maxLearners: 20 });
-                    }
-                  }}
-                />
-              </ErpField>
+                      const parsed = parseInt(value, 10);
+                      setEditForm({ ...editForm, maxLearners: Number.isNaN(parsed) ? 20 : Math.max(0, parsed) });
+                    }}
+                    onBlur={() => {
+                      if (editForm.maxLearners === '' || typeof editForm.maxLearners !== 'number' || editForm.maxLearners < 0) {
+                        setEditForm({ ...editForm, maxLearners: 20 });
+                      }
+                    }}
+                  />
+                </ErpField>
+              )}
             </div>
 
             <ErpSubmitButton disabled={isSubmitting}>{isSubmitting ? 'Đang cập nhật...' : 'Cập nhật khóa học'}</ErpSubmitButton>

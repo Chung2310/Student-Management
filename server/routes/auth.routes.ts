@@ -12,6 +12,7 @@ router.post("/login", validate(loginSchema), AuthController.login);
 router.post("/refresh-token", AuthController.refreshToken);
 router.post("/logout", AuthController.logout);
 router.get("/teacher/:id", AuthController.getTeacherPublicInfo);
+router.get("/teacher/:id/courses", AuthController.getTeacherCourses);
 router.get("/me", authMiddleware, AuthController.getMe);
 router.get("/users/:id/bank-settings", authMiddleware, AuthController.getUserBankSettings);
 router.patch("/bank-settings", authMiddleware, validate(bankSettingsSchema), AuthController.updateBankSettings);

@@ -55,8 +55,13 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [rankFilter, setRankFilter] = useState('Tất cả hạng');
+  const [rankFilter, setRankFilter] = useState(businessType === 'driving' ? 'Tất cả hạng' : 'Tất cả khóa học');
   const [feeStatusFilter, setFeeStatusFilter] = useState('Tất cả học phí');
+
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRankFilter(businessType === 'driving' ? 'Tất cả hạng' : 'Tất cả khóa học');
+  }, [businessType]);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
@@ -186,8 +191,17 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
       if (!(studentStatuses as string[]).includes(dbStatus)) return false;
     }
 
-    // 3. Rank Filter (chỉ áp dụng với dữ liệu ngành lái xe)
-    if (hasRankData && rankFilter !== 'Tất cả hạng' && student.rank !== rankFilter) return false;
+    // 3. Rank / Course Filter
+    if (businessType === 'driving') {
+      if (hasRankData && rankFilter !== 'Tất cả hạng' && rankFilter !== 'Tất cả khóa học' && student.rank !== rankFilter) return false;
+    } else {
+      if (rankFilter !== 'Tất cả hạng' && rankFilter !== 'Tất cả khóa học') {
+        const selectedCourse = courses.find(c => c.id === rankFilter);
+        const matchesCourseId = student.courseId === rankFilter;
+        const matchesRank = selectedCourse && student.rank === selectedCourse.title;
+        if (!matchesCourseId && !matchesRank) return false;
+      }
+    }
 
     // 4. Date Range Filter
     if (startDate || endDate) {
@@ -352,34 +366,20 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
         { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 35 }, { wch: 16 },
         { wch: 30 }, { wch: 30 }, { wch: 30 }
       ];
-    } else if (businessType === 'language') {
+    } else if (businessType === 'language' || businessType === 'general') {
       headers = ['Họ và tên', 'Số điện thoại', 'Khóa học', ...commonHeadersAfter];
       getRowData = (student: Student) => {
-        const cats = Array.from(studentCategories.get(student.id) || []);
+        const course = courses.find(c => c.id === student.courseId);
+        const displayTitle = course ? course.title : student.rank;
         return [
           student.fullName,
           student.phone,
-          cats.length > 0 ? cats.join(', ') : (student.rank || ''),
+          displayTitle || 'Chưa đăng ký',
           ...getCommonRowDataAfter(student)
         ];
       };
       cols = [
-        { wch: 20 }, { wch: 15 }, { wch: 20 },
-        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 18 },
-        { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 35 }, { wch: 16 },
-        { wch: 30 }, { wch: 30 }, { wch: 30 }
-      ];
-    } else {
-      headers = ['Họ và tên', 'Số điện thoại', ...commonHeadersAfter];
-      getRowData = (student: Student) => {
-        return [
-          student.fullName,
-          student.phone,
-          ...getCommonRowDataAfter(student)
-        ];
-      };
-      cols = [
-        { wch: 20 }, { wch: 15 },
+        { wch: 20 }, { wch: 15 }, { wch: 25 },
         { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 18 },
         { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 35 }, { wch: 16 },
         { wch: 30 }, { wch: 30 }, { wch: 30 }
@@ -596,18 +596,37 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
             <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
-        {hasRankData && businessType !== 'general' && (
+        {businessType === 'driving' ? (
+          hasRankData && (
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Hạng bằng (lái xe)</label>
+              <div className="relative">
+                <select
+                  value={rankFilter}
+                  onChange={(e) => setRankFilter(e.target.value)}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-cyan-600"
+                >
+                  {rankOptions.map(opt => <option key={opt}>{opt}</option>)}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+          )
+        ) : (
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-              {businessType === 'language' ? 'Khóa học' : 'Hạng bằng (lái xe)'}
-            </label>
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Khóa học</label>
             <div className="relative">
               <select
                 value={rankFilter}
                 onChange={(e) => setRankFilter(e.target.value)}
                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-cyan-600"
               >
-                {rankOptions.map(opt => <option key={opt}>{opt}</option>)}
+                <option value="Tất cả khóa học">Tất cả khóa học</option>
+                {courses.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             </div>
@@ -662,11 +681,11 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
                   <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-600" />
                 </th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Họ và tên</th>
-                {businessType === 'language' ? (
-                  <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Khóa học</th>
-                ) : businessType === 'driving' ? (
+                {businessType === 'driving' ? (
                   <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Ngành / Hạng</th>
-                ) : null}
+                ) : (
+                  <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Khóa học</th>
+                )}
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Ngày ĐK</th>
                 {businessType === 'driving' && (
                   <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Tiến độ</th>
@@ -706,9 +725,9 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
                       </div>
                     </div>
                   </td>
-                  {businessType !== 'general' && (
-                    <td className="px-4 py-4 text-center">
-                      {(() => {
+                  <td className="px-4 py-4 text-center">
+                    {(() => {
+                      if (businessType === 'driving') {
                         const cats = Array.from(studentCategories.get(student.id) || []);
                         if (cats.length > 0) {
                           return (
@@ -729,9 +748,20 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
                           );
                         }
                         return <span className="text-xs text-slate-300 font-medium italic">Chưa xếp lớp</span>;
-                      })()}
-                    </td>
-                  )}
+                      } else {
+                        const course = courses.find(c => c.id === student.courseId);
+                        const displayTitle = course ? course.title : student.rank;
+                        if (displayTitle) {
+                          return (
+                            <span className="px-3 py-1 bg-cyan-50 text-cyan-700 rounded text-xs font-bold border border-cyan-100">
+                              {displayTitle}
+                            </span>
+                          );
+                        }
+                        return <span className="text-xs text-slate-300 font-medium italic">Chưa đăng ký</span>;
+                      }
+                    })()}
+                  </td>
                   <td className="px-4 py-4 text-center text-sm font-medium text-slate-500">
                     {formatDisplayDate(student.registrationDate)}
                   </td>

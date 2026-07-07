@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -40,7 +40,27 @@ export function CustomSelect({
   theme = 'modal',
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Calculate fixed position to avoid overflow-hidden clip
+  const recalcPosition = useCallback(() => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const dropdownHeight = 240; // max-h-60
+    const openUpward = spaceBelow < dropdownHeight + 8 && rect.top > dropdownHeight;
+    setDropdownStyle({
+      position: 'fixed',
+      left: rect.left,
+      width: rect.width,
+      zIndex: 9999,
+      ...(openUpward
+        ? { bottom: window.innerHeight - rect.top + 4 }
+        : { top: rect.bottom + 4 }),
+    });
+  }, []);
 
   // Close when clicking outside
   useEffect(() => {
@@ -52,6 +72,18 @@ export function CustomSelect({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Recalc on scroll/resize
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = () => recalcPosition();
+    window.addEventListener('scroll', handler, true);
+    window.addEventListener('resize', handler);
+    return () => {
+      window.removeEventListener('scroll', handler, true);
+      window.removeEventListener('resize', handler);
+    };
+  }, [isOpen, recalcPosition]);
 
   // Find currently selected label
   let selectedLabel = placeholder;
@@ -93,8 +125,12 @@ export function CustomSelect({
       
       <div className="relative">
         <button
+          ref={buttonRef}
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            if (!isOpen) recalcPosition();
+            setIsOpen(!isOpen);
+          }}
           className={`w-full text-left flex items-center justify-between transition-all outline-none cursor-pointer ${
             isRegister 
               ? 'px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-100 font-bold text-sm focus:border-cyan-600 focus:bg-white' 
@@ -110,11 +146,12 @@ export function CustomSelect({
         <AnimatePresence>
           {isOpen && (
             <motion.div
-              initial={{ opacity: 0, y: -8, scale: 0.98 }}
+              initial={{ opacity: 0, y: -6, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.98 }}
+              exit={{ opacity: 0, y: -6, scale: 0.98 }}
               transition={{ duration: 0.15, ease: 'easeOut' }}
-              className="absolute z-[100] left-0 right-0 mt-1 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden max-h-60 flex flex-col"
+              style={dropdownStyle}
+              className="bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden max-h-60 flex flex-col"
             >
               <div className="overflow-y-auto p-1.5 space-y-1">
                 {placeholder && (

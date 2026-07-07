@@ -3,6 +3,8 @@ import { Student } from '../../../types';
 import { formatDisplayDate } from '../../../lib/utils';
 import { useAuth } from '../../../hooks/useAuth';
 
+import { useCourses } from '../../../hooks/useCourses';
+
 interface ProfileTabProps {
   student: Student;
 }
@@ -10,6 +12,9 @@ interface ProfileTabProps {
 export function ProfileTab({ student }: ProfileTabProps) {
   const { user } = useAuth();
   const businessType = user?.businessType || 'driving';
+  const { courses } = useCourses(student.centerId || student.ownerId || undefined);
+  const course = courses.find(c => c.id === student.courseId);
+  const displayTitle = course ? course.title : student.rank;
 
   return (
     <div className="space-y-6">
@@ -21,11 +26,11 @@ export function ProfileTab({ student }: ProfileTabProps) {
         <FormField label="NGƯỜI GIỚI THIỆU" value={student.referral || 'Trực tiếp'} />
         <FormField label="CCCD / CMND" value={student.idCard || 'Chưa cập nhật'} />
         
-        {businessType === 'language' ? (
-          <FormField label="KHÓA HỌC ĐĂNG KÝ*" value={student.rank} />
-        ) : businessType === 'driving' ? (
+        {businessType === 'driving' ? (
           <FormField label="HẠNG BẰNG*" value={student.rank} />
-        ) : null}
+        ) : (
+          <FormField label="KHÓA HỌC ĐĂNG KÝ*" value={displayTitle || 'Chưa đăng ký'} />
+        )}
 
         <FormField label="NGÀY ĐĂNG KÝ" value={formatDisplayDate(student.registrationDate)} />
         <FormField label="NGÀY NHẬP HỌC" value={formatDisplayDate(student.enrollmentDate || '') || 'Chưa cập nhật'} />
