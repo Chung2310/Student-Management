@@ -228,6 +228,34 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Synchronize document title for SEO & UX (Clean title on logout)
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    if (!user) {
+      document.title = "IGEN Quản lý học viên - Hệ thống Quản trị & Đào tạo chuyên nghiệp";
+      return;
+    }
+
+    const viewNames: Record<ViewType, string> = {
+      Dashboard: "Tổng quan",
+      Students: "Quản lý học viên",
+      Exams: "Quản lý lịch thi",
+      Fees: "Quản lý học phí",
+      Bot: "Trợ lý AI",
+      Courses: "Quản lý khóa học",
+      Batches: "Quản lý lớp học",
+      Resources: "Quản lý tài nguyên",
+      UserManagement: "Quản lý người dùng",
+      SettingsAdmin: "Cấu hình hệ thống",
+      Partners: "Quản lý đối tác",
+    };
+
+    const currentViewName = viewNames[currentView] || "Hệ thống";
+    const centerSuffix = user.displayName ? ` | ${user.displayName}` : "";
+    document.title = `${currentViewName}${centerSuffix} - IGEN ERP`;
+  }, [user, currentView]);
+
   // Handle deep-linked student slugs
   React.useEffect(() => {
     if (loading || students.length === 0) return;
@@ -314,7 +342,7 @@ export default function App() {
     if (user.role === 'superadmin' || user.role === 'admin') return true;
     if (view === 'Dashboard' || view === 'SettingsAdmin') return true;
     if (view === 'UserManagement') return false;
-    if (user.permissions && Array.isArray(user.permissions)) {
+    if (user.permissions && Array.isArray(user.permissions) && user.permissions.length > 0) {
       return user.permissions.includes(view);
     }
     return true;

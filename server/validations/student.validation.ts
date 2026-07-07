@@ -23,16 +23,19 @@ export const createStudentSchema = Joi.object({
     "any.required": "Họ và tên là bắt buộc.",
     "string.empty": "Họ và tên không được để trống.",
   }),
-  phone: Joi.string().required().messages({
+  phone: Joi.string().required().pattern(/^(0[35789]\d{8})$/).messages({
     "any.required": "Số điện thoại là bắt buộc.",
     "string.empty": "Số điện thoại không được để trống.",
+    "string.pattern.base": "Số điện thoại không hợp lệ (phải gồm 10 chữ số bắt đầu bằng 03, 05, 07, 08 hoặc 09).",
   }),
   email: Joi.string().email().allow("").optional().messages({
     "string.email": "Định dạng email không hợp lệ.",
   }),
   referral: Joi.string().allow("").optional(),
   birthday: Joi.string().allow("").optional(),
-  idCard: Joi.string().allow("").optional(),
+  idCard: Joi.string().pattern(/^(\d{9}|\d{12})$/).allow("").optional().messages({
+    "string.pattern.base": "Số CCCD/CMND phải có 9 hoặc 12 chữ số.",
+  }),
   rank: Joi.string().allow("").optional(),
   courseId: objectIdSchema.allow("").optional(),
   registrationDate: Joi.string().required().messages({
@@ -56,11 +59,15 @@ export const createStudentSchema = Joi.object({
 
 export const updateStudentSchema = Joi.object({
   fullName: Joi.string().optional(),
-  phone: Joi.string().optional(),
+  phone: Joi.string().pattern(/^(0[35789]\d{8})$/).optional().messages({
+    "string.pattern.base": "Số điện thoại không hợp lệ (phải gồm 10 chữ số bắt đầu bằng 03, 05, 07, 08 hoặc 09).",
+  }),
   email: Joi.string().email().allow("").optional(),
   referral: Joi.string().allow("").optional(),
   birthday: Joi.string().allow("").optional(),
-  idCard: Joi.string().allow("").optional(),
+  idCard: Joi.string().pattern(/^(\d{9}|\d{12})$/).allow("").optional().messages({
+    "string.pattern.base": "Số CCCD/CMND phải có 9 hoặc 12 chữ số.",
+  }),
   rank: Joi.string().allow("").optional(),
   courseId: objectIdSchema.allow("").optional(),
   registrationDate: Joi.string().optional(),

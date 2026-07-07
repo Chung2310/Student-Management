@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Handshake, Wallet, CheckCircle, AlertCircle, Edit, Trash2, Eye, Landmark } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { Handshake, Wallet, CheckCircle, AlertCircle, Edit, Trash2, Eye, Landmark, Download, Upload } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { apiFetch } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
@@ -12,6 +13,7 @@ import { AddPartnerModal } from './components/AddPartnerModal';
 import { PartnerDetailModal } from './components/PartnerDetailModal';
 import { AddPayoutModal } from './components/AddPayoutModal';
 import { CommissionLevelModal } from './components/CommissionLevelModal';
+import { ImportPartnerModal } from './components/ImportPartnerModal';
 import { Partner } from '../../types';
 
 interface PartnersPageProps {
@@ -22,14 +24,13 @@ export function PartnersPage({ selectedCenter }: PartnersPageProps) {
   const { toast } = useToast();
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Filters state
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   // Modal triggers
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLevelModal, setShowLevelModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null);
   const [payingPartner, setPayingPartner] = useState<Partner | null>(null);
@@ -108,22 +109,81 @@ export function PartnersPage({ selectedCenter }: PartnersPageProps) {
     };
   }, [partners]);
 
+  const handleExportExcel = () => {
+    const headers = [
+      'Tên đối tác',
+      'Số điện thoại',
+      'Email',
+      'Ngân hàng',
+      'Số tài khoản',
+      'Tên chủ tài khoản',
+      'Trạng thái',
+      'Ghi chú',
+      'Số học viên giới thiệu',
+      'Tổng học phí giới thiệu',
+      'Tổng hoa hồng',
+      'Đã thanh toán',
+      'Còn nợ',
+      'Level hoa hồng',
+      'Owner ID',
+    ];
+
+    const rows = partners.map((partner) => [
+      partner.name || '',
+      partner.phone || '',
+      partner.email || '',
+      partner.bankName || '',
+      partner.bankAccountNo || '',
+      partner.bankAccountName || '',
+      partner.isActive ? 'Đang hoạt động' : 'Ngưng hoạt động',
+      partner.notes || '',
+      partner.referredStudentsCount || 0,
+      partner.totalReferredTuition || 0,
+      partner.totalCommission || 0,
+      partner.totalPaid || 0,
+      partner.unpaidBalance || 0,
+      partner.levelName || '',
+      partner.ownerId || '',
+    ]);
+
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Partners');
+    XLSX.writeFile(wb, `danh_sach_doi_tac_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.xlsx`);
+  };
+
+  // Handled by ImportPartnerModal
+
   return (
     <div className="space-y-6 text-left">
       <ErpPageHeader
         title="Quản lý Đối tác & Cộng tác viên"
         subtitle="Quản lý thông tin CTV, theo dõi số lượng học viên đã giới thiệu và ghi nhận chi trả tiền hoa hồng"
         action={
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center justify-start sm:justify-end gap-3 w-full sm:w-auto">
+            <button
+              onClick={handleExportExcel}
+              className="flex items-center gap-2 px-5 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-2xl text-xs font-black transition-all active:scale-95 cursor-pointer shadow-sm border border-emerald-200/60"
+            >
+              <Download className="w-4 h-4" />
+              Xuất Excel
+            </button>
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="flex items-center gap-2 px-5 py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-2xl text-xs font-black transition-all active:scale-95 cursor-pointer shadow-sm border border-amber-200/60"
+            >
+              <Upload className="w-4 h-4" />
+              Nhập Excel
+            </button>
             <button
               onClick={() => setShowLevelModal(true)}
               className="flex items-center gap-2 px-5 py-3 bg-slate-100 hover:bg-slate-200/80 text-slate-750 rounded-2xl text-xs font-black transition-all active:scale-95 cursor-pointer shadow-sm border border-slate-200/40"
             >
               <Landmark className="w-4 h-4 text-sky-600" />
-              Cấu hình Level Hoa hồng
+              Cấu hình Level
             </button>
             <ErpPrimaryButton onClick={() => { setEditingPartner(null); setShowAddModal(true); }}>
-              Khai báo đối tác mới
+              Thêm đối tác
             </ErpPrimaryButton>
           </div>
         }
@@ -344,6 +404,15 @@ export function PartnersPage({ selectedCenter }: PartnersPageProps) {
         onClose={() => setShowLevelModal(false)}
         selectedCenter={selectedCenter}
       />
+
+      {/* Import Partner Modal */}
+      {showImportModal && (
+        <ImportPartnerModal
+          isOpen={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          onSuccess={fetchPartners}
+        />
+      )}
     </div>
   );
 }

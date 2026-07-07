@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  GraduationCap, Users, CreditCard, Bot, Sparkles, CheckCircle2,
+  Users, CreditCard, Bot, Sparkles, CheckCircle2,
   ArrowRight, Shield, Activity, Calendar, Award, BookOpen,
   MessageSquare, Menu, X, ArrowUpRight
 } from 'lucide-react';
@@ -95,12 +95,14 @@ export function LandingPage({ onNavigateToLogin, onNavigateToPath }: LandingPage
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-600 flex items-center justify-center shadow-md shadow-cyan-600/20">
-              <GraduationCap className="w-6 h-6 text-white" />
-            </div>
+            <img
+              src="/logo-igen.png"
+              alt="Logo"
+              className="w-10 h-10 rounded-xl object-contain shadow-lg"
+            />
             <div>
-              <span className="text-lg font-black text-slate-900 tracking-tight block leading-none">IGEN</span>
-              <span className="text-[9px] font-bold text-cyan-600 uppercase tracking-widest mt-0.5 block">Student Management</span>
+              <span className="font-bold text-slate-900 text-sm leading-tight block">iGen Education</span>
+              <span className="text-[10px] text-slate-500 font-medium block">Quản lý đào tạo & học viên</span>
             </div>
           </div>
 
@@ -456,10 +458,12 @@ export function LandingPage({ onNavigateToLogin, onNavigateToPath }: LandingPage
       <footer className="bg-slate-950 text-slate-400 py-12 border-t border-slate-900">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-cyan-600 flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-sm font-black text-white tracking-wider">IGEN STUDENT MANAGEMENT</span>
+            <img
+              src="/logo-igen.png"
+              alt="Logo"
+              className="w-8 h-8 rounded-lg object-contain bg-white p-0.5 shadow-sm"
+            />
+            <span className="text-xs font-bold text-white tracking-wider">iGen Education</span>
           </div>
           
           <div className="flex flex-col items-center md:items-end gap-3">

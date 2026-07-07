@@ -24,6 +24,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
   const businessType = user?.businessType || 'driving';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingField, setUploadingField] = useState<FileField | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   const [referralMode, setReferralMode] = useState<'none' | 'partner' | 'custom'>('none');
@@ -140,43 +141,28 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const missingFields: string[] = [];
-    if (requiredFields.fullName && !formData.fullName) missingFields.push('Họ và tên');
-    if (requiredFields.phone && !formData.phone) missingFields.push('Số điện thoại');
-    if (requiredFields.birthday && !formData.birthday) missingFields.push('Ngày sinh');
-    if (requiredFields.idCard && !formData.idCard) missingFields.push('CCCD/CMND');
-    if (requiredFields.email && !formData.email) missingFields.push('Email');
+    const newErrors: Record<string, string> = {};
+    const fieldsToValidate = ['fullName', 'phone', 'email', 'birthday', 'idCard', 'rank'];
+    fieldsToValidate.forEach(field => {
+      const val = formData[field as keyof typeof formData];
+      if (typeof val === 'string') {
+        const err = validateField(field, val);
+        if (err) newErrors[field] = err;
+      }
+    });
 
-    if (requiredFields.rank && !formData.rank) {
-      if (businessType === 'driving') {
-        missingFields.push('Hạng bằng');
-      } else if (businessType === 'language') {
-        missingFields.push('Khóa học đăng ký');
+    if (businessType === 'driving') {
+      if (!formData.idCardFrontFile) {
+        newErrors.idCardFrontFile = 'Vui lòng tải lên ảnh mặt trước CCCD.';
+      }
+      if (!formData.idCardBackFile) {
+        newErrors.idCardBackFile = 'Vui lòng tải lên ảnh mặt sau CCCD.';
       }
     }
 
-    if (businessType === 'driving' && formData.idCard && formData.idCard.trim().length !== 12) {
-      toast.error("Số CCCD phải có đúng 12 ký tự.");
-      return;
-    }
-
-    if (missingFields.length > 0) {
-      toast.error(`Vui lòng điền đầy đủ các trường bắt buộc: ${missingFields.join(', ')}`);
-      return;
-    }
-
-    const duplicateField = findDuplicateStudentField(
-      students,
-      {
-        email: formData.email,
-        phone: formData.phone,
-        idCard: formData.idCard,
-      },
-      student?.id,
-      businessType
-    );
-    if (duplicateField) {
-      toast.error(`${duplicateField.label} đã tồn tại trong hệ thống, không được trùng.`);
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error('Vui lòng kiểm tra lại các thông tin nhập vào.');
       return;
     }
 
@@ -204,6 +190,75 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => {
+        const copy = { ...prev };
+        delete copy[name];
+        return copy;
+      });
+    }
+  };
+
+  const validateField = (name: string, value: string): string => {
+    if (requiredFields[name as keyof typeof requiredFields] && !value.trim()) {
+      if (name === 'fullName') return 'Họ và tên không được để trống.';
+      if (name === 'phone') return 'Số điện thoại không được để trống.';
+      if (name === 'birthday') return 'Ngày sinh không được để trống.';
+      if (name === 'idCard') return 'CCCD/CMND không được để trống.';
+      if (name === 'email') return 'Email không được để trống.';
+      if (name === 'rank') {
+        return businessType === 'driving' 
+          ? 'Hạng bằng không được để trống.' 
+          : 'Khóa học đăng ký không được để trống.';
+      }
+    }
+
+    if (name === 'phone' && value) {
+      const phoneRegex = /^(0[35789]\d{8})$/;
+      if (!phoneRegex.test(value)) {
+        return 'Số điện thoại không hợp lệ (phải gồm 10 chữ số bắt đầu bằng 03, 05, 07, 08 hoặc 09).';
+      }
+    }
+
+    if (name === 'email' && value) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) {
+        return 'Định dạng email không hợp lệ.';
+      }
+    }
+
+    if (name === 'idCard' && value) {
+      const idCardRegex = /^(\d{9}|\d{12})$/;
+      if (!idCardRegex.test(value)) {
+        return 'Số CCCD/CMND không hợp lệ (phải gồm 9 hoặc 12 chữ số).';
+      }
+      if (businessType === 'driving' && value.trim().length !== 12) {
+        return 'Số CCCD phải có đúng 12 chữ số.';
+      }
+    }
+
+    if (value && (name === 'phone' || name === 'email' || name === 'idCard')) {
+      const checkData = {
+        email: name === 'email' ? value : formData.email,
+        phone: name === 'phone' ? value : formData.phone,
+        idCard: name === 'idCard' ? value : formData.idCard,
+      };
+      const duplicateField = findDuplicateStudentField(students, checkData, student?.id, businessType);
+      if (duplicateField && duplicateField.field === name) {
+        return `${duplicateField.label} đã tồn tại trong hệ thống.`;
+      }
+    }
+
+    return '';
+  };
+
+  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const errorMsg = validateField(name, value);
+    setErrors(prev => ({
+      ...prev,
+      [name]: errorMsg
+    }));
   };
 
   return (
@@ -241,25 +296,31 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   required={requiredFields.fullName}
                   placeholder="Nhập họ và tên..."
+                  error={errors.fullName}
                 />
                 <FormInput
                   label="Số điện thoại"
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   required={requiredFields.phone}
                   placeholder="Nhập số điện thoại..."
+                  error={errors.phone}
                 />
                 <FormInput
                   label="Email học viên"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   required={requiredFields.email}
                   placeholder="Nhập địa chỉ email..."
                   className="sm:col-span-2"
+                  error={errors.email}
                 />
                 <div className="sm:col-span-2 space-y-1">
                   <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
@@ -329,15 +390,19 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
                   type="date"
                   value={toInputDate(formData.birthday)}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   required={requiredFields.birthday}
+                  error={errors.birthday}
                 />
                 <FormInput
                   label="CCCD / CMND"
                   name="idCard"
                   value={formData.idCard}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   required={requiredFields.idCard}
                   placeholder="Nhập số CCCD (12 số)..."
+                  error={errors.idCard}
                 />
                 
                 {user?.businessType === 'language' ? (
@@ -346,8 +411,10 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
                     name="rank"
                     value={formData.rank}
                     onChange={handleInputChange}
+                    onBlur={handleInputBlur}
                     required={requiredFields.rank}
                     placeholder="Ví dụ: IELTS, TOEIC, Giao tiếp..."
+                    error={errors.rank}
                   />
                 ) : (user?.businessType || 'driving') === 'driving' ? (
                   <FormInput
@@ -355,8 +422,10 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
                     name="rank"
                     value={formData.rank}
                     onChange={handleInputChange}
+                    onBlur={handleInputBlur}
                     required={requiredFields.rank}
                     placeholder="Ví dụ: A1, B2, C... hoặc để trống"
+                    error={errors.rank}
                   />
                 ) : null}
 
@@ -374,19 +443,23 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
                   type="date"
                   value={toInputDate(formData.enrollmentDate)}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                 />
                 <FormInput
                   label={(user?.businessType || 'driving') === 'driving' ? 'Học phí (VND)' : 'Học phí đã chốt (VND)'}
                   name="fee"
                   value={formData.fee}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   placeholder={(user?.businessType || 'driving') === 'driving' ? 'Nhập học phí...' : 'Nhập học phí đã chốt...'}
+                  error={errors.fee}
                 />
                 <FormInput
                   label="Địa chỉ"
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   placeholder="Nhập địa chỉ..."
                   className="sm:col-span-2"
                 />
@@ -439,22 +512,52 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
                     label="CCCD mặt trước"
                     file={formData.idCardFrontFile}
                     isUploading={uploadingField === 'idCardFrontFile'}
-                    onFileChange={(file) => handleUploadFile('idCardFrontFile', file)}
+                    onFileChange={(file) => {
+                      handleUploadFile('idCardFrontFile', file);
+                      if (errors.idCardFrontFile) {
+                        setErrors(prev => {
+                          const copy = { ...prev };
+                          delete copy.idCardFrontFile;
+                          return copy;
+                        });
+                      }
+                    }}
                     onRemove={() => setFormData(prev => ({ ...prev, idCardFrontFile: undefined }))}
+                    error={errors.idCardFrontFile}
                   />
                   <UploadCard
                     label="CCCD mặt sau"
                     file={formData.idCardBackFile}
                     isUploading={uploadingField === 'idCardBackFile'}
-                    onFileChange={(file) => handleUploadFile('idCardBackFile', file)}
+                    onFileChange={(file) => {
+                      handleUploadFile('idCardBackFile', file);
+                      if (errors.idCardBackFile) {
+                        setErrors(prev => {
+                          const copy = { ...prev };
+                          delete copy.idCardBackFile;
+                          return copy;
+                        });
+                      }
+                    }}
                     onRemove={() => setFormData(prev => ({ ...prev, idCardBackFile: undefined }))}
+                    error={errors.idCardBackFile}
                   />
                   <UploadCard
                     label="Ảnh chân dung"
                     file={formData.portraitFile}
                     isUploading={uploadingField === 'portraitFile'}
-                    onFileChange={(file) => handleUploadFile('portraitFile', file)}
+                    onFileChange={(file) => {
+                      handleUploadFile('portraitFile', file);
+                      if (errors.portraitFile) {
+                        setErrors(prev => {
+                          const copy = { ...prev };
+                          delete copy.portraitFile;
+                          return copy;
+                        });
+                      }
+                    }}
                     onRemove={() => setFormData(prev => ({ ...prev, portraitFile: undefined }))}
+                    error={errors.portraitFile}
                   />
                 </div>
               )}

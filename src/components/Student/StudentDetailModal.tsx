@@ -402,6 +402,262 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
     setLoading(false);
   };
 
+  const handlePrint = () => {
+    if (!student) return;
+
+    const printWindow = window.open('', '_blank', 'width=900,height=800');
+    if (!printWindow) {
+      toast.warning('Trình duyệt đã chặn cửa sổ bật lên. Vui lòng cho phép bật lên để in.');
+      return;
+    }
+
+    const businessType = user?.businessType || 'driving';
+
+    // Format money
+    const totalFeeNum = parseInt(String(student.fee).replace(/\D/g, ''), 10) || 0;
+    const paidSoFar = student.paidAmount || 0;
+    const remaining = totalFeeNum - paidSoFar;
+    const feeStatus = remaining <= 0 && totalFeeNum > 0 
+      ? 'Đã hoàn tất' 
+      : (paidSoFar > 0 ? 'Còn thiếu' : 'Chưa đóng');
+
+    const formattedFee = totalFeeNum.toLocaleString('vi-VN') + 'đ';
+    const formattedPaid = paidSoFar.toLocaleString('vi-VN') + 'đ';
+    const formattedRemaining = remaining.toLocaleString('vi-VN') + 'đ';
+
+    // Health check info
+    const kskStatus = (Array.isArray(student.status) ? student.status.includes('Chờ KSK') : student.status === 'Chờ KSK') 
+      ? 'Chờ khám sức khỏe' 
+      : 'Đã hoàn tất khám sức khỏe';
+
+    // Progress details
+    let progressHtml = '';
+    if (businessType === 'driving') {
+      const theory = student.progress?.theory?.completed ? `Đã đạt (${student.progress.theory.score} điểm, ngày ${student.progress.theory.lastDate})` : 'Chưa đạt';
+      const sim = student.progress?.sim?.completed ? `Đã đạt (ngày ${student.progress.sim.lastDate})` : 'Chưa đạt';
+      const cabin = student.progress?.cabin ? `${student.progress.cabin.hoursDone} / ${student.progress.cabin.totalHours} giờ` : '0 giờ';
+      const practice = student.progress?.practice ? `${student.progress.practice.hoursDone} / ${student.progress.practice.totalHours} giờ` : '0 giờ';
+      const dat = student.progress?.dat ? `${student.progress.dat.kmDone} / ${student.progress.dat.totalKm} km` : '0 km';
+
+      progressHtml = `
+        <div class="section">
+          <div class="section-title">TIẾN ĐỘ ĐÀO TẠO</div>
+          <table>
+            <tr>
+              <th style="width: 30%;">Nội dung</th>
+              <th>Tiến độ / Kết quả</th>
+            </tr>
+            <tr>
+              <td>Lý thuyết (600 câu)</td>
+              <td><strong>${theory}</strong></td>
+            </tr>
+            <tr>
+              <td>Mô phỏng cabin</td>
+              <td><strong>${cabin}</strong></td>
+            </tr>
+            <tr>
+              <td>Lái xe mô phỏng (Cabin điện tử)</td>
+              <td><strong>${sim}</strong></td>
+            </tr>
+            <tr>
+              <td>Lái xe đường trường (DAT)</td>
+              <td><strong>${dat}</strong></td>
+            </tr>
+            <tr>
+              <td>Thực hành sa hình</td>
+              <td><strong>${practice}</strong></td>
+            </tr>
+          </table>
+        </div>
+      `;
+    }
+
+    // Exams details
+    let examsHtml = '';
+    if (student.exams && student.exams.length > 0) {
+      const examRows = student.exams.map(ex => `
+        <tr>
+          <td>${ex.name || ex.type}</td>
+          <td>${ex.date || ''}</td>
+          <td style="text-align: center;">${ex.result?.theory !== undefined ? ex.result.theory : '-'}</td>
+          <td style="text-align: center;">${ex.result?.practice !== undefined ? ex.result.practice : '-'}</td>
+          <td style="text-align: center;">${ex.result?.simulation !== undefined ? ex.result.simulation : '-'}</td>
+          <td style="text-align: center;"><strong>${ex.result?.overall || 'Chưa có kết quả'}</strong></td>
+        </tr>
+      `).join('');
+
+      examsHtml = `
+        <div class="section">
+          <div class="section-title">LỊCH SỬ THI & SÁT HẠCH</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Kỳ thi</th>
+                <th>Ngày thi</th>
+                <th>Điểm LT</th>
+                <th>Điểm SH</th>
+                <th>Điểm MP</th>
+                <th>Kết quả</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${examRows}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    const printContent = `
+      <html>
+        <head>
+          <title>Hồ sơ học viên - ${student.fullName}</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; color: #334155; line-height: 1.5; font-size: 14px; }
+            .header-container { display: flex; align-items: center; border-bottom: 2px solid #008bad; padding-bottom: 20px; margin-bottom: 25px; }
+            .avatar { width: 80px; height: 80px; border-radius: 50%; background-color: #008bad; color: white; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; margin-right: 20px; }
+            .title-info h1 { margin: 0; font-size: 24px; color: #1e293b; }
+            .title-info p { margin: 5px 0 0 0; color: #64748b; font-size: 14px; }
+            .section { margin-bottom: 25px; }
+            .section-title { font-size: 14px; font-weight: bold; color: #008bad; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
+            .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 30px; }
+            .info-item { display: flex; margin-bottom: 8px; }
+            .info-label { width: 140px; color: #64748b; font-weight: 500; flex-shrink: 0; }
+            .info-value { color: #1e293b; font-weight: 600; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; }
+            th { background-color: #f8fafc; color: #475569; font-weight: bold; }
+            .footer { margin-top: 50px; display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; }
+            .signature { text-align: center; width: 200px; color: #475569; }
+            .signature-space { height: 70px; }
+            @media print {
+              body { padding: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header-container">
+            <div class="avatar">${student.fullName.charAt(0)}</div>
+            <div class="title-info">
+              <h1>HỒ SƠ CHI TIẾT HỌC VIÊN</h1>
+              <p>Hệ thống Quản lý Đào tạo & Học viên iGen</p>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">THÔNG TIN CÁ NHÂN</div>
+            <div class="grid-2">
+              <div class="info-item">
+                <div class="info-label">Họ và tên:</div>
+                <div class="info-value">${student.fullName}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Số điện thoại:</div>
+                <div class="info-value">${student.phone}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Email:</div>
+                <div class="info-value">${student.email || 'Chưa cập nhật'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Số CCCD/CMND:</div>
+                <div class="info-value">${student.idCard || 'Chưa cập nhật'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Ngày sinh:</div>
+                <div class="info-value">${student.birthday || 'Chưa cập nhật'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Địa chỉ:</div>
+                <div class="info-value">${student.address || 'Chưa cập nhật'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">THÔNG TIN ĐÀO TẠO & HỌC PHÍ</div>
+            <div class="grid-2">
+              <div class="info-item">
+                <div class="info-label">${businessType === 'language' ? 'Khóa học:' : 'Hạng bằng:'}</div>
+                <div class="info-value">${student.rank || 'Chưa xếp lớp'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Trạng thái học tập:</div>
+                <div class="info-value">${Array.isArray(student.status) ? student.status.join(', ') : student.status}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Ngày đăng ký:</div>
+                <div class="info-value">${student.registrationDate}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Ngày nhập học:</div>
+                <div class="info-value">${student.enrollmentDate || 'Chưa nhập học'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Tổng học phí:</div>
+                <div class="info-value">${formattedFee}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Đã đóng:</div>
+                <div class="info-value" style="color: #10b981;">${formattedPaid}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Còn thiếu:</div>
+                <div class="info-value" style="color: #ef4444;">${formattedRemaining}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Trạng thái đóng phí:</div>
+                <div class="info-value">${feeStatus}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">THÔNG TIN Y TẾ (KSK)</div>
+            <div class="grid-2">
+              <div class="info-item">
+                <div class="info-label">Trạng thái KSK:</div>
+                <div class="info-value">${kskStatus}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Ngày khám:</div>
+                <div class="info-value">${student.healthCheckDate || 'Chưa cập nhật'}</div>
+              </div>
+              <div class="info-item" style="grid-column: span 2;">
+                <div class="info-label">Ghi chú sức khỏe:</div>
+                <div class="info-value">${student.healthCheckNotes || 'Không có ghi chú'}</div>
+              </div>
+            </div>
+          </div>
+
+          ${progressHtml}
+
+          ${examsHtml}
+
+          <div class="footer">
+            <div>Ngày in: ${new Date().toLocaleDateString('vi-VN')}</div>
+            <div class="signature">
+              <strong>Người lập bảng</strong>
+              <div class="signature-space"></div>
+              (Ký và ghi rõ họ tên)
+            </div>
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(() => { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+  };
+
   const getStatusColor = (status: string) => {
     const map: Record<string, string> = {
       'Đang thi': 'bg-purple-100 text-purple-700 border-purple-200',
@@ -472,6 +728,7 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
                   </div>
                   <div className="flex items-center gap-2">
                     <button 
+                      onClick={handlePrint}
                       title="In thông tin"
                       className="p-2 sm:p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all active:scale-95"
                     >
