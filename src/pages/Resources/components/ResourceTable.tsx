@@ -60,25 +60,31 @@ function ResourceTableRow({
   onDelete,
 }: ResourceTableRowProps) {
   const darkMode = false;
+  const [currentTime, setCurrentTime] = React.useState(() => new Date().toTimeString().slice(0, 5));
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date().toTimeString().slice(0, 5));
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const currentBooking = useMemo(() => {
     const today = todayStr();
-    const hhmm = new Date().toTimeString().slice(0, 5);
-    return resource.bookings.find(b => b.date === today && b.startTime <= hhmm && b.endTime > hhmm);
-  }, [resource.bookings]);
+    return resource.bookings.find(b => b.date === today && b.startTime <= currentTime && b.endTime > currentTime);
+  }, [resource.bookings, currentTime]);
 
   const upcomingBookings = useMemo(() => {
     const today = todayStr();
-    const hhmm = new Date().toTimeString().slice(0, 5);
     return resource.bookings
       .filter(b => {
         if (b.date < today) return false;
-        if (b.date === today && b.startTime <= hhmm && b.endTime > hhmm) return false;
+        if (b.date === today && b.startTime <= currentTime && b.endTime > currentTime) return false;
         return true;
       })
       .sort((a, b) => (a.date === b.date ? a.startTime.localeCompare(b.startTime) : a.date.localeCompare(b.date)))
       .slice(0, 2);
-  }, [resource.bookings]);
+  }, [resource.bookings, currentTime]);
 
   const isOccupied = !!currentBooking;
 

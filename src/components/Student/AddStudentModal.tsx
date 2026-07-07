@@ -31,6 +31,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingField, setUploadingField] = useState<FileField | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [batchId, setBatchId] = useState('');
   const [selectedCenterId, setSelectedCenterId] = useState<string>(() => {
     return selectedCenter && selectedCenter !== 'all' ? selectedCenter : '';
@@ -141,51 +142,28 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
       return;
     }
 
-    const missingFields: string[] = [];
-    if (requiredFields.fullName && !formData.fullName) missingFields.push('Họ và tên');
-    if (requiredFields.phone && !formData.phone) missingFields.push('Số điện thoại');
-    if (requiredFields.birthday && !formData.birthday) missingFields.push('Ngày sinh');
-    if (requiredFields.idCard && !formData.idCard) missingFields.push('CCCD/CMND');
-    if (requiredFields.email && !formData.email) missingFields.push('Email');
-
-    if (requiredFields.rank && !formData.rank) {
-      if (businessType === 'driving') {
-        missingFields.push('Hạng bằng');
-      } else if (businessType === 'language') {
-        missingFields.push('Khóa học đăng ký');
+    const newErrors: Record<string, string> = {};
+    const fieldsToValidate = ['fullName', 'phone', 'email', 'birthday', 'idCard', 'rank'];
+    fieldsToValidate.forEach(field => {
+      const val = formData[field as keyof typeof formData];
+      if (typeof val === 'string') {
+        const err = validateField(field, val);
+        if (err) newErrors[field] = err;
       }
-    }
-
-    if (businessType === 'driving' && formData.idCard && formData.idCard.trim().length !== 12) {
-      const message = "Số CCCD phải có đúng 12 ký tự.";
-      setErrorMsg(message);
-      toast.error(message);
-      return;
-    }
-
-    if (missingFields.length > 0) {
-      const message = `Vui lòng điền đầy đủ các trường bắt buộc: ${missingFields.join(', ')}`;
-      setErrorMsg(message);
-      toast.error(message);
-      return;
-    }
+    });
 
     if (businessType === 'driving') {
-      if (!formData.idCardFrontFile || !formData.idCardBackFile) {
-        const message = "Vui lòng tải lên cả ảnh mặt trước và mặt sau của CCCD.";
-        setErrorMsg(message);
-        toast.error(message);
-        return;
+      if (!formData.idCardFrontFile) {
+        newErrors.idCardFrontFile = 'Vui lòng tải lên ảnh mặt trước CCCD.';
+      }
+      if (!formData.idCardBackFile) {
+        newErrors.idCardBackFile = 'Vui lòng tải lên ảnh mặt sau CCCD.';
       }
     }
 
-    const duplicateField = findDuplicateStudentField(students, {
-      email: formData.email,
-      phone: formData.phone,
-      idCard: formData.idCard,
-    }, undefined, businessType);
-    if (duplicateField) {
-      const message = `${duplicateField.label} đã tồn tại trong hệ thống, không được trùng.`;
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const message = 'Vui lòng kiểm tra lại các thông tin nhập vào.';
       setErrorMsg(message);
       toast.error(message);
       return;
@@ -271,6 +249,75 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: name === 'fee' ? formatVND(value) : value }));
+    if (errors[name]) {
+      setErrors(prev => {
+        const copy = { ...prev };
+        delete copy[name];
+        return copy;
+      });
+    }
+  };
+
+  const validateField = (name: string, value: string): string => {
+    if (requiredFields[name as keyof typeof requiredFields] && !value.trim()) {
+      if (name === 'fullName') return 'Họ và tên không được để trống.';
+      if (name === 'phone') return 'Số điện thoại không được để trống.';
+      if (name === 'birthday') return 'Ngày sinh không được để trống.';
+      if (name === 'idCard') return 'CCCD/CMND không được để trống.';
+      if (name === 'email') return 'Email không được để trống.';
+      if (name === 'rank') {
+        return businessType === 'driving' 
+          ? 'Hạng bằng không được để trống.' 
+          : 'Khóa học đăng ký không được để trống.';
+      }
+    }
+
+    if (name === 'phone' && value) {
+      const phoneRegex = /^(0[35789]\d{8})$/;
+      if (!phoneRegex.test(value)) {
+        return 'Số điện thoại không hợp lệ (phải gồm 10 chữ số bắt đầu bằng 03, 05, 07, 08 hoặc 09).';
+      }
+    }
+
+    if (name === 'email' && value) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) {
+        return 'Định dạng email không hợp lệ.';
+      }
+    }
+
+    if (name === 'idCard' && value) {
+      const idCardRegex = /^(\d{9}|\d{12})$/;
+      if (!idCardRegex.test(value)) {
+        return 'Số CCCD/CMND không hợp lệ (phải gồm 9 hoặc 12 chữ số).';
+      }
+      if (businessType === 'driving' && value.trim().length !== 12) {
+        return 'Số CCCD phải có đúng 12 chữ số.';
+      }
+    }
+
+    if (value && (name === 'phone' || name === 'email' || name === 'idCard')) {
+      const checkData = {
+        email: name === 'email' ? value : formData.email,
+        phone: name === 'phone' ? value : formData.phone,
+        idCard: name === 'idCard' ? value : formData.idCard,
+      };
+      const duplicateField = findDuplicateStudentField(students, checkData, undefined, businessType);
+      if (duplicateField && duplicateField.field === name) {
+        return `${duplicateField.label} đã tồn tại trong hệ thống.`;
+      }
+    }
+
+    return '';
+  };
+
+  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const errorMsg = validateField(name, value);
+    setErrors(prev => ({
+      ...prev,
+      [name]: errorMsg
+    }));
   };
 
   return (
@@ -302,7 +349,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
               </button>
             </div>
 
-            <form className="p-6 overflow-y-auto space-y-4" onSubmit={handleSubmit}>
+            <form className="p-6 overflow-y-auto space-y-4 flex-1 min-h-0" onSubmit={handleSubmit}>
               {errorMsg && (
                 <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-sm font-bold text-rose-600">
                   {errorMsg}
@@ -338,25 +385,31 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   required={requiredFields.fullName}
                   placeholder="Nhập họ và tên..."
+                  error={errors.fullName}
                 />
                 <FormInput
                   label="Số điện thoại"
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   required={requiredFields.phone}
                   placeholder="Nhập số điện thoại..."
+                  error={errors.phone}
                 />
                 <FormInput
                   label="Email học viên"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   required={requiredFields.email}
                   placeholder="Nhập địa chỉ email..."
                   className="sm:col-span-2"
+                  error={errors.email}
                 />
 
                 <div className="sm:col-span-2 space-y-1">
@@ -428,15 +481,19 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
                   type="date"
                   value={toInputDate(formData.birthday)}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   required={requiredFields.birthday}
+                  error={errors.birthday}
                 />
                 <FormInput
                   label="CCCD / CMND"
                   name="idCard"
                   value={formData.idCard}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   required={requiredFields.idCard}
                   placeholder="Nhập số CCCD (12 số)..."
+                  error={errors.idCard}
                 />
                 
                 <div className="space-y-1">
@@ -468,18 +525,50 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
                     name="rank"
                     value={formData.rank}
                     onChange={handleInputChange}
+                    onBlur={handleInputBlur}
                     required={requiredFields.rank}
                     placeholder="Ví dụ: IELTS, TOEIC, Giao tiếp..."
+                    error={errors.rank}
                   />
                 ) : (user?.businessType || 'driving') === 'driving' ? (
-                  <FormInput
-                    label="Hạng bằng (lái xe — tùy chọn)"
-                    name="rank"
-                    value={formData.rank}
-                    onChange={handleInputChange}
-                    required={requiredFields.rank}
-                    placeholder="Ví dụ: A1, B2, C... hoặc để trống"
-                  />
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                      Hạng bằng (lái xe — tùy chọn)
+                    </label>
+                    <div className="relative">
+                      <select
+                        name="rank"
+                        value={formData.rank}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all cursor-pointer font-semibold"
+                      >
+                        <option value="">-- Chọn hạng bằng --</option>
+                        <optgroup label="Xe máy (Mô tô)">
+                          <option value="A1">A1</option>
+                          <option value="A2">A2</option>
+                          <option value="A3">A3</option>
+                          <option value="A4">A4</option>
+                        </optgroup>
+                        <optgroup label="Ô tô / Xe tải">
+                          <option value="B1">B1</option>
+                          <option value="B2">B2</option>
+                          <option value="C">C</option>
+                        </optgroup>
+                        <optgroup label="Xe khách / Nâng hạng">
+                          <option value="D">D</option>
+                          <option value="E">E</option>
+                        </optgroup>
+                        <optgroup label="Xe đầu kéo / Rơ-moóc">
+                          <option value="FB2">FB2</option>
+                          <option value="FC">FC</option>
+                          <option value="FD">FD</option>
+                          <option value="FE">FE</option>
+                        </optgroup>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
+                    {errors.rank && <p className="text-[11px] font-bold text-rose-500 ml-1">{errors.rank}</p>}
+                  </div>
                 ) : null}
 
                 <FormInput
@@ -495,6 +584,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
                   type="date"
                   value={toInputDate(formData.enrollmentDate)}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                 />
                 {usesCourseFeePolicy ? (
                   <div className="space-y-1">
@@ -511,7 +601,9 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
                     name="fee"
                     value={formData.fee}
                     onChange={handleInputChange}
+                    onBlur={handleInputBlur}
                     placeholder="Nhập học phí..."
+                    error={errors.fee}
                   />
                 )}
                 <FormInput
@@ -519,6 +611,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   placeholder="Nhập địa chỉ..."
                   className="sm:col-span-2"
                 />
@@ -530,22 +623,52 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
                     label="CCCD mặt trước"
                     file={formData.idCardFrontFile}
                     isUploading={uploadingField === 'idCardFrontFile'}
-                    onFileChange={(file) => handleUploadFile('idCardFrontFile', file)}
+                    onFileChange={(file) => {
+                      handleUploadFile('idCardFrontFile', file);
+                      if (errors.idCardFrontFile) {
+                        setErrors(prev => {
+                          const copy = { ...prev };
+                          delete copy.idCardFrontFile;
+                          return copy;
+                        });
+                      }
+                    }}
                     onRemove={() => setFormData(prev => ({ ...prev, idCardFrontFile: undefined }))}
+                    error={errors.idCardFrontFile}
                   />
                   <UploadCard
                     label="CCCD mặt sau"
                     file={formData.idCardBackFile}
                     isUploading={uploadingField === 'idCardBackFile'}
-                    onFileChange={(file) => handleUploadFile('idCardBackFile', file)}
+                    onFileChange={(file) => {
+                      handleUploadFile('idCardBackFile', file);
+                      if (errors.idCardBackFile) {
+                        setErrors(prev => {
+                          const copy = { ...prev };
+                          delete copy.idCardBackFile;
+                          return copy;
+                        });
+                      }
+                    }}
                     onRemove={() => setFormData(prev => ({ ...prev, idCardBackFile: undefined }))}
+                    error={errors.idCardBackFile}
                   />
                   <UploadCard
                     label="Ảnh chân dung"
                     file={formData.portraitFile}
                     isUploading={uploadingField === 'portraitFile'}
-                    onFileChange={(file) => handleUploadFile('portraitFile', file)}
+                    onFileChange={(file) => {
+                      handleUploadFile('portraitFile', file);
+                      if (errors.portraitFile) {
+                        setErrors(prev => {
+                          const copy = { ...prev };
+                          delete copy.portraitFile;
+                          return copy;
+                        });
+                      }
+                    }}
                     onRemove={() => setFormData(prev => ({ ...prev, portraitFile: undefined }))}
+                    error={errors.portraitFile}
                   />
                 </div>
               )}

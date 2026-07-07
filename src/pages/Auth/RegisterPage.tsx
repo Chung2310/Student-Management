@@ -21,6 +21,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
   const teacherId = queryParams.get('teacherId');
 
   const [teacherName, setTeacherName] = useState('');
+  const [businessType, setBusinessType] = useState('driving');
   const [errorMsg, setErrorMsg] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [regSuccess, setRegSuccess] = useState(false);
@@ -47,7 +48,16 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
     if (!teacherId) return;
     apiFetch(`/auth/teacher/${teacherId}`)
       .then(res => {
-        if (res.success && res.data) setTeacherName(res.data.displayName);
+        if (res.success && res.data) {
+          setTeacherName(res.data.displayName);
+          if (res.data.businessType) {
+            setBusinessType(res.data.businessType);
+            // Default rank to empty if it's not a driving center
+            if (res.data.businessType !== 'driving') {
+              setRank('');
+            }
+          }
+        }
       })
       .catch(() => setErrorMsg('Không tìm thấy thông tin giáo viên. Vui lòng kiểm tra lại liên kết quét mã!'));
   }, [teacherId]);
@@ -175,11 +185,20 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
     }
 
     // Validate CCCD
-    const idCardRegex = /^\d{12}$/;
-    if (!idCard.trim()) {
-      newErrors.idCard = 'Số CCCD/CMND không được để trống.';
-    } else if (!idCardRegex.test(idCard.trim())) {
-      newErrors.idCard = 'Số CCCD không hợp lệ (phải gồm đúng 12 chữ số).';
+    if (businessType === 'driving') {
+      const idCardRegex = /^\d{12}$/;
+      if (!idCard.trim()) {
+        newErrors.idCard = 'Số CCCD/CMND không được để trống.';
+      } else if (!idCardRegex.test(idCard.trim())) {
+        newErrors.idCard = 'Số CCCD không hợp lệ (phải gồm đúng 12 chữ số).';
+      }
+    } else {
+      if (idCard.trim()) {
+        const idCardRegex = /^(\d{9}|\d{12})$/;
+        if (!idCardRegex.test(idCard.trim())) {
+          newErrors.idCard = 'Số CCCD/CMND phải gồm 9 hoặc 12 chữ số.';
+        }
+      }
     }
 
     // Validate dates
@@ -207,14 +226,16 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
     }
 
     // Validate file uploads
-    if (!idCardFrontFile) {
-      newErrors.idCardFrontFile = 'Ảnh CCCD mặt trước là bắt buộc.';
-    }
-    if (!idCardBackFile) {
-      newErrors.idCardBackFile = 'Ảnh CCCD mặt sau là bắt buộc.';
-    }
-    if (!portraitFile) {
-      newErrors.portraitFile = 'Ảnh chân dung là bắt buộc.';
+    if (businessType === 'driving') {
+      if (!idCardFrontFile) {
+        newErrors.idCardFrontFile = 'Ảnh CCCD mặt trước là bắt buộc.';
+      }
+      if (!idCardBackFile) {
+        newErrors.idCardBackFile = 'Ảnh CCCD mặt sau là bắt buộc.';
+      }
+      if (!portraitFile) {
+        newErrors.portraitFile = 'Ảnh chân dung là bắt buộc.';
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -345,19 +366,58 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Select 
-                    value={rank} 
-                    onChange={(val) => updateField('rank', val)} 
-                    label="Hạng bằng (lái xe)" 
-                    options={['Không (ngành khác)', 'A1', 'A2', 'B1', 'B2', 'C']} 
-                  />
-                  <DateInput
-                    label="Ngày nhập học"
-                    value={enrollmentDate}
-                    onChange={(val) => updateField('enrollmentDate', val)}
-                    error={errors.enrollmentDate}
-                    onBlur={() => handleBlur('enrollmentDate')}
-                  />
+                  {businessType === 'driving' ? (
+                    <>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Hạng bằng (lái xe)</label>
+                        <select 
+                          value={rank} 
+                          onChange={(e) => updateField('rank', e.target.value)} 
+                          className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-100 focus:border-cyan-600 focus:bg-white outline-none transition-all font-bold text-slate-900 text-sm appearance-none cursor-pointer"
+                        >
+                          <option value="Không (ngành khác)">Không (ngành khác)</option>
+                          <optgroup label="Xe máy (Mô tô)">
+                            <option value="A1">A1</option>
+                            <option value="A2">A2</option>
+                            <option value="A3">A3</option>
+                            <option value="A4">A4</option>
+                          </optgroup>
+                          <optgroup label="Ô tô / Xe tải">
+                            <option value="B1">B1</option>
+                            <option value="B2">B2</option>
+                            <option value="C">C</option>
+                          </optgroup>
+                          <optgroup label="Xe khách / Nâng hạng">
+                            <option value="D">D</option>
+                            <option value="E">E</option>
+                          </optgroup>
+                          <optgroup label="Xe đầu kéo / Rơ-moóc">
+                            <option value="FB2">FB2</option>
+                            <option value="FC">FC</option>
+                            <option value="FD">FD</option>
+                            <option value="FE">FE</option>
+                          </optgroup>
+                        </select>
+                      </div>
+                      <DateInput
+                        label="Ngày nhập học"
+                        value={enrollmentDate}
+                        onChange={(val) => updateField('enrollmentDate', val)}
+                        error={errors.enrollmentDate}
+                        onBlur={() => handleBlur('enrollmentDate')}
+                      />
+                    </>
+                  ) : (
+                    <div className="sm:col-span-2">
+                      <DateInput
+                        label="Ngày nhập học"
+                        value={enrollmentDate}
+                        onChange={(val) => updateField('enrollmentDate', val)}
+                        error={errors.enrollmentDate}
+                        onBlur={() => handleBlur('enrollmentDate')}
+                      />
+                    </div>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -365,7 +425,8 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
                     value={idCard} 
                     onChange={(val) => updateField('idCard', val)} 
                     placeholder="Số CCCD..." 
-                    label="Số CCCD/CMND *" 
+                    label={businessType === 'driving' ? "Số CCCD/CMND *" : "Số CCCD/CMND (Tùy chọn)"}
+                    required={businessType === 'driving'}
                     error={errors.idCard}
                     onBlur={() => handleBlur('idCard')}
                   />
@@ -398,35 +459,37 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
                   required={false} 
                 />
                 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Hình ảnh đính kèm *</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <PublicUploadCard 
-                      label="CCCD mặt trước *" 
-                      file={idCardFrontFile} 
-                      isUploading={uploadingField === 'idCardFrontFile'} 
-                      onUpload={(file) => handleUploadFile('idCardFrontFile', file)} 
-                      onRemove={() => updateFileField('idCardFrontFile', undefined)} 
-                      error={errors.idCardFrontFile}
-                    />
-                    <PublicUploadCard 
-                      label="CCCD mặt sau *" 
-                      file={idCardBackFile} 
-                      isUploading={uploadingField === 'idCardBackFile'} 
-                      onUpload={(file) => handleUploadFile('idCardBackFile', file)} 
-                      onRemove={() => updateFileField('idCardBackFile', undefined)} 
-                      error={errors.idCardBackFile}
-                    />
-                    <PublicUploadCard 
-                      label="Ảnh chân dung *" 
-                      file={portraitFile} 
-                      isUploading={uploadingField === 'portraitFile'} 
-                      onUpload={(file) => handleUploadFile('portraitFile', file)} 
-                      onRemove={() => updateFileField('portraitFile', undefined)} 
-                      error={errors.portraitFile}
-                    />
+                {businessType === 'driving' && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Hình ảnh đính kèm *</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <PublicUploadCard 
+                        label="CCCD mặt trước *" 
+                        file={idCardFrontFile} 
+                        isUploading={uploadingField === 'idCardFrontFile'} 
+                        onUpload={(file) => handleUploadFile('idCardFrontFile', file)} 
+                        onRemove={() => updateFileField('idCardFrontFile', undefined)} 
+                        error={errors.idCardFrontFile}
+                      />
+                      <PublicUploadCard 
+                        label="CCCD mặt sau *" 
+                        file={idCardBackFile} 
+                        isUploading={uploadingField === 'idCardBackFile'} 
+                        onUpload={(file) => handleUploadFile('idCardBackFile', file)} 
+                        onRemove={() => updateFileField('idCardBackFile', undefined)} 
+                        error={errors.idCardBackFile}
+                      />
+                      <PublicUploadCard 
+                        label="Ảnh chân dung *" 
+                        file={portraitFile} 
+                        isUploading={uploadingField === 'portraitFile'} 
+                        onUpload={(file) => handleUploadFile('portraitFile', file)} 
+                        onRemove={() => updateFileField('portraitFile', undefined)} 
+                        error={errors.portraitFile}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <button 
                   type="submit" 
@@ -519,20 +582,6 @@ function Input({
   );
 }
 
-function Select({ value, onChange, label, options }: { value: string; onChange: (value: string) => void; label: string; options: string[]; }) {
-  return (
-    <div className="space-y-1">
-      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{label}</label>
-      <select 
-        value={value} 
-        onChange={(e) => onChange(e.target.value)} 
-        className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-100 focus:border-cyan-600 focus:bg-white outline-none transition-all font-bold text-slate-900 text-sm appearance-none"
-      >
-        {options.map(option => <option key={option} value={option}>{option}</option>)}
-      </select>
-    </div>
-  );
-}
 
 function AlertBanner({ message }: { message: string }) {
   return (

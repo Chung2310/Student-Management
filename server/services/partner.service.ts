@@ -27,6 +27,18 @@ interface PartnerData {
   notes?: string;
 }
 
+export interface BulkPartnerInput {
+  name?: string;
+  phone?: string;
+  email?: string;
+  bankName?: string;
+  bankAccountNo?: string;
+  bankAccountName?: string;
+  isActive?: boolean | string;
+  notes?: string;
+  centerId?: string;
+}
+
 export interface EnrichedPartner {
   _id: string;
   name: string;
@@ -64,6 +76,10 @@ function buildOwnerQuery(ownerId: string | string[]): Record<string, unknown> {
 
 function parseCurrency(val: string | undefined): number {
   return parseInt(String(val || "").replace(/\D/g, ""), 10) || 0;
+}
+
+function normalizePhone(phone: string): string {
+  return String(phone || "").replace(/\D/g, "");
 }
 
 const DEFAULT_LEVELS = [
@@ -306,6 +322,100 @@ export class PartnerService {
     const saved = await partner.save();
     const enriched = await enrichPartners([saved]);
     return enriched[0];
+  }
+
+  static async bulkCreatePartners(
+    creatorId: string,
+    ownerId: string | string[],
+    partnersData: BulkPartnerInput[],
+    targetOwnerId?: string
+  ) {
+    let importedCount = 0;
+    let skippedCount = 0;
+    const errors: { row: number; name: string; phone: string; reason: string }[] = [];
+    const validPartners: Partial<IPartner>[] = [];
+    const seenPhonesInBatch = new Set<string>();
+
+    const query = buildOwnerQuery(ownerId);
+    const existingPartners = await Partner.find(query).select("phone");
+    const existingPhones = new Set(existingPartners.map((p) => normalizePhone(p.phone)));
+
+    for (let i = 0; i < partnersData.length; i++) {
+      const rowNum = i + 1;
+      const data = partnersData[i];
+      const name = String(data.name || "").trim();
+      const phone = normalizePhone(String(data.phone || ""));
+
+      if (!name) {
+        errors.push({ row: rowNum, name, phone, reason: "Tên đối tác không được để trống." });
+        skippedCount++;
+        continue;
+      }
+      if (!phone) {
+        errors.push({ row: rowNum, name, phone, reason: "Số điện thoại không được để trống." });
+        skippedCount++;
+        continue;
+      }
+
+      if (seenPhonesInBatch.has(phone)) {
+        errors.push({ row: rowNum, name, phone, reason: "Số điện thoại bị trùng lặp trong file import." });
+        skippedCount++;
+        continue;
+      }
+      seenPhonesInBatch.add(phone);
+
+      if (existingPhones.has(phone)) {
+        errors.push({ row: rowNum, name, phone, reason: "Số điện thoại đối tác đã tồn tại trong trung tâm." });
+        skippedCount++;
+        continue;
+      }
+
+      let isActive = true;
+      if (typeof data.isActive === "boolean") {
+        isActive = data.isActive;
+      } else if (typeof data.isActive === "string") {
+        const normStatus = data.isActive.trim().toLowerCase();
+        if (
+          normStatus === "ngung hoat dong" ||
+          normStatus === "tam dung" ||
+          normStatus === "inactive" ||
+          normStatus === "false"
+        ) {
+          isActive = false;
+        }
+      }
+
+      const partnerOwnerId = targetOwnerId || data.centerId || creatorId;
+
+      validPartners.push({
+        name,
+        phone,
+        email: String(data.email || "").trim().toLowerCase() || "",
+        bankName: String(data.bankName || "").trim(),
+        bankAccountNo: String(data.bankAccountNo || "").replace(/\D/g, ""),
+        bankAccountName: String(data.bankAccountName || "").trim(),
+        isActive,
+        notes: String(data.notes || "").trim(),
+        ownerId: partnerOwnerId,
+        commissionType: "fixed",
+        commissionValue: 0,
+        payoutHistory: [],
+      });
+
+      existingPhones.add(phone);
+    }
+
+    if (validPartners.length > 0) {
+      const results = await Partner.insertMany(validPartners);
+      importedCount = results.length;
+      logger.info(`[Partner] Bulk import complete: imported=${importedCount}, skipped=${skippedCount}`);
+    }
+
+    return {
+      importedCount,
+      skippedCount,
+      errors,
+    };
   }
 
   static async getCommissionLevels(ownerId: string | string[]): Promise<ICommissionLevel[]> {

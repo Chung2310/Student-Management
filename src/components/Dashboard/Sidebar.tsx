@@ -54,7 +54,7 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
       // Dashboard is always visible
       if (item.view === 'Dashboard') return true;
       // If user.permissions exists, filter by it
-      if (user.permissions && Array.isArray(user.permissions)) {
+      if (user.permissions && Array.isArray(user.permissions) && user.permissions.length > 0) {
         return user.permissions.includes(item.view);
       }
       // If permissions array is missing/legacy, default to true

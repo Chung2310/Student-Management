@@ -7,11 +7,13 @@ interface FormInputProps {
   name: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   required?: boolean;
   readOnly?: boolean;
   placeholder?: string;
   className?: string;
   type?: string;
+  error?: string;
 }
 
 export function FormInput({
@@ -19,11 +21,13 @@ export function FormInput({
   name,
   value,
   onChange,
+  onBlur,
   required = false,
   readOnly = false,
   placeholder = '',
   className = '',
   type = 'text',
+  error,
 }: FormInputProps) {
   return (
     <div className={`space-y-1 ${className}`}>
@@ -35,12 +39,20 @@ export function FormInput({
         name={name}
         value={value}
         onChange={onChange}
+        onBlur={onBlur}
         readOnly={readOnly}
         placeholder={placeholder}
-        className={`w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all ${
+        className={`w-full px-4 py-2 bg-white border rounded-xl text-sm placeholder:text-slate-300 focus:outline-none focus:ring-4 transition-all ${
+          error 
+            ? 'border-rose-500 focus:ring-rose-500/5 focus:border-rose-500' 
+            : 'border-slate-200 focus:ring-cyan-600/5 focus:border-cyan-600'
+        } ${
           readOnly ? 'bg-slate-50 text-slate-600 cursor-default' : ''
         }`}
       />
+      {error && (
+        <p className="text-[11px] font-bold text-rose-500 mt-1">{error}</p>
+      )}
     </div>
   );
 }
@@ -51,6 +63,7 @@ interface UploadCardProps {
   isUploading: boolean;
   onFileChange: (file?: File) => void;
   onRemove: () => void;
+  error?: string;
 }
 
 export function UploadCard({
@@ -59,9 +72,12 @@ export function UploadCard({
   isUploading,
   onFileChange,
   onRemove,
+  error,
 }: UploadCardProps) {
   return (
-    <div className="border border-slate-200 rounded-2xl p-4 space-y-3">
+    <div className={`border rounded-2xl p-4 space-y-3 transition-all ${
+      error ? 'border-rose-500 bg-rose-50/5' : 'border-slate-200'
+    }`}>
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-bold text-slate-700">{label}</p>
         {file && (
@@ -97,6 +113,9 @@ export function UploadCard({
             onChange={(e) => onFileChange(e.target.files?.[0])}
           />
         </label>
+      )}
+      {error && (
+        <p className="text-[11px] font-bold text-rose-500 mt-1">{error}</p>
       )}
     </div>
   );

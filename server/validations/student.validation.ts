@@ -23,16 +23,19 @@ export const createStudentSchema = Joi.object({
     "any.required": "Họ và tên là bắt buộc.",
     "string.empty": "Họ và tên không được để trống.",
   }),
-  phone: Joi.string().required().messages({
+  phone: Joi.string().required().pattern(/^(0[35789]\d{8})$/).messages({
     "any.required": "Số điện thoại là bắt buộc.",
     "string.empty": "Số điện thoại không được để trống.",
+    "string.pattern.base": "Số điện thoại không hợp lệ (phải gồm 10 chữ số bắt đầu bằng 03, 05, 07, 08 hoặc 09).",
   }),
   email: Joi.string().email().allow("").optional().messages({
     "string.email": "Định dạng email không hợp lệ.",
   }),
   referral: Joi.string().allow("").optional(),
   birthday: Joi.string().allow("").optional(),
-  idCard: Joi.string().allow("").optional(),
+  idCard: Joi.string().pattern(/^(\d{9}|\d{12})$/).allow("").optional().messages({
+    "string.pattern.base": "Số CCCD/CMND phải có 9 hoặc 12 chữ số.",
+  }),
   rank: Joi.string().allow("").optional(),
   courseId: objectIdSchema.allow("").optional(),
   registrationDate: Joi.string().required().messages({
@@ -56,11 +59,15 @@ export const createStudentSchema = Joi.object({
 
 export const updateStudentSchema = Joi.object({
   fullName: Joi.string().optional(),
-  phone: Joi.string().optional(),
+  phone: Joi.string().pattern(/^(0[35789]\d{8})$/).optional().messages({
+    "string.pattern.base": "Số điện thoại không hợp lệ (phải gồm 10 chữ số bắt đầu bằng 03, 05, 07, 08 hoặc 09).",
+  }),
   email: Joi.string().email().allow("").optional(),
   referral: Joi.string().allow("").optional(),
   birthday: Joi.string().allow("").optional(),
-  idCard: Joi.string().allow("").optional(),
+  idCard: Joi.string().pattern(/^(\d{9}|\d{12})$/).allow("").optional().messages({
+    "string.pattern.base": "Số CCCD/CMND phải có 9 hoặc 12 chữ số.",
+  }),
   rank: Joi.string().allow("").optional(),
   courseId: objectIdSchema.allow("").optional(),
   registrationDate: Joi.string().optional(),
@@ -132,11 +139,7 @@ export const publicRegisterStudentSchema = Joi.object({
     "string.empty": "Ngày sinh không được để trống.",
     "string.pattern.base": "Ngày sinh không đúng định dạng DD/MM/YYYY.",
   }),
-  idCard: Joi.string().required().pattern(/^\d{12}$/).messages({
-    "any.required": "Số CCCD/CMND là bắt buộc.",
-    "string.empty": "Số CCCD/CMND không được để trống.",
-    "string.pattern.base": "Số CCCD phải có đúng 12 chữ số.",
-  }),
+  idCard: Joi.string().allow("").optional(),
   rank: Joi.string().allow("").optional(),
   enrollmentDate: Joi.string().required().pattern(/^\d{1,2}\/\d{1,2}\/\d{4}$/).messages({
     "any.required": "Ngày nhập học là bắt buộc.",
@@ -147,15 +150,9 @@ export const publicRegisterStudentSchema = Joi.object({
     "any.required": "Địa chỉ là bắt buộc.",
     "string.empty": "Địa chỉ không được để trống.",
   }),
-  idCardFrontFile: uploadedFileSchema.required().messages({
-    "any.required": "Ảnh CCCD mặt trước là bắt buộc.",
-  }),
-  idCardBackFile: uploadedFileSchema.required().messages({
-    "any.required": "Ảnh CCCD mặt sau là bắt buộc.",
-  }),
-  portraitFile: uploadedFileSchema.required().messages({
-    "any.required": "Ảnh chân dung là bắt buộc.",
-  }),
+  idCardFrontFile: uploadedFileSchema.optional(),
+  idCardBackFile: uploadedFileSchema.optional(),
+  portraitFile: uploadedFileSchema.optional(),
   teacherId: objectIdSchema.required().messages({
     "any.required": "ID giáo viên là bắt buộc.",
     "string.empty": "ID giáo viên không được để trống.",

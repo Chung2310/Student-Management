@@ -94,7 +94,7 @@ export function UserManagementPage() {
     setFBankId(item.bankId || 'mbbank');
     setFBusinessType(item.businessType || 'driving');
     setFMaxUsersLimit(item.maxUsersLimit ?? 10);
-    setFPermissions(item.permissions || []);
+    setFPermissions(item.permissions && item.permissions.length > 0 ? item.permissions : ALL_PERMISSIONS);
     setModal(item.role === 'admin' ? 'edit-center' : 'edit-user');
   };
 
