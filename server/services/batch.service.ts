@@ -221,7 +221,7 @@ export class BatchService {
       throw new Error("Không tìm thấy học viên.");
     }
     const course = await Course.findOne({ _id: batch.courseId });
-    if (course && course.maxLearners > 0 && batch.learnerIds.length >= course.maxLearners) {
+    if (businessType === "driving" && course && course.maxLearners > 0 && batch.learnerIds.length >= course.maxLearners) {
       throw new Error(`Lớp đã đạt sĩ số tối đa (${course.maxLearners} học viên).`);
     }
 

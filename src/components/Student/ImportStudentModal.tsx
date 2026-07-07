@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx';
 import { apiFetch } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
+import { useCourses } from '../../hooks/useCourses';
 
 interface ImportStudentModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface ParsedStudent {
   fullName: string;
   phone: string;
   rank: string;
+  courseId?: string;
   fee: string;
   paidAmount?: number;
   birthday?: string;
@@ -58,6 +60,7 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
   const { user } = useAuth();
   const businessType = user?.businessType || 'driving';
   const { toast } = useToast();
+  const { courses } = useCourses();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isDragging, setIsDragging] = useState(false);
@@ -93,30 +96,17 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
           { wch: 20 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
           { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 35 }, { wch: 16 }
         ];
-      } else if (businessType === 'language') {
+      } else if (businessType === 'language' || businessType === 'general') {
         headers = [
-          'Họ và tên', 'Số điện thoại', 'Khóa học đăng ký', 'Học phí', 'Đã đóng', 'Còn nợ',
+          'Họ và tên', 'Số điện thoại', 'Mã khóa học', 'Học phí', 'Đã đóng', 'Còn nợ',
           'Ngày sinh', 'CCCD / CMND', 'Email', 'Người giới thiệu', 'Địa chỉ', 'Ngày nhập học'
         ];
         data = [
-          ['Nguyễn Văn A', '0912345678', 'IELTS 6.5', '8.000.000', '8.000.000', '0', '25/12/1995', '123456789012', 'nva@gmail.com', 'Trần Văn B', '123 Đường Lê Lợi, Q.1', '15/06/2026'],
-          ['Trần Thị B', '0987654321', 'Tiếng Anh Giao Tiếp', '3.500.000', '0', '3.500.000', '10/05/2000', '987654321098', 'ttb@gmail.com', '', '456 Đường Nguyễn Huệ, H.Hóc Môn', '20/06/2026']
+          ['Nguyễn Văn A', '0912345678', 'IELTS6.5', '8.000.000', '8.000.000', '0', '25/12/1995', '123456789012', 'nva@gmail.com', 'Trần Văn B', '123 Đường Lê Lợi, Q.1', '15/06/2026'],
+          ['Trần Thị B', '0987654321', 'TAGT', '3.500.000', '0', '3.500.000', '10/05/2000', '987654321098', 'ttb@gmail.com', '', '456 Đường Nguyễn Huệ, H.Hóc Môn', '20/06/2026']
         ];
         cols = [
-          { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
-          { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 35 }, { wch: 16 }
-        ];
-      } else {
-        headers = [
-          'Họ và tên', 'Số điện thoại', 'Học phí', 'Đã đóng', 'Còn nợ',
-          'Ngày sinh', 'CCCD / CMND', 'Email', 'Người giới thiệu', 'Địa chỉ', 'Ngày nhập học'
-        ];
-        data = [
-          ['Nguyễn Văn A', '0912345678', '1.000.000', '1.000.000', '0', '25/12/1995', '123456789012', 'nva@gmail.com', 'Trần Văn B', '123 Đường Lê Lợi, Q.1', '15/06/2026'],
-          ['Trần Thị B', '0987654321', '3.500.000', '0', '3.500.000', '10/05/2000', '987654321098', 'ttb@gmail.com', '', '456 Đường Nguyễn Huệ, H.Hóc Môn', '20/06/2026']
-        ];
-        cols = [
-          { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+          { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
           { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 35 }, { wch: 16 }
         ];
       }
@@ -141,7 +131,12 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
       const val = String(cell).trim().toLowerCase();
       if (val.includes('họ và tên') || val.includes('họ tên') || val === 'tên') map.fullName = idx;
       else if (val.includes('số điện thoại') || val.includes('điện thoại') || val === 'sdt') map.phone = idx;
-      else if (val.includes('hạng bằng') || val.includes('hạng') || val === 'hang' || val.includes('khóa học') || val.includes('khoa hoc')) map.rank = idx;
+      else if (
+        val.includes('hạng bằng') || val.includes('hạng') || val === 'hang' ||
+        val.includes('khóa học') || val.includes('khoa hoc') ||
+        val.includes('mã khóa') || val.includes('ma khoa') ||
+        val.includes('mã kh') || val.includes('ma kh')
+      ) map.rank = idx;
       else if (val.includes('học phí') || val.includes('hoc phi')) map.fee = idx;
       else if (val.includes('đã đóng') || val.includes('da dong') || val === 'dong') map.paidAmount = idx;
       else if (val.includes('ngày sinh') || val.includes('ngay sinh') || val === 'năm sinh') map.birthday = idx;
@@ -205,13 +200,37 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
             return String(row[idx]).trim();
           };
 
+          const errors: string[] = [];
+
           const feeNum = parseInt(getCellValue('fee').replace(/\D/g, ''), 10) || 0;
           const paidAmount = parseInt(getCellValue('paidAmount').replace(/\D/g, ''), 10) || 0;
+
+          let resolvedCourseId = '';
+          let finalFee = feeNum > 0 ? feeNum.toLocaleString('vi-VN') : '0';
+
+          const excelRank = getCellValue('rank');
+          if (businessType !== 'driving' && excelRank) {
+            const matchedCourse = courses.find(c => 
+              c.code.toLowerCase() === excelRank.toLowerCase() || 
+              c.title.toLowerCase() === excelRank.toLowerCase()
+            );
+            if (matchedCourse) {
+              resolvedCourseId = matchedCourse.id;
+              if (feeNum === 0 && matchedCourse.fee) {
+                const matchedFeeNum = parseInt(String(matchedCourse.fee).replace(/\D/g, ''), 10) || 0;
+                finalFee = matchedFeeNum.toLocaleString('vi-VN');
+              }
+            } else {
+              errors.push(`Mã/Tên khóa học "${excelRank}" không tồn tại trong hệ thống`);
+            }
+          }
+
           const studentData: ParsedStudent = {
             fullName: getCellValue('fullName'),
             phone: formatExcelPhone(getCellValue('phone')),
-            rank: getCellValue('rank').toUpperCase(),
-            fee: feeNum > 0 ? feeNum.toLocaleString('vi-VN') : '0',
+            rank: businessType === 'driving' ? getCellValue('rank').toUpperCase() : getCellValue('rank'),
+            courseId: resolvedCourseId,
+            fee: finalFee,
             paidAmount,
             birthday: getCellValue('birthday'),
             idCard: getCellValue('idCard'),
@@ -221,14 +240,15 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
             enrollmentDate: getCellValue('enrollmentDate'),
           };
 
-          const errors: string[] = [];
           if (!studentData.fullName) errors.push('Họ tên không được trống');
           if (!studentData.phone) errors.push('Số điện thoại không được trống');
           else if (seenPhones.has(studentData.phone)) errors.push('SĐT bị trùng lặp trong file');
           else seenPhones.add(studentData.phone);
-          if (paidAmount > feeNum) errors.push(`Số tiền đã đóng (${paidAmount.toLocaleString('vi-VN')}đ) không được vượt quá học phí (${studentData.fee}đ)`);
-
-          // Hạng bằng là tùy chọn tự do, không cần kiểm tra thuộc danh sách cố định lái xe nữa
+          
+          const finalFeeNum = parseInt(finalFee.replace(/\D/g, ''), 10) || 0;
+          if (paidAmount > finalFeeNum) {
+            errors.push(`Số tiền đã đóng (${paidAmount.toLocaleString('vi-VN')}đ) không được vượt quá học phí (${finalFee}đ)`);
+          }
 
           if (studentData.enrollmentDate && !DATE_PATTERN.test(studentData.enrollmentDate)) {
             errors.push('Ngày nhập học không đúng định dạng DD/MM/YYYY');
@@ -432,11 +452,11 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
                           <th className="px-4 py-3 text-slate-400 font-bold text-center w-12">Dòng</th>
                           <th className="px-4 py-3 text-slate-400 font-bold w-40">Họ và tên</th>
                           <th className="px-4 py-3 text-slate-400 font-bold w-32">Số điện thoại</th>
-                          {businessType === 'language' ? (
-                            <th className="px-3 py-3 text-slate-400 font-bold text-center w-24">Khóa học</th>
-                          ) : businessType === 'driving' ? (
+                          {businessType === 'driving' ? (
                             <th className="px-3 py-3 text-slate-400 font-bold text-center w-16">Hạng</th>
-                          ) : null}
+                          ) : (
+                            <th className="px-3 py-3 text-slate-400 font-bold text-center w-24">Khóa học</th>
+                          )}
                           <th className="px-3 py-3 text-slate-400 font-bold w-24">Học phí</th>
                           <th className="px-3 py-3 text-slate-400 font-bold w-24">Đã đóng</th>
                           <th className="px-3 py-3 text-slate-400 font-bold w-28">Ngày nhập học</th>
@@ -449,11 +469,9 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
                             <td className="px-4 py-3 text-slate-400 text-center font-bold">{row.rowNum}</td>
                             <td className="px-4 py-3 font-bold text-slate-800">{row.data.fullName || <span className="text-slate-300 italic">Trống</span>}</td>
                             <td className="px-4 py-3 text-slate-600">{row.data.phone || <span className="text-slate-300 italic">Trống</span>}</td>
-                            {businessType !== 'general' && (
-                              <td className="px-3 py-3 text-center">
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-50 text-cyan-700 border border-cyan-100">{row.data.rank || 'N/A'}</span>
-                              </td>
-                            )}
+                            <td className="px-3 py-3 text-center">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-50 text-cyan-700 border border-cyan-100">{row.data.rank || 'N/A'}</span>
+                            </td>
                             <td className="px-3 py-3 text-slate-600 font-semibold">{row.data.fee}đ</td>
                             <td className="px-3 py-3 text-emerald-600 font-semibold">{(row.data.paidAmount || 0).toLocaleString('vi-VN')}đ</td>
                             <td className="px-3 py-3 text-slate-600 font-semibold">{row.data.enrollmentDate || <span className="text-slate-300 italic">Không có</span>}</td>

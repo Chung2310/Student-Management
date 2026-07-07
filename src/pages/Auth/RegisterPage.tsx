@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  CheckCircle2, RefreshCcw, AlertCircle, User, 
-  Phone, MapPin, ChevronLeft, Upload, 
-  Image as ImageIcon, Trash2 
+import {
+  CheckCircle2, RefreshCcw, AlertCircle, User,
+  Phone, MapPin, ChevronLeft, Upload,
+  Image as ImageIcon, Trash2
 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { UploadedFile } from '../../types';
@@ -42,6 +42,9 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
   const [idCardBackFile, setIdCardBackFile] = useState<UploadedFile | undefined>();
   const [portraitFile, setPortraitFile] = useState<UploadedFile | undefined>();
 
+  const [courses, setCourses] = useState<{ id: string; title: string; fee: string; code: string }[]>([]);
+  const [courseId, setCourseId] = useState('');
+
   // Field-specific validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -51,17 +54,40 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
       .then(res => {
         if (res.success && res.data) {
           setTeacherName(res.data.displayName);
-          if (res.data.businessType) {
-            setBusinessType(res.data.businessType);
-            // Default rank to empty if it's not a driving center
-            if (res.data.businessType !== 'driving') {
-              setRank('');
-            }
+          const bizType = res.data.businessType || 'driving';
+          setBusinessType(bizType);
+          if (bizType !== 'driving') {
+            setRank('');
+            apiFetch(`/auth/teacher/${teacherId}/courses`)
+              .then(cRes => {
+                if (cRes.success && cRes.data) {
+                  setCourses(cRes.data.map((c: { _id?: string; id?: string; title: string; fee: string; code: string }) => ({
+                    id: c._id || c.id || '',
+                    title: c.title,
+                    fee: c.fee,
+                    code: c.code,
+                  })));
+                }
+              })
+              .catch(err => console.error("Lỗi lấy danh sách khóa học:", err));
           }
         }
       })
       .catch(() => setErrorMsg('Không tìm thấy thông tin giáo viên. Vui lòng kiểm tra lại liên kết quét mã!'));
   }, [teacherId]);
+
+  const handleCourseChange = (selectedId: string) => {
+    setCourseId(selectedId);
+    const found = courses.find(c => c.id === selectedId);
+    setRank(found ? found.title : '');
+    if (errors.courseId) {
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next.courseId;
+        return next;
+      });
+    }
+  };
 
   const updateField = (field: string, val: string) => {
     if (field === 'fullName') setFullName(val);
@@ -110,13 +136,33 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
       }
     }
     if (field === 'idCard') {
-      const idCardRegex = /^\d{12}$/;
-      if (!idCard.trim()) {
-        newErrors.idCard = 'Số CCCD/CMND không được để trống.';
-      } else if (!idCardRegex.test(idCard.trim())) {
-        newErrors.idCard = 'Số CCCD không hợp lệ (phải gồm đúng 12 chữ số).';
+      if (businessType === 'driving') {
+        const idCardRegex = /^\d{12}$/;
+        if (!idCard.trim()) {
+          newErrors.idCard = 'Số CCCD/CMND không được để trống.';
+        } else if (!idCardRegex.test(idCard.trim())) {
+          newErrors.idCard = 'Số CCCD không hợp lệ (phải gồm đúng 12 chữ số).';
+        } else {
+          delete newErrors.idCard;
+        }
       } else {
-        delete newErrors.idCard;
+        if (idCard.trim()) {
+          const idCardRegex = /^(\d{9}|\d{12})$/;
+          if (!idCardRegex.test(idCard.trim())) {
+            newErrors.idCard = 'Số CCCD/CMND phải gồm 9 hoặc 12 chữ số.';
+          } else {
+            delete newErrors.idCard;
+          }
+        } else {
+          delete newErrors.idCard;
+        }
+      }
+    }
+    if (field === 'courseId') {
+      if (businessType !== 'driving' && !courseId) {
+        newErrors.courseId = 'Vui lòng chọn khóa học đăng ký.';
+      } else {
+        delete newErrors.courseId;
       }
     }
     if (field === 'email') {
@@ -239,6 +285,12 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
       }
     }
 
+    if (businessType !== 'driving') {
+      if (!courseId) {
+        newErrors.courseId = 'Vui lòng chọn khóa học đăng ký.';
+      }
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setIsRegistering(false);
@@ -255,6 +307,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
           birthday: toDisplayDate(birthday),
           idCard,
           rank: rank === 'Không (ngành khác)' ? '' : rank,
+          courseId: businessType !== 'driving' ? courseId : undefined,
           address,
           enrollmentDate: toDisplayDate(enrollmentDate),
           idCardFrontFile,
@@ -283,6 +336,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
     setAddress('');
     setEnrollmentDate('');
     setReferral('');
+    setCourseId('');
     setIdCardFrontFile(undefined);
     setIdCardBackFile(undefined);
     setPortraitFile(undefined);
@@ -298,7 +352,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-teal-600/10 blur-[120px] rounded-full" />
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -306,7 +360,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
       >
         <AnimatePresence mode="wait">
           {!regSuccess ? (
-            <motion.div 
+            <motion.div
               key="form"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -314,8 +368,8 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
             >
               <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-6">
                 <div>
-                  <button 
-                    onClick={() => onNavigateToPath('/login')} 
+                  <button
+                    onClick={() => onNavigateToPath('/login')}
                     className="flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-cyan-600 transition-colors mb-2 cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" /> Quay lại đăng nhập
@@ -327,33 +381,33 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
                     </p>
                   )}
                 </div>
-                <img 
-                  src="/logo-igen.png" 
-                  alt="Logo" 
-                  className="w-10 h-10 rounded-xl object-contain shadow-md shrink-0 self-start sm:self-center" 
+                <img
+                  src="/logo-igen.png"
+                  alt="Logo"
+                  className="w-10 h-10 rounded-xl object-contain shadow-md shrink-0 self-start sm:self-center"
                 />
               </div>
 
               {errorMsg && <AlertBanner message={errorMsg} />}
 
               <form onSubmit={handleRegisterSubmit} noValidate className="space-y-5">
-                <Input 
-                  icon={User} 
-                  value={fullName} 
-                  onChange={(val) => updateField('fullName', val)} 
-                  placeholder="Nguyễn Văn A" 
-                  label="Họ và tên *" 
+                <Input
+                  icon={User}
+                  value={fullName}
+                  onChange={(val) => updateField('fullName', val)}
+                  placeholder="Nguyễn Văn A"
+                  label="Họ và tên *"
                   error={errors.fullName}
                   onBlur={() => handleBlur('fullName')}
                 />
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input 
-                    icon={Phone} 
-                    value={phone} 
-                    onChange={(val) => updateField('phone', val)} 
-                    placeholder="09xxxxxxxx" 
-                    label="Số điện thoại *" 
+                  <Input
+                    icon={Phone}
+                    value={phone}
+                    onChange={(val) => updateField('phone', val)}
+                    placeholder="09xxxxxxxx"
+                    label="Số điện thoại *"
                     error={errors.phone}
                     onBlur={() => handleBlur('phone')}
                   />
@@ -365,7 +419,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
                     onBlur={() => handleBlur('birthday')}
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {businessType === 'driving' ? (
                     <>
@@ -418,7 +472,20 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
                       />
                     </>
                   ) : (
-                    <div className="sm:col-span-2">
+                    <>
+                      <CustomSelect
+                        label="Khóa học đăng ký"
+                        value={courseId}
+                        onChange={handleCourseChange}
+                        options={courses.map(c => ({
+                          value: c.id,
+                          label: `${c.code} - ${c.title}`
+                        }))}
+                        placeholder="Chọn khóa học..."
+                        theme="register"
+                        required={true}
+                        error={errors.courseId}
+                      />
                       <DateInput
                         label="Ngày nhập học"
                         value={enrollmentDate}
@@ -426,84 +493,99 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
                         error={errors.enrollmentDate}
                         onBlur={() => handleBlur('enrollmentDate')}
                       />
-                    </div>
+                      {courseId && (() => {
+                        const selectedCourse = courses.find(c => c.id === courseId);
+                        if (!selectedCourse) return null;
+                        return (
+                          <div className="sm:col-span-2 p-4 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between">
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Học phí khóa học </p>
+                              <p className="text-lg font-black text-slate-800 mt-0.5">{selectedCourse.fee}</p>
+                            </div>
+                            <span className="text-[10px] font-extrabold text-cyan-600 bg-cyan-50 border border-cyan-100 px-2.5 py-1 rounded-lg">
+                              {selectedCourse.code}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </>
                   )}
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input 
-                    value={idCard} 
-                    onChange={(val) => updateField('idCard', val)} 
-                    placeholder="Số CCCD..." 
+                  <Input
+                    value={idCard}
+                    onChange={(val) => updateField('idCard', val)}
+                    placeholder="Số CCCD..."
                     label={businessType === 'driving' ? "Số CCCD/CMND *" : "Số CCCD/CMND (Tùy chọn)"}
                     required={businessType === 'driving'}
                     error={errors.idCard}
                     onBlur={() => handleBlur('idCard')}
                   />
-                  <Input 
-                    type="email" 
-                    value={emailReg} 
-                    onChange={(val) => updateField('email', val)} 
-                    placeholder="name@example.com" 
-                    label="Email *" 
+                  <Input
+                    type="email"
+                    value={emailReg}
+                    onChange={(val) => updateField('email', val)}
+                    placeholder="name@example.com"
+                    label="Email *"
                     error={errors.email}
                     onBlur={() => handleBlur('email')}
                   />
                 </div>
-                
-                <Input 
-                  icon={MapPin} 
-                  value={address} 
-                  onChange={(val) => updateField('address', val)} 
-                  placeholder="Nhập địa chỉ của bạn..." 
-                  label="Địa chỉ *" 
+
+                <Input
+                  icon={MapPin}
+                  value={address}
+                  onChange={(val) => updateField('address', val)}
+                  placeholder="Nhập địa chỉ của bạn..."
+                  label="Địa chỉ *"
                   error={errors.address}
                   onBlur={() => handleBlur('address')}
                 />
-                <Input 
-                  icon={User} 
-                  value={referral} 
-                  onChange={(val) => updateField('referral', val)} 
-                  placeholder="Nhập tên người giới thiệu (nếu có)..." 
-                  label="Người giới thiệu" 
-                  required={false} 
+                <Input
+                  icon={User}
+                  value={referral}
+                  onChange={(val) => updateField('referral', val)}
+                  placeholder="Nhập tên người giới thiệu (nếu có)..."
+                  label="Người giới thiệu"
+                  required={false}
                 />
-                
+
                 {businessType === 'driving' && (
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Hình ảnh đính kèm *</label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <PublicUploadCard 
-                        label="CCCD mặt trước *" 
-                        file={idCardFrontFile} 
-                        isUploading={uploadingField === 'idCardFrontFile'} 
-                        onUpload={(file) => handleUploadFile('idCardFrontFile', file)} 
-                        onRemove={() => updateFileField('idCardFrontFile', undefined)} 
+                      <PublicUploadCard
+                        label="CCCD mặt trước *"
+                        file={idCardFrontFile}
+                        isUploading={uploadingField === 'idCardFrontFile'}
+                        onUpload={(file) => handleUploadFile('idCardFrontFile', file)}
+                        onRemove={() => updateFileField('idCardFrontFile', undefined)}
                         error={errors.idCardFrontFile}
                       />
-                      <PublicUploadCard 
-                        label="CCCD mặt sau *" 
-                        file={idCardBackFile} 
-                        isUploading={uploadingField === 'idCardBackFile'} 
-                        onUpload={(file) => handleUploadFile('idCardBackFile', file)} 
-                        onRemove={() => updateFileField('idCardBackFile', undefined)} 
+                      <PublicUploadCard
+                        label="CCCD mặt sau *"
+                        file={idCardBackFile}
+                        isUploading={uploadingField === 'idCardBackFile'}
+                        onUpload={(file) => handleUploadFile('idCardBackFile', file)}
+                        onRemove={() => updateFileField('idCardBackFile', undefined)}
                         error={errors.idCardBackFile}
                       />
-                      <PublicUploadCard 
-                        label="Ảnh chân dung *" 
-                        file={portraitFile} 
-                        isUploading={uploadingField === 'portraitFile'} 
-                        onUpload={(file) => handleUploadFile('portraitFile', file)} 
-                        onRemove={() => updateFileField('portraitFile', undefined)} 
+                      <PublicUploadCard
+                        label="Ảnh chân dung *"
+                        file={portraitFile}
+                        isUploading={uploadingField === 'portraitFile'}
+                        onUpload={(file) => handleUploadFile('portraitFile', file)}
+                        onRemove={() => updateFileField('portraitFile', undefined)}
                         error={errors.portraitFile}
                       />
                     </div>
                   </div>
                 )}
 
-                <button 
-                  type="submit" 
-                  disabled={isRegistering} 
+                <button
+                  type="submit"
+                  disabled={isRegistering}
                   className="w-full py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-2xl font-bold shadow-lg shadow-cyan-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-6 cursor-pointer"
                 >
                   {isRegistering ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
@@ -512,7 +594,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
               </form>
             </motion.div>
           ) : (
-            <motion.div 
+            <motion.div
               key="success"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -526,8 +608,8 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
               <p className="text-slate-500 font-medium text-sm leading-relaxed mb-8">
                 Hồ sơ học viên <span className="font-bold text-slate-800">{fullName}</span> đã được ghi nhận thành công và liên kết trực tiếp vào danh sách của giáo viên <span className="font-bold text-cyan-600">{teacherName || 'hệ thống'}</span>.
               </p>
-              <button 
-                onClick={resetRegister} 
+              <button
+                onClick={resetRegister}
                 className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold transition-all shadow-lg cursor-pointer"
               >
                 Quay lại trang chủ
@@ -542,19 +624,19 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
 
 // Subcomponents matching LoginPage
 interface InputProps {
-  icon?: React.ComponentType<{ className?: string }>; 
-  value: string; 
-  onChange: (value: string) => void; 
-  placeholder?: string; 
-  label: string; 
-  type?: string; 
-  required?: boolean; 
+  icon?: React.ComponentType<{ className?: string }>;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  label: string;
+  type?: string;
+  required?: boolean;
   error?: string;
   onBlur?: () => void;
 }
 
-function Input({ 
-  icon: Icon, value, onChange, placeholder, label, type = 'text', required = true, error, onBlur 
+function Input({
+  icon: Icon, value, onChange, placeholder, label, type = 'text', required = true, error, onBlur
 }: InputProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [localVal, setLocalVal] = useState(value);
@@ -570,12 +652,12 @@ function Input({
       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{label}</label>
       <div className="relative">
         {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />}
-        <input 
+        <input
           ref={inputRef}
-          type={type} 
-          required={required} 
-          placeholder={placeholder} 
-          value={localVal} 
+          type={type}
+          required={required}
+          placeholder={placeholder}
+          value={localVal}
           onChange={(e) => {
             setLocalVal(e.target.value);
             onChange(e.target.value);
@@ -584,7 +666,7 @@ function Input({
             setLocalVal(value);
             onBlur?.();
           }}
-          className={`w-full py-3.5 rounded-xl bg-slate-50 border outline-none transition-all font-medium text-slate-900 text-sm ${error ? 'border-rose-300 bg-rose-50/10 focus:border-rose-500' : 'border-slate-100 focus:border-cyan-600 focus:bg-white'} ${Icon ? 'pl-11 pr-4' : 'px-4'}`} 
+          className={`w-full py-3.5 rounded-xl bg-slate-50 border outline-none transition-all font-medium text-slate-900 text-sm ${error ? 'border-rose-300 bg-rose-50/10 focus:border-rose-500' : 'border-slate-100 focus:border-cyan-600 focus:bg-white'} ${Icon ? 'pl-11 pr-4' : 'px-4'}`}
         />
       </div>
       {error && <p className="text-[11px] font-bold text-rose-500 ml-1">{error}</p>}
@@ -602,14 +684,14 @@ function AlertBanner({ message }: { message: string }) {
   );
 }
 
-function PublicUploadCard({ 
-  label, file, isUploading, onUpload, onRemove, error 
-}: { 
-  label: string; 
-  file?: UploadedFile; 
-  isUploading: boolean; 
-  onUpload: (file?: File) => void; 
-  onRemove: () => void; 
+function PublicUploadCard({
+  label, file, isUploading, onUpload, onRemove, error
+}: {
+  label: string;
+  file?: UploadedFile;
+  isUploading: boolean;
+  onUpload: (file?: File) => void;
+  onRemove: () => void;
   error?: string;
 }) {
   return (

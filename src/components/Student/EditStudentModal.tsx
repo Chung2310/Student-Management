@@ -4,9 +4,10 @@ import { X, Save, Loader2, ChevronDown } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import { Student, UploadedFile, Partner } from '../../types';
-import { cn, toInputDate, toDisplayDate, compressImage } from '../../lib/utils';
+import { cn, toInputDate, toDisplayDate, compressImage, formatVND } from '../../lib/utils';
 import { findDuplicateStudentField } from '../../lib/studentUniqueness';
 import { useAuth } from '../../hooks/useAuth';
+import { useCourses } from '../../hooks/useCourses';
 import { FormInput, UploadCard } from './components/StudentFormFields';
 import { CustomSelect } from '../ui/CustomSelect';
 
@@ -27,6 +28,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
   const [uploadingField, setUploadingField] = useState<FileField | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const { courses } = useCourses(student?.centerId || student?.ownerId || undefined);
 
   const [referralMode, setReferralMode] = useState<'none' | 'partner' | 'custom'>('none');
   const [partners, setPartners] = useState<Partner[]>([]);
@@ -59,6 +61,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
     birthday: '',
     idCard: '',
     rank: '',
+    courseId: '',
     registrationDate: '',
     enrollmentDate: '',
     fee: '',
@@ -77,6 +80,17 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
         const isCustomRef = !student.partnerId && !!student.referral;
         setReferralMode(isPartnerRef ? 'partner' : (isCustomRef ? 'custom' : 'none'));
 
+        let resolvedCourseId = student.courseId || '';
+        if (!resolvedCourseId && student.rank && courses.length > 0) {
+          const matched = courses.find(c =>
+            c.title.toLowerCase() === student.rank.toLowerCase() ||
+            c.code.toLowerCase() === student.rank.toLowerCase()
+          );
+          if (matched) {
+            resolvedCourseId = matched.id;
+          }
+        }
+
         setFormData({
           fullName: student.fullName || '',
           email: student.email || '',
@@ -86,6 +100,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
           birthday: student.birthday || '',
           idCard: student.idCard || '',
           rank: student.rank || '',
+          courseId: resolvedCourseId,
           registrationDate: student.registrationDate || '',
           enrollmentDate: student.enrollmentDate || '',
           fee: student.fee || '',
@@ -97,7 +112,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
         });
       }, 0);
     }
-  }, [student]);
+  }, [student, courses]);
 
   const getRequiredFieldsConfig = () => {
     const saved = localStorage.getItem('requiredFieldsConfig');
@@ -176,6 +191,9 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
         partnerId: formData.partnerId || "",
       };
       await apiFetch(`/students/${student?.id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+
+
+
       window.dispatchEvent(new Event('student-mutation'));
       toast.success('Đã cập nhật thông tin học viên thành công!');
       onSuccess();
@@ -190,7 +208,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: name === 'fee' ? formatVND(value) : value }));
     if (errors[name]) {
       setErrors(prev => {
         const copy = { ...prev };
@@ -198,6 +216,22 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
         return copy;
       });
     }
+  };
+
+  const handleCourseChange = (courseId: string) => {
+    const course = courses.find(c => c.id === courseId);
+    setFormData(prev => ({
+      ...prev,
+      courseId: courseId,
+      rank: course ? course.title : '',
+      fee: course ? formatVND(course.fee) : '',
+    }));
+    setErrors(prev => {
+      const copy = { ...prev };
+      delete copy.rank;
+      delete copy.fee;
+      return copy;
+    });
   };
 
   const validateField = (name: string, value: string): string => {
@@ -208,8 +242,8 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
       if (name === 'idCard') return 'CCCD/CMND không được để trống.';
       if (name === 'email') return 'Email không được để trống.';
       if (name === 'rank') {
-        return businessType === 'driving' 
-          ? 'Hạng bằng không được để trống.' 
+        return businessType === 'driving'
+          ? 'Hạng bằng không được để trống.'
           : 'Khóa học đăng ký không được để trống.';
       }
     }
@@ -405,69 +439,86 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
                   placeholder="Nhập số CCCD (12 số)..."
                   error={errors.idCard}
                 />
-                
-                {user?.businessType === 'language' ? (
-                  <FormInput
-                    label="Khóa học đăng ký"
-                    name="rank"
-                    value={formData.rank}
-                    onChange={handleInputChange}
-                    onBlur={handleInputBlur}
-                    required={requiredFields.rank}
-                    placeholder="Ví dụ: IELTS, TOEIC, Giao tiếp..."
-                    error={errors.rank}
-                  />
+
+                {user?.businessType === 'language' || user?.businessType === 'general' ? (
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                      Khóa học đăng ký {requiredFields.rank && '*'}
+                    </label>
+                    <div className="relative">
+                      <select
+                        name="courseId"
+                        value={formData.courseId}
+                        onChange={(e) => handleCourseChange(e.target.value)}
+                        className={`w-full px-4 py-2 bg-white border rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-cyan-600/5 focus:border-cyan-600 transition-all cursor-pointer ${errors.rank ? 'border-rose-300 bg-rose-50/10 focus:border-rose-500' : 'border-slate-200'
+                          }`}
+                      >
+                        {formData.courseId === "" && formData.rank ? (
+                          <option value="">{formData.rank} (Khóa học cũ)</option>
+                        ) : (
+                          <option value="">-- Chọn khóa học --</option>
+                        )}
+                        {courses.map(c => (
+                          <option key={c.id} value={c.id}>
+                            {c.code} — {c.title}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                    </div>
+                    {errors.rank && <p className="text-[10px] text-rose-500 font-bold">{errors.rank}</p>}
+                  </div>
                 ) : (user?.businessType || 'driving') === 'driving' ? (
-                    <CustomSelect
-                      label="Hạng bằng (lái xe — tùy chọn)"
-                      value={formData.rank}
-                      onChange={(val) => {
-                        setFormData(prev => ({ ...prev, rank: val }));
-                        if (errors.rank) {
-                          setErrors(prev => {
-                            const copy = { ...prev };
-                            delete copy.rank;
-                            return copy;
-                          });
-                        }
-                      }}
-                      groups={[
-                        {
-                          label: "Xe máy (Mô tô)",
-                          options: [
-                            { value: "A1", label: "A1" },
-                            { value: "A2", label: "A2" }
-                          ]
-                        },
-                        {
-                          label: "Ô tô / Xe tải",
-                          options: [
-                            { value: "B1", label: "B1" },
-                            { value: "B2", label: "B2" },
-                            { value: "C", label: "C" }
-                          ]
-                        },
-                        {
-                          label: "Xe khách / Nâng hạng",
-                          options: [
-                            { value: "D", label: "D" },
-                            { value: "E", label: "E" }
-                          ]
-                        },
-                        {
-                          label: "Xe đầu kéo / Rơ-moóc",
-                          options: [
-                            { value: "FB2", label: "FB2" },
-                            { value: "FC", label: "FC" },
-                            { value: "FD", label: "FD" },
-                            { value: "FE", label: "FE" }
-                          ]
-                        }
-                      ]}
-                      placeholder="-- Chọn hạng bằng --"
-                      error={errors.rank}
-                      theme="modal"
-                    />
+                  <CustomSelect
+                    label="Hạng bằng (lái xe — tùy chọn)"
+                    value={formData.rank}
+                    onChange={(val) => {
+                      setFormData(prev => ({ ...prev, rank: val }));
+                      if (errors.rank) {
+                        setErrors(prev => {
+                          const copy = { ...prev };
+                          delete copy.rank;
+                          return copy;
+                        });
+                      }
+                    }}
+                    groups={[
+                      {
+                        label: "Xe máy (Mô tô)",
+                        options: [
+                          { value: "A1", label: "A1" },
+                          { value: "A2", label: "A2" }
+                        ]
+                      },
+                      {
+                        label: "Ô tô / Xe tải",
+                        options: [
+                          { value: "B1", label: "B1" },
+                          { value: "B2", label: "B2" },
+                          { value: "C", label: "C" }
+                        ]
+                      },
+                      {
+                        label: "Xe khách / Nâng hạng",
+                        options: [
+                          { value: "D", label: "D" },
+                          { value: "E", label: "E" }
+                        ]
+                      },
+                      {
+                        label: "Xe đầu kéo / Rơ-moóc",
+                        options: [
+                          { value: "FB2", label: "FB2" },
+                          { value: "FC", label: "FC" },
+                          { value: "FD", label: "FD" },
+                          { value: "FE", label: "FE" }
+                        ]
+                      }
+                    ]}
+                    placeholder="-- Chọn hạng bằng --"
+                    error={errors.rank}
+                    theme="modal"
+                  />
                 ) : null}
 
                 <FormInput
