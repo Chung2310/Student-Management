@@ -39,6 +39,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
   });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedCenterId(selectedCenter && selectedCenter !== 'all' ? selectedCenter : '');
   }, [selectedCenter]);
 
