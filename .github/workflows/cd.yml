@@ -67,6 +67,7 @@ jobs:
           port: ${{ secrets.SSH_PORT || '22' }}
           envs: ENV_FILE_CONTENT
           script: |
+            set -e
             TARGET_DIR="/opt/student-management/staging"
             IMAGE_TAG="develop"
             CONTAINER_NAME="student-management-staging"
@@ -115,6 +116,7 @@ jobs:
           port: ${{ secrets.SSH_PORT_PROD || '22' }}
           envs: ENV_FILE_CONTENT
           script: |
+            set -e
             TARGET_DIR="/opt/student-management/production"
             IMAGE_TAG="production"
             CONTAINER_NAME="student-management-production"
