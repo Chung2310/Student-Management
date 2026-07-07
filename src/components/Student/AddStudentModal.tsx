@@ -37,12 +37,10 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
   const [selectedCenterId, setSelectedCenterId] = useState<string>(() => {
     return selectedCenter && selectedCenter !== 'all' ? selectedCenter : '';
   });
-  const [prevSelectedCenter, setPrevSelectedCenter] = useState(selectedCenter);
 
-  if (selectedCenter !== prevSelectedCenter) {
-    setPrevSelectedCenter(selectedCenter);
+  useEffect(() => {
     setSelectedCenterId(selectedCenter && selectedCenter !== 'all' ? selectedCenter : '');
-  }
+  }, [selectedCenter]);
 
   const [referralMode, setReferralMode] = useState<'none' | 'partner' | 'custom'>('none');
   const [partners, setPartners] = useState<Partner[]>([]);
