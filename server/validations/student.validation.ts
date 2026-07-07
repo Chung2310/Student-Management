@@ -141,6 +141,7 @@ export const publicRegisterStudentSchema = Joi.object({
   }),
   idCard: Joi.string().allow("").optional(),
   rank: Joi.string().allow("").optional(),
+  courseId: objectIdSchema.allow("").optional(),
   enrollmentDate: Joi.string().required().pattern(/^\d{1,2}\/\d{1,2}\/\d{4}$/).messages({
     "any.required": "Ngày nhập học là bắt buộc.",
     "string.empty": "Ngày nhập học không được để trống.",

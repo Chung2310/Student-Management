@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
 import { 
   Download, Search,
   ChevronDown, CreditCard, Clock, Users as UsersIcon,
@@ -50,14 +49,13 @@ export function FeesPage({ onSelectStudent, selectedCenter }: FeesPageProps) {
     }
 
     // Define CSV headers
-    const headers = ['Họ và tên', 'Số điện thoại', 'Hạng', 'Tổng học phí', 'Đã đóng', 'Còn nợ', 'Tiến độ (%)'];
+    const headers = ['Họ và tên', 'Số điện thoại', 'Hạng', 'Tổng học phí', 'Đã đóng', 'Còn nợ'];
     
     // Map data to CSV rows
     const rows = filteredStudents.map(student => {
       const total = parseCurrency(student.fee || '0');
       const paid = student.paidAmount || 0;
       const debt = total - paid;
-      const progress = total > 0 ? Math.round((paid / total) * 100) : 0;
       
       return [
         student.fullName,
@@ -65,8 +63,7 @@ export function FeesPage({ onSelectStudent, selectedCenter }: FeesPageProps) {
         student.rank,
         total,
         paid,
-        debt,
-        `${progress}%`
+        debt
       ];
     });
 
@@ -219,7 +216,6 @@ export function FeesPage({ onSelectStudent, selectedCenter }: FeesPageProps) {
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right whitespace-nowrap">Tổng HP</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right whitespace-nowrap">Đã đóng</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right whitespace-nowrap">Còn nợ</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Tiến độ</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Lần cuối</th>
                 <th className="px-6 py-4 text-right border-b border-slate-100"></th>
               </tr>
@@ -239,7 +235,6 @@ export function FeesPage({ onSelectStudent, selectedCenter }: FeesPageProps) {
                 const total = parseCurrency(student.fee || '0');
                 const paid = student.paidAmount || 0;
                 const debt = total - paid;
-                const progress = total > 0 ? Math.round((paid / total) * 100) : 0;
 
                 return (
                   <tr key={student.id} className="group hover:bg-slate-50/50 transition-colors">
@@ -279,21 +274,6 @@ export function FeesPage({ onSelectStudent, selectedCenter }: FeesPageProps) {
                       )}>
                         {formatCurrency(debt)}
                       </span>
-                    </td>
-                    <td className="px-6 py-5 border-b border-slate-50 min-w-[120px]">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 h-1 bg-slate-50 rounded-full overflow-hidden border border-slate-100 shadow-inner">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${progress}%` }}
-                            className={cn(
-                              "h-full rounded-full transition-colors",
-                              progress === 100 ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "bg-slate-200"
-                            )}
-                          />
-                        </div>
-                        <span className="text-[10px] font-extrabold text-slate-400 w-8">{progress}%</span>
-                      </div>
                     </td>
                     <td className="px-6 py-5 border-b border-slate-50 text-center">
                       <span className="text-[11px] font-bold text-slate-400">

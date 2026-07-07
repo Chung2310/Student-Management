@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { StudentService } from "../services/student.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { AuthService } from "../services/auth.service";
+import { Course } from "../models/course.model";
 import { getAllowedOwnerIds, getCenterOwnerIds } from "../utils/auth.util";
 
 export class StudentController {
@@ -145,11 +146,25 @@ export class StudentController {
         }
       }
 
+      let courseFee = "0";
+      if (businessType !== "driving") {
+        if (!studentData.courseId) {
+          return res.status(400).json({ success: false, error: "Vui lòng chọn khóa học đăng ký." });
+        }
+
+        const course = await Course.findById(studentData.courseId);
+        if (!course) {
+          return res.status(400).json({ success: false, error: "Khóa học đăng ký không tồn tại." });
+        }
+        courseFee = course.fee || "0";
+        studentData.rank = course.title || "";
+      }
+
       // Default attributes for student registration
       const payload = {
         ...studentData,
         registrationDate: new Date().toLocaleDateString('vi-VN'),
-        fee: "0",
+        fee: courseFee,
         paidAmount: 0,
         status: businessType === "driving" ? "Chờ KSK" : "Đang học",
       };

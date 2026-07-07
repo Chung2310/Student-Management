@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { AuthService } from "../services/auth.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
+import { CourseService } from "../services/course.service";
 
 export class AuthController {
   static async register(req: Request, res: Response) {
@@ -412,6 +413,24 @@ export class AuthController {
           centerId: user.centerId,
           businessType,
         },
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  static async getTeacherCourses(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = await AuthService.getUserProfile(req.params.id);
+      if (!user || user.isActive === false) {
+        return res.status(404).json({ success: false, error: "Không tìm thấy thông tin giáo viên hoặc tài khoản đã bị khóa." });
+      }
+      const ownerId = user.centerId || user._id.toString();
+
+      const result = await CourseService.getCourses(ownerId, { limit: 1000 });
+      res.json({
+        success: true,
+        data: result.courses,
       });
     } catch (error: unknown) {
       next(error);
