@@ -9,6 +9,7 @@ import { apiFetch } from '../../lib/api';
 import { UploadedFile } from '../../types';
 import { toDisplayDate, compressImage } from '../../lib/utils';
 import { DateInput } from '../../components/ui/DateInput';
+import { CustomSelect } from '../../components/ui/CustomSelect';
 
 type PublicFileField = 'idCardFrontFile' | 'idCardBackFile' | 'portraitFile';
 
@@ -368,37 +369,46 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {businessType === 'driving' ? (
                     <>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Hạng bằng (lái xe)</label>
-                        <select 
-                          value={rank} 
-                          onChange={(e) => updateField('rank', e.target.value)} 
-                          className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-100 focus:border-cyan-600 focus:bg-white outline-none transition-all font-bold text-slate-900 text-sm appearance-none cursor-pointer"
-                        >
-                          <option value="Không (ngành khác)">Không (ngành khác)</option>
-                          <optgroup label="Xe máy (Mô tô)">
-                            <option value="A1">A1</option>
-                            <option value="A2">A2</option>
-                            <option value="A3">A3</option>
-                            <option value="A4">A4</option>
-                          </optgroup>
-                          <optgroup label="Ô tô / Xe tải">
-                            <option value="B1">B1</option>
-                            <option value="B2">B2</option>
-                            <option value="C">C</option>
-                          </optgroup>
-                          <optgroup label="Xe khách / Nâng hạng">
-                            <option value="D">D</option>
-                            <option value="E">E</option>
-                          </optgroup>
-                          <optgroup label="Xe đầu kéo / Rơ-moóc">
-                            <option value="FB2">FB2</option>
-                            <option value="FC">FC</option>
-                            <option value="FD">FD</option>
-                            <option value="FE">FE</option>
-                          </optgroup>
-                        </select>
-                      </div>
+                      <CustomSelect
+                        label="Hạng bằng (lái xe)"
+                        value={rank}
+                        onChange={(val) => updateField('rank', val)}
+                        groups={[
+                          {
+                            label: "Xe máy (Mô tô)",
+                            options: [
+                              { value: "A1", label: "A1" },
+                              { value: "A2", label: "A2" }
+                            ]
+                          },
+                          {
+                            label: "Ô tô / Xe tải",
+                            options: [
+                              { value: "B1", label: "B1" },
+                              { value: "B2", label: "B2" },
+                              { value: "C", label: "C" }
+                            ]
+                          },
+                          {
+                            label: "Xe khách / Nâng hạng",
+                            options: [
+                              { value: "D", label: "D" },
+                              { value: "E", label: "E" }
+                            ]
+                          },
+                          {
+                            label: "Xe đầu kéo / Rơ-moóc",
+                            options: [
+                              { value: "FB2", label: "FB2" },
+                              { value: "FC", label: "FC" },
+                              { value: "FD", label: "FD" },
+                              { value: "FE", label: "FE" }
+                            ]
+                          }
+                        ]}
+                        placeholder="Không (ngành khác)"
+                        theme="register"
+                      />
                       <DateInput
                         label="Ngày nhập học"
                         value={enrollmentDate}
