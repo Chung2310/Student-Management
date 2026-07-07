@@ -118,13 +118,40 @@ export class StudentController {
         return res.status(400).json({ success: false, error: "Giáo viên không hợp lệ hoặc đã bị khóa tài khoản." });
       }
 
+      // Validate driving-specific requirements if teacher's center is a driving center
+      let businessType = teacher.businessType || "driving";
+      if (teacher.role === "user" && teacher.centerId) {
+        const adminUser = await AuthService.getUserProfile(teacher.centerId);
+        if (adminUser) {
+          businessType = adminUser.businessType || "driving";
+        }
+      }
+
+      if (businessType === "driving") {
+        if (!studentData.idCard) {
+          return res.status(400).json({ success: false, error: "Số CCCD/CMND là bắt buộc khi đăng ký học lái xe." });
+        }
+        if (!/^\d{12}$/.test(studentData.idCard)) {
+          return res.status(400).json({ success: false, error: "Số CCCD phải có đúng 12 chữ số khi đăng ký học lái xe." });
+        }
+        if (!studentData.idCardFrontFile) {
+          return res.status(400).json({ success: false, error: "Ảnh CCCD mặt trước là bắt buộc." });
+        }
+        if (!studentData.idCardBackFile) {
+          return res.status(400).json({ success: false, error: "Ảnh CCCD mặt sau là bắt buộc." });
+        }
+        if (!studentData.portraitFile) {
+          return res.status(400).json({ success: false, error: "Ảnh chân dung là bắt buộc." });
+        }
+      }
+
       // Default attributes for student registration
       const payload = {
         ...studentData,
         registrationDate: new Date().toLocaleDateString('vi-VN'),
         fee: "0",
         paidAmount: 0,
-        status: teacher.businessType === "driving" ? "Chờ KSK" : "Đang học",
+        status: businessType === "driving" ? "Chờ KSK" : "Đang học",
       };
 
       const teacherScope = teacher.centerId === "superadmin"

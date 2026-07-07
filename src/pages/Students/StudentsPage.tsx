@@ -44,13 +44,14 @@ function categoryIcon(name: string): React.ComponentType<{ className?: string }>
 export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: StudentsPageProps) {
   const { user } = useAuth();
   const resolvedCenter = selectedCenter === 'all' ? undefined : selectedCenter;
+  const businessType = user?.businessType || 'driving';
   const { students, loading } = useStudents(resolvedCenter);
   const { batches } = useBatches();
   const { courses } = useCourses(resolvedCenter);
   const { categories } = useCourseCategories(resolvedCenter);
   const { toast } = useToast();
   const [category, setCategory] = useState<string>(TAB_ALL);
-  const [selectedStatuses, setSelectedStatuses] = useState<StatusFilter[]>(['Tất cả']);
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('Tất cả');
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -77,22 +78,71 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
       setCurrentPage(1);
     }, 0);
     return () => clearTimeout(timer);
-  }, [category, selectedStatuses, searchQuery, startDate, endDate, rankFilter, feeStatusFilter, selectedCenter]);
+  }, [category, selectedStatus, searchQuery, startDate, endDate, rankFilter, feeStatusFilter, selectedCenter]);
 
-  // Helper to parse DD/MM/YYYY to Date object
+  // Helper to parse multiple date string formats to Date object
   const parseDate = (dateStr: string) => {
     if (!dateStr) return new Date(0);
-    const parts = dateStr.split('/');
-    if (parts.length < 3) return new Date(0);
-    const [day, month, year] = parts.map(Number);
-    if (isNaN(day) || isNaN(month) || isNaN(year)) return new Date(0);
-    return new Date(year, month - 1, day);
+    
+    // If it is YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+      const parts = dateStr.substring(0, 10).split('-');
+      const [year, month, day] = parts.map(Number);
+      return new Date(year, month - 1, day);
+    }
+    
+    // If it is DD/MM/YYYY
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(dateStr)) {
+      const parts = dateStr.split('/');
+      const [day, month, year] = parts.map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    // Try new Date directly
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed.getTime())) return parsed;
+    
+    return new Date(0);
   };
 
-  // Học viên thuộc phân loại nào = phân loại của các khóa học mà lớp (batch) của họ đang mở
+  // Học viên thuộc phân loại nào = phân loại của các khóa học mà lớp (batch) của họ đang mở, hoặc phân loại của khóa học họ đăng ký, hoặc ánh xạ hạng bằng lái sang phân loại khóa học tương ứng
   const studentCategories = useMemo(() => {
     const categoryByCourseId = new Map<string, string>(courses.map(c => [c.id, c.category]));
     const map = new Map<string, Set<string>>();
+
+    for (const s of students) {
+      const set = new Set<string>();
+
+      // 1. Map directly via courseId
+      if (s.courseId) {
+        const cat = categoryByCourseId.get(s.courseId);
+        if (cat) set.add(cat);
+      }
+
+      // 2. Map via rank (e.g. driving license rank A1, B2, C...)
+      if (s.rank) {
+        const rankUpper = s.rank.toUpperCase();
+        const matchedCourse = courses.find(c => 
+          c.code.toUpperCase().includes(rankUpper) || 
+          c.title.toUpperCase().includes(rankUpper)
+        );
+        if (matchedCourse) {
+          set.add(matchedCourse.category);
+        } else if (businessType === 'driving') {
+          // Fallback for driving category mapping
+          const drivingCat = categories.find(cat => cat.name.toLowerCase().includes('lái'));
+          if (drivingCat) {
+            set.add(drivingCat.name);
+          }
+        }
+      }
+
+      if (set.size > 0) {
+        map.set(s.id, set);
+      }
+    }
+
+    // 3. Map via batches
     for (const b of batches) {
       const cat = categoryByCourseId.get(b.courseId);
       if (!cat) continue;
@@ -103,14 +153,16 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
       }
     }
     return map;
-  }, [batches, courses]);
+  }, [students, batches, courses, categories, businessType]);
 
   // Hạng bằng là dữ liệu riêng ngành lái xe — chỉ hiện filter/cột khi còn học viên có hạng
   const hasRankData = useMemo(() => students.some(s => s.rank), [students]);
-  const rankOptions = useMemo(() => {
-    const ranks = [...new Set(students.map(s => s.rank).filter(Boolean))] as string[];
-    return ['Tất cả hạng', ...ranks.sort()];
-  }, [students]);
+  const rankOptions = [
+    'Tất cả hạng',
+    'A1', 'A2', 'A3', 'A4',
+    'B1', 'B2', 'C', 'D', 'E',
+    'FB2', 'FC', 'FD', 'FE'
+  ];
 
   const filteredStudents = students.filter(student => {
     // 1. Category Filter (theo phân loại khóa học của lớp học viên đang tham gia)
@@ -124,15 +176,14 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
     }
 
     // 2. Status Filter
-    if (!selectedStatuses.includes('Tất cả') && selectedStatuses.length > 0) {
+    if (selectedStatus !== 'Tất cả') {
       const statusMap: Record<string, string> = {
         'Nộp HS': 'Đã nộp HS',
         'KSK': 'Chờ KSK'
       };
-      const dbStatuses = selectedStatuses.map(s => statusMap[s] || s);
+      const dbStatus = statusMap[selectedStatus] || selectedStatus;
       const studentStatuses = Array.isArray(student.status) ? student.status : [student.status];
-      const hasMatch = studentStatuses.some(s => dbStatuses.includes(s));
-      if (!hasMatch) return false;
+      if (!(studentStatuses as string[]).includes(dbStatus)) return false;
     }
 
     // 3. Rank Filter (chỉ áp dụng với dữ liệu ngành lái xe)
@@ -187,7 +238,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
     currentPage * pageSize
   );
 
-  const businessType = user?.businessType || 'driving';
+    // businessType is already declared at the top of the component
 
   // Nhóm trạng thái riêng quy trình lái xe — ẩn tab khi không có học viên nào mang trạng thái đó
   const DRIVING_STATUS_TABS: StatusFilter[] = ['KSK', 'Đã KSK', 'Nộp HS'];
@@ -491,22 +542,11 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
       {/* Sub-Tabs (Status Workflow) */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 status-tabs">
         {statusTabs.map((tab) => {
-          const isSelected = selectedStatuses.includes(tab.label);
+          const isSelected = selectedStatus === tab.label;
           return (
             <button
               key={tab.label}
-              onClick={() => {
-                setSelectedStatuses((prev) => {
-                  if (tab.label === 'Tất cả') {
-                    return ['Tất cả'];
-                  }
-                  const withoutAll = prev.filter(x => x !== 'Tất cả');
-                  const next = withoutAll.includes(tab.label)
-                    ? withoutAll.filter(x => x !== tab.label)
-                    : [...withoutAll, tab.label];
-                  return next.length === 0 ? ['Tất cả'] : next;
-                });
-              }}
+              onClick={() => setSelectedStatus(tab.label)}
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all whitespace-nowrap",
                 isSelected

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, GraduationCap, Search } from 'lucide-react';
+import { ArrowLeft, Search } from 'lucide-react';
 import { StudentLookup } from '../../components/Student/StudentLookup';
 
 interface LookupPageProps {
@@ -19,10 +19,12 @@ export function LookupPage({ onBack }: LookupPageProps) {
             <ArrowLeft className="w-4 h-4" /> Quay lại Trang chủ
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-cyan-600 flex items-center justify-center">
-              <GraduationCap className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-xs font-black uppercase tracking-wider text-slate-400">IGEN PORTAL</span>
+            <img
+              src="/logo-igen.png"
+              alt="Logo"
+              className="w-6 h-6 rounded object-contain"
+            />
+            <span className="text-xs font-black uppercase tracking-wider text-slate-400">iGen Portal</span>
           </div>
         </div>
       </header>

@@ -183,7 +183,7 @@ export function BusinessResults() {
             label="Hạng bằng" 
             value={rankFilter} 
             onChange={setRankFilter}
-            options={['Mọi hạng', 'A1', 'A2', 'B1', 'B2', 'C', 'D', 'E']}
+            options={['Mọi hạng', 'A1', 'A2', 'A3', 'A4', 'B1', 'B2', 'C', 'D', 'E', 'FB2', 'FC', 'FD', 'FE']}
           />
         </div>
 

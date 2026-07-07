@@ -40,8 +40,8 @@ export function LoginPage({ onNavigateToPath: _ }: LoginPageProps) {
         <div className="flex items-center gap-3 mb-12">
           <img src="/logo-igen.png" alt="Logo" className="w-12 h-12 rounded-2xl object-contain shadow-lg shadow-cyan-500/10" />
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none">IGEN Quản lý Học viên</h1>
-            <p className="text-cyan-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Hệ thống quản lý thông minh</p>
+            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none">iGen Education</h1>
+            <p className="text-cyan-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Quản lý đào tạo & học viên</p>
           </div>
         </div>
 

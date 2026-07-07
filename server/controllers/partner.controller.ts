@@ -23,6 +23,33 @@ export class PartnerController {
     }
   }
 
+  static async bulkCreate(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const creatorId = req.user!.uid;
+      const ownerId = await getAllowedOwnerIds(req.user!);
+      let targetOwnerId: string | undefined;
+
+      if (req.user!.role === "superadmin") {
+        const centerId = req.query.centerId || req.body.centerId;
+        if (!centerId || typeof centerId !== "string") {
+          return res.status(400).json({ success: false, error: "Vui lòng chọn trung tâm quản lý." });
+        }
+        targetOwnerId = centerId;
+      }
+
+      const partners = req.body.partners;
+      if (!Array.isArray(partners)) {
+        return res.status(400).json({ success: false, error: "Dữ liệu đối tác không hợp lệ (phải là danh sách)." });
+      }
+
+      const result = await PartnerService.bulkCreatePartners(creatorId, ownerId, partners, targetOwnerId);
+      res.status(200).json({ success: true, ...result });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+
   static async getList(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const ownerId = await getAllowedOwnerIds(req.user!);

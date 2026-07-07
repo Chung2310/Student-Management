@@ -13,7 +13,9 @@ router.get("/commission-levels", PartnerController.getCommissionLevels);
 router.post("/commission-levels", validate(createCommissionLevelSchema), PartnerController.createCommissionLevel);
 router.delete("/commission-levels/:id", validate(idParamSchema, "params"), PartnerController.deleteCommissionLevel);
 
+router.post("/bulk", PartnerController.bulkCreate);
 router.post("/", validate(createPartnerSchema), PartnerController.create);
+
 router.get("/", PartnerController.getList);
 router.get("/:id", validate(idParamSchema, "params"), PartnerController.getDetail);
 router.patch("/:id", validate(idParamSchema, "params"), validate(updatePartnerSchema), PartnerController.update);
