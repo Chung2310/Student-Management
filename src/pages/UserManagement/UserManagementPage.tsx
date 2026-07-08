@@ -26,6 +26,8 @@ type ManagedUser = {
 type RoleFilter = 'all' | 'superadmin' | 'admin' | 'user';
 type ModalMode = null | 'center' | 'user' | 'edit-user' | 'edit-center';
 
+const ALL_PERMISSIONS = ['Students', 'Exams', 'Fees', 'Bot', 'Courses', 'Batches', 'Partners', 'Resources'];
+
 export function UserManagementPage() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -53,7 +55,6 @@ export function UserManagementPage() {
     localStorage.setItem('erp_view_mode_users', mode);
   };
 
-  const ALL_PERMISSIONS = ['Students', 'Exams', 'Fees', 'Bot', 'Courses', 'Batches', 'Partners', 'Resources'];
 
   // Form fields
   const [fName, setFName] = useState('');
@@ -135,6 +136,28 @@ export function UserManagementPage() {
   const totalPages = Math.ceil(filtered.length / pageSize);
   const paginatedUsers = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+  const availablePermissions = useMemo(() => {
+    if (isSA) {
+      if (modal === 'center' || modal === 'edit-center') {
+        return ALL_PERMISSIONS;
+      }
+      const targetCenterId = editingUser ? editingUser.centerId : fCenter;
+      const centerAdmin = adminList.find(a => a.centerId === targetCenterId);
+      return centerAdmin?.permissions && centerAdmin.permissions.length > 0 ? centerAdmin.permissions : ALL_PERMISSIONS;
+    } else {
+      return user?.permissions && user.permissions.length > 0 ? user.permissions : ALL_PERMISSIONS;
+    }
+  }, [isSA, modal, editingUser, fCenter, adminList, user]);
+
+  useEffect(() => {
+    if (modal === 'user') {
+      const timer = setTimeout(() => {
+        setFPermissions(prev => prev.filter(p => availablePermissions.includes(p)));
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [fCenter, availablePermissions, modal]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setCurrentPage(1);
@@ -185,7 +208,7 @@ export function UserManagementPage() {
           bankId: fBankId,
           businessType: fBusinessType,
           maxUsersLimit: isSA && isCenter ? fMaxUsersLimit : undefined,
-          permissions: isCenter ? undefined : fPermissions,
+          permissions: fPermissions,
         }),
       });
       const r = await apiFetch('/auth/users');
@@ -235,9 +258,7 @@ export function UserManagementPage() {
       if (fPass.trim()) {
         payload.password = fPass;
       }
-      if (editingUser.role === 'user') {
-        payload.permissions = fPermissions;
-      }
+      payload.permissions = fPermissions;
       if (isSA) {
         payload.centerId = editingUser.role === 'admin' ? editingUser.uid : fCenter;
         if (editingUser.role === 'admin') {
@@ -422,6 +443,8 @@ export function UserManagementPage() {
         setFBankId={setFBankId}
         fBankAccountNo={fBankAccountNo}
         setFBankAccountNo={setFBankAccountNo}
+        fPermissions={fPermissions}
+        setFPermissions={setFPermissions}
         showPass={showPass}
         setShowPass={setShowPass}
         onSubmit={handleSubmit}
@@ -444,7 +467,7 @@ export function UserManagementPage() {
         adminList={adminList}
         fPermissions={fPermissions}
         setFPermissions={setFPermissions}
-        ALL_PERMISSIONS={ALL_PERMISSIONS}
+        availablePermissions={availablePermissions}
         showPass={showPass}
         setShowPass={setShowPass}
         onSubmit={handleSubmit}
@@ -470,6 +493,8 @@ export function UserManagementPage() {
         setFBankId={setFBankId}
         fBankAccountNo={fBankAccountNo}
         setFBankAccountNo={setFBankAccountNo}
+        fPermissions={fPermissions}
+        setFPermissions={setFPermissions}
         fActive={fActive}
         setFActive={setFActive}
         showPass={showPass}
@@ -494,6 +519,7 @@ export function UserManagementPage() {
         adminList={adminList}
         fPermissions={fPermissions}
         setFPermissions={setFPermissions}
+        availablePermissions={availablePermissions}
         fActive={fActive}
         setFActive={setFActive}
         showPass={showPass}

@@ -28,9 +28,9 @@ export function ModalShell({ open, onClose, icon: Icon, title, subtitle, childre
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.97 }}
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+          className="relative w-full max-w-lg max-h-[calc(100vh-3rem)] flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
         >
-          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <div className="flex-none flex items-center justify-between border-b border-slate-100 px-6 py-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
                 <Icon className="h-5 w-5" />
