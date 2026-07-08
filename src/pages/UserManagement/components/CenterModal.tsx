@@ -25,10 +25,23 @@ interface CenterModalProps {
   setFBankId: (val: string) => void;
   fBankAccountNo: string;
   setFBankAccountNo: (val: string) => void;
+  fPermissions: string[];
+  setFPermissions: (val: string[]) => void;
   showPass: boolean;
   setShowPass: (val: boolean) => void;
   onSubmit: () => void;
 }
+
+const ALL_PERMISSION_OPTIONS = [
+  { key: 'Students', label: 'Học viên' },
+  { key: 'Exams', label: 'Lịch thi' },
+  { key: 'Fees', label: 'Học phí' },
+  { key: 'Bot', label: 'BOT Thông báo' },
+  { key: 'Courses', label: 'Khóa học' },
+  { key: 'Batches', label: 'Lớp & Khai giảng' },
+  { key: 'Partners', label: 'Đối tác & CTV' },
+  { key: 'Resources', label: 'Thiết bị' },
+];
 
 export function CenterModal({
   open,
@@ -49,6 +62,8 @@ export function CenterModal({
   setFBankId,
   fBankAccountNo,
   setFBankAccountNo,
+  fPermissions,
+  setFPermissions,
   showPass,
   setShowPass,
   onSubmit,
@@ -61,7 +76,7 @@ export function CenterModal({
       title="Thêm trung tâm mới"
       subtitle="Tạo tài khoản Admin quản lý trung tâm riêng"
     >
-      <div className="space-y-4 p-6">
+      <div className="space-y-4 p-6 overflow-y-auto flex-1">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={LABEL}>Tên trung tâm / Admin</label>
@@ -134,6 +149,43 @@ export function CenterModal({
           </div>
         )}
 
+        {/* Access Permissions Grid */}
+        <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+          <label className="mb-2.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+            Quyền truy cập chức năng cho Trung tâm
+          </label>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+            {ALL_PERMISSION_OPTIONS.map((p) => {
+              const checked = fPermissions.includes(p.key);
+              return (
+                <label
+                  key={p.key}
+                  className={cn(
+                    "flex cursor-pointer items-center gap-2 rounded-xl border p-2.5 text-xs font-semibold transition-all select-none",
+                    checked
+                      ? "border-cyan-200 bg-cyan-50/50 text-cyan-700 font-bold"
+                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFPermissions([...fPermissions, p.key]);
+                      } else {
+                        setFPermissions(fPermissions.filter((item) => item !== p.key));
+                      }
+                    }}
+                    className="h-3.5 w-3.5 rounded border-slate-350 text-cyan-600 focus:ring-cyan-500"
+                  />
+                  {p.label}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="border-t border-slate-100 pt-4 space-y-4">
           <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
             Cấu hình đồng bộ & Thanh toán
@@ -172,7 +224,7 @@ export function CenterModal({
           <span>Admin sẽ tự động quản lý trung tâm riêng và có thể thêm nhân viên vào trung tâm của mình.</span>
         </div>
       </div>
-      <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+      <div className="flex-none flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
         <button
           type="button"
           onClick={onClose}

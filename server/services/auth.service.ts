@@ -57,10 +57,10 @@ export class AuthService {
   }
 
   static async register(data: RegisterData): Promise<IUser> {
-    const existingUser = await User.findOne({ email: data.email.toLowerCase().trim(), role: { $in: ["admin", "superadmin"] } });
+    const existingUser = await User.findOne({ email: data.email.toLowerCase().trim() });
     if (existingUser) {
       logger.warn(`[Auth] Registration failed - Email already exists: ${data.email}`);
-      throw new Error("Email này đã được sử dụng cho một tài khoản admin khác.");
+      throw new Error("Email này đã được sử dụng cho một tài khoản khác trong hệ thống.");
     }
     const hashedPassword = await bcrypt.hash(data.password, 10);
     const newUser = new User({
@@ -235,23 +235,24 @@ export class AuthService {
       if (currentUserCount >= limit) {
         throw new Error(`Trung tâm của bạn đã đạt giới hạn tối đa ${limit} tài khoản nhân viên.`);
       }
+
+      // Check if requested permissions are subset of admin's permissions
+      const ALL_PERMISSIONS = ["Students", "Exams", "Fees", "Bot", "Courses", "Batches", "Partners", "Resources"];
+      const adminPermissions = adminUser?.permissions && adminUser.permissions.length > 0
+        ? adminUser.permissions
+        : ALL_PERMISSIONS;
+      const requestedPermissions = data.permissions || [];
+      const invalidPermissions = requestedPermissions.filter(p => !adminPermissions.includes(p));
+      if (invalidPermissions.length > 0) {
+        throw new Error(`Bạn chỉ có quyền phân các chức năng thuộc trung tâm của mình. Lỗi quyền: ${invalidPermissions.join(", ")}`);
+      }
     }
 
-    const targetCenterId = requester.role === "admin" ? (requester.centerId || requester.uid) : (data.centerId || "");
-    let existingUser;
-    if (data.role === "admin") {
-      existingUser = await User.findOne({
-        email: data.email.toLowerCase().trim(),
-        role: { $in: ["admin", "superadmin"] },
-      });
-    } else {
-      existingUser = await User.findOne({
-        email: data.email.toLowerCase().trim(),
-        centerId: targetCenterId,
-      });
-    }
+    const existingUser = await User.findOne({
+      email: data.email.toLowerCase().trim(),
+    });
     if (existingUser) {
-      throw new Error("Email này đã được sử dụng cho một tài khoản khác trong cùng trung tâm.");
+      throw new Error("Email này đã được sử dụng cho một tài khoản khác trong hệ thống.");
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -316,32 +317,33 @@ export class AuthService {
       if (userToEdit.role !== "user") {
         throw new Error("Bạn chỉ có quyền sửa nhân viên thuộc trung tâm của mình.");
       }
+
+      // Check if requested permissions are subset of admin's permissions
+      if (data.permissions !== undefined) {
+        const adminUser = await User.findById(requester.uid);
+        const ALL_PERMISSIONS = ["Students", "Exams", "Fees", "Bot", "Courses", "Batches", "Partners", "Resources"];
+        const adminPermissions = adminUser?.permissions && adminUser.permissions.length > 0
+          ? adminUser.permissions
+          : ALL_PERMISSIONS;
+        const requestedPermissions = data.permissions || [];
+        const invalidPermissions = requestedPermissions.filter(p => !adminPermissions.includes(p));
+        if (invalidPermissions.length > 0) {
+          throw new Error(`Bạn chỉ có quyền phân các chức năng thuộc trung tâm của mình. Lỗi quyền: ${invalidPermissions.join(", ")}`);
+        }
+      }
     }
 
     // Prepare updates
     const updates: Record<string, unknown> = {};
     if (data.displayName !== undefined) updates.displayName = data.displayName;
     if (data.email !== undefined) {
-      let existing;
-      const targetRole = data.role !== undefined ? data.role : userToEdit.role;
-      const targetCenterId = data.centerId !== undefined ? data.centerId : userToEdit.centerId;
-
-      if (targetRole === "admin") {
-        existing = await User.findOne({
-          email: data.email.toLowerCase().trim(),
-          role: { $in: ["admin", "superadmin"] },
-          _id: { $ne: userId }
-        });
-      } else {
-        existing = await User.findOne({
-          email: data.email.toLowerCase().trim(),
-          centerId: targetCenterId,
-          _id: { $ne: userId }
-        });
-      }
+      const existing = await User.findOne({
+        email: data.email.toLowerCase().trim(),
+        _id: { $ne: userId }
+      });
 
       if (existing) {
-        throw new Error("Email này đã được sử dụng bởi người dùng khác trong cùng trung tâm.");
+        throw new Error("Email này đã được sử dụng bởi một tài khoản khác trong hệ thống.");
       }
       updates.email = data.email;
     }

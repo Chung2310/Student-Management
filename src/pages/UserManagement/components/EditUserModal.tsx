@@ -37,12 +37,24 @@ interface EditUserModalProps {
   adminList: ManagedUser[];
   fPermissions: string[];
   setFPermissions: (val: string[]) => void;
+  availablePermissions?: string[];
   fActive: boolean;
   setFActive: (val: boolean) => void;
   showPass: boolean;
   setShowPass: (val: boolean) => void;
   onSubmit: () => void;
 }
+
+const ALL_PERMISSION_OPTIONS = [
+  { key: 'Students', label: 'Học viên' },
+  { key: 'Exams', label: 'Lịch thi' },
+  { key: 'Fees', label: 'Học phí' },
+  { key: 'Bot', label: 'BOT Thông báo' },
+  { key: 'Courses', label: 'Khóa học' },
+  { key: 'Batches', label: 'Lớp & Khai giảng' },
+  { key: 'Partners', label: 'Đối tác & CTV' },
+  { key: 'Resources', label: 'Thiết bị' },
+];
 
 export function EditUserModal({
   open,
@@ -60,12 +72,16 @@ export function EditUserModal({
   adminList,
   fPermissions,
   setFPermissions,
+  availablePermissions,
   fActive,
   setFActive,
   showPass,
   setShowPass,
   onSubmit,
 }: EditUserModalProps) {
+  const resolvedPermissions = availablePermissions || ALL_PERMISSION_OPTIONS.map(p => p.key);
+  const visibleOptions = ALL_PERMISSION_OPTIONS.filter(p => resolvedPermissions.includes(p.key));
+
   return (
     <ModalShell
       open={open}
@@ -74,7 +90,7 @@ export function EditUserModal({
       title={isSA ? "Sửa thông tin người dùng" : "Sửa thông tin giảng viên"}
       subtitle={isSA ? 'Chỉnh sửa thông tin nhân viên hoặc chuyển trung tâm' : 'Chỉnh sửa thông tin giảng viên'}
     >
-      <div className="space-y-4 p-6">
+      <div className="space-y-4 p-6 overflow-y-auto flex-1">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={LABEL}>Họ tên</label>
@@ -138,43 +154,40 @@ export function EditUserModal({
             Quyền truy cập chức năng
           </label>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-            {[
-              { key: 'Students', label: 'Học viên' },
-              { key: 'Exams', label: 'Lịch thi' },
-              { key: 'Fees', label: 'Học phí' },
-              { key: 'Bot', label: 'BOT Thông báo' },
-              { key: 'Courses', label: 'Khóa học' },
-              { key: 'Batches', label: 'Lớp & Khai giảng' },
-              { key: 'Partners', label: 'Đối tác & CTV' },
-              { key: 'Resources', label: 'Thiết bị' },
-            ].map((p) => {
-              const checked = fPermissions.includes(p.key);
-              return (
-                <label
-                  key={p.key}
-                  className={cn(
-                    "flex cursor-pointer items-center gap-2 rounded-xl border p-2.5 text-xs font-semibold transition-all select-none",
-                    checked
-                      ? "border-cyan-200 bg-cyan-50/50 text-cyan-700 font-bold"
-                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                  )}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setFPermissions([...fPermissions, p.key]);
-                      } else {
-                        setFPermissions(fPermissions.filter((item) => item !== p.key));
-                      }
-                    }}
-                    className="h-3.5 w-3.5 rounded border-slate-350 text-cyan-600 focus:ring-cyan-500"
-                  />
-                  {p.label}
-                </label>
-              );
-            })}
+            {visibleOptions.length === 0 ? (
+              <p className="text-xs text-rose-500 font-semibold italic col-span-full py-2">
+                Trung tâm chưa được cấp quyền hoạt động nào.
+              </p>
+            ) : (
+              visibleOptions.map((p) => {
+                const checked = fPermissions.includes(p.key);
+                return (
+                  <label
+                    key={p.key}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-2 rounded-xl border p-2.5 text-xs font-semibold transition-all select-none",
+                      checked
+                        ? "border-cyan-200 bg-cyan-50/50 text-cyan-700 font-bold"
+                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFPermissions([...fPermissions, p.key]);
+                        } else {
+                          setFPermissions(fPermissions.filter((item) => item !== p.key));
+                        }
+                      }}
+                      className="h-3.5 w-3.5 rounded border-slate-350 text-cyan-600 focus:ring-cyan-500"
+                    />
+                    {p.label}
+                  </label>
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -200,7 +213,7 @@ export function EditUserModal({
           </button>
         </div>
       </div>
-      <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+      <div className="flex-none flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
         <button
           type="button"
           onClick={onClose}
