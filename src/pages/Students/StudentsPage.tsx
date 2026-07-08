@@ -184,14 +184,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
     }
   }, [businessType, categories, students]);
 
-  // Hạng bằng là dữ liệu riêng ngành lái xe — chỉ hiện filter/cột khi còn học viên có hạng
-  const hasRankData = useMemo(() => students.some(s => s.rank), [students]);
-  const rankOptions = [
-    'Tất cả hạng',
-    'A1', 'A2', 'A3', 'A4',
-    'B1', 'B2', 'C', 'D', 'E',
-    'FB2', 'FC', 'FD', 'FE'
-  ];
+
 
   const filteredStudents = students.filter(student => {
     // 1. Primary Tab Filter (theo phân loại khóa học hoặc hạng bằng lái xe)
@@ -610,7 +603,9 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
               onClick={(e) => {
                 try {
                   e.currentTarget.showPicker();
-                } catch (err) {}
+                } catch {
+                  // Ignore if showPicker is not supported
+                }
               }}
               className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-cyan-600 transition-all cursor-pointer select-none"
             />
@@ -628,7 +623,9 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
               onClick={(e) => {
                 try {
                   e.currentTarget.showPicker();
-                } catch (err) {}
+                } catch {
+                  // Ignore if showPicker is not supported
+                }
               }}
               className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-cyan-600 transition-all cursor-pointer select-none"
             />

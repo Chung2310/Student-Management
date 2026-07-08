@@ -426,7 +426,7 @@ export class AuthService {
     try {
       await User.collection.dropIndex("email_1");
       logger.info(">>> Dropped unique 'email_1' index to support multi-center emails.");
-    } catch (error) {
+    } catch {
       // Ignore if index doesn't exist
     }
 

@@ -191,7 +191,7 @@ export function ErpInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
     if (props.type === 'date' || props.type === 'time') {
       try {
         e.currentTarget.showPicker();
-      } catch (err) {
+      } catch {
         // ignore if not supported
       }
     }

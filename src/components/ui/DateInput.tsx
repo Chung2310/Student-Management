@@ -61,7 +61,7 @@ export function DateInput({
           onClick={(e) => {
             try {
               e.currentTarget.showPicker();
-            } catch (err) {
+            } catch {
               // ignore
             }
           }}
