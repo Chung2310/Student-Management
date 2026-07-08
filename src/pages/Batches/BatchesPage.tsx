@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
-  School, Trash2, Pencil, Users, UserPlus, X, GraduationCap,
-  Tag, BookOpen, Clock, Calendar, CalendarRange, MapPin
+  School, Trash2, Pencil, Users, CalendarRange, GraduationCap
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { apiFetch } from '../../lib/api';
@@ -13,14 +12,15 @@ import { useStudents } from '../../hooks/useStudents';
 import { Batch, BatchStatus } from '../../types';
 import {
   ErpPageHeader, ErpPrimaryButton, ErpSearchBar, ErpFilterTab, ErpFilterRail,
-  ErpModal, ErpField, ErpInput, ErpSelect,
   ErpEmptyState, ErpLoadingState, ErpCard, ErpConfirmModal, ErpTableHead
 } from '../../components/Erp/ErpUI';
 import { Pagination } from '../../components/ui/Pagination';
+import { BatchFormModal } from '../../components/Batches/BatchFormModal';
+import { ManageLearnersModal } from '../../components/Batches/ManageLearnersModal';
+import { AttendanceModal } from '../../components/Batches/AttendanceModal';
 
 const BATCH_STATUSES: BatchStatus[] = ['Sắp khai giảng', 'Đang học', 'Đã kết thúc'];
 
-// Thứ trong tuần theo giá trị getDay(): 0 = CN ... 6 = T7, hiển thị theo thứ tự T2 → CN
 const DAY_OPTIONS: { value: number; label: string }[] = [
   { value: 1, label: 'T2' },
   { value: 2, label: 'T3' },
@@ -42,33 +42,6 @@ const statusStyle = (status: BatchStatus) => {
   return "bg-slate-500/10 text-slate-400 border-slate-500/15";
 };
 
-interface BatchForm {
-  code: string;
-  courseId: string;
-  instructorId: string;
-  daysOfWeek: number[];
-  startTime: string;
-  endTime: string;
-  location: string;
-  startDate: string;
-  endDate: string;
-  status: BatchStatus;
-}
-
-const EMPTY_FORM: BatchForm = {
-  code: '',
-  courseId: '',
-  instructorId: '',
-  daysOfWeek: [],
-  startTime: '18:00',
-  endTime: '20:00',
-  location: '',
-  startDate: '',
-  endDate: '',
-  status: 'Sắp khai giảng',
-};
-
-/** Bắn sự kiện để các hook liên quan tự refetch (lớp, khóa học, giảng viên, lịch) */
 const notifyBatchMutation = () => {
   window.dispatchEvent(new Event('batch-mutation'));
   window.dispatchEvent(new Event('course-mutation'));
@@ -79,7 +52,7 @@ export function BatchesPage({ selectedCenter }: { selectedCenter?: string }) {
   const darkMode = false;
   const { toast } = useToast();
   const resolvedCenter = selectedCenter === 'all' ? undefined : selectedCenter;
-  const { batches, loading } = useBatches(resolvedCenter);
+  const { batches, loading, refetch } = useBatches(resolvedCenter);
   const { courses } = useCourses(resolvedCenter);
   const { users } = useManagedUsers();
   const instructors = users.filter(u => u.role === 'user');
@@ -89,10 +62,7 @@ export function BatchesPage({ selectedCenter }: { selectedCenter?: string }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<BatchForm>(EMPTY_FORM);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [manageLearnersId, setManageLearnersId] = useState<string | null>(null);
-  const [selectedStudentId, setSelectedStudentId] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id: string; code: string }>({
@@ -101,70 +71,19 @@ export function BatchesPage({ selectedCenter }: { selectedCenter?: string }) {
     code: '',
   });
 
-  // Lấy bản mới nhất từ danh sách để modal học viên không bị dữ liệu cũ sau refetch
+  const [attendanceBatchId, setAttendanceBatchId] = useState<string | null>(null);
+
   const manageBatch = manageLearnersId ? batches.find(b => b.id === manageLearnersId) : undefined;
+  const attendanceBatch = attendanceBatchId ? batches.find(b => b.id === attendanceBatchId) : undefined;
 
   const openCreateModal = () => {
     setEditingId(null);
-    setForm({ ...EMPTY_FORM, courseId: courses[0]?.id || '' });
     setShowFormModal(true);
   };
 
   const openEditModal = (batch: Batch) => {
     setEditingId(batch.id);
-    setForm({
-      code: batch.code,
-      courseId: batch.courseId,
-      instructorId: batch.instructorId || '',
-      daysOfWeek: batch.daysOfWeek || [],
-      startTime: batch.startTime,
-      endTime: batch.endTime,
-      location: batch.location || '',
-      startDate: batch.startDate,
-      endDate: batch.endDate,
-      status: batch.status,
-    });
     setShowFormModal(true);
-  };
-
-  const toggleDay = (day: number) => {
-    setForm(prev => ({
-      ...prev,
-      daysOfWeek: prev.daysOfWeek.includes(day)
-        ? prev.daysOfWeek.filter(d => d !== day)
-        : [...prev.daysOfWeek, day],
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.code || !form.courseId || !form.startDate || !form.endDate) {
-      toast.error('Vui lòng nhập đầy đủ thông tin lớp học.');
-      return;
-    }
-    if (form.daysOfWeek.length === 0) {
-      toast.error('Vui lòng chọn ít nhất một ngày học trong tuần.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const payload = { ...form, code: form.code.toUpperCase() };
-      if (editingId) {
-        await apiFetch(`/batches/${editingId}`, { method: 'PATCH', body: JSON.stringify(payload) });
-        toast.success(`Đã cập nhật lớp ${payload.code}.`);
-      } else {
-        await apiFetch('/batches', { method: 'POST', body: JSON.stringify(payload) });
-        toast.success(`Đã mở lớp ${payload.code} thành công!`);
-      }
-      notifyBatchMutation();
-      setShowFormModal(false);
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Có lỗi xảy ra khi lưu lớp học.';
-      toast.error(msg);
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleChangeStatus = async (batch: Batch, status: BatchStatus) => {
@@ -195,32 +114,9 @@ export function BatchesPage({ selectedCenter }: { selectedCenter?: string }) {
     }
   };
 
-  const handleAddLearner = async () => {
-    if (!manageBatch || !selectedStudentId) return;
-    try {
-      await apiFetch(`/batches/${manageBatch.id}/learners`, {
-        method: 'POST',
-        body: JSON.stringify({ studentId: selectedStudentId }),
-      });
-      notifyBatchMutation();
-      setSelectedStudentId('');
-      toast.success('Đã thêm học viên vào lớp.');
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Có lỗi xảy ra khi thêm học viên.';
-      toast.error(msg);
-    }
-  };
-
-  const handleRemoveLearner = async (studentId: string) => {
-    if (!manageBatch) return;
-    try {
-      await apiFetch(`/batches/${manageBatch.id}/learners/${studentId}`, { method: 'DELETE' });
-      notifyBatchMutation();
-      toast.success('Đã bỏ học viên khỏi lớp.');
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Có lỗi xảy ra khi bỏ học viên.';
-      toast.error(msg);
-    }
+  const handleMutationSuccess = () => {
+    notifyBatchMutation();
+    refetch();
   };
 
   const filteredBatches = batches.filter(b => {
@@ -240,15 +136,6 @@ export function BatchesPage({ selectedCenter }: { selectedCenter?: string }) {
     }, 0);
     return () => clearTimeout(timer);
   }, [searchTerm, statusFilter]);
-
-  const availableStudents = manageBatch
-    ? students.filter(s => !manageBatch.learnerIds.includes(s.id))
-    : [];
-  const enrolledStudents = manageBatch
-    ? manageBatch.learnerIds
-        .map(id => students.find(s => s.id === id))
-        .filter((s): s is NonNullable<typeof s> => !!s)
-    : [];
 
   return (
     <div className="space-y-6 text-left">
@@ -319,7 +206,7 @@ export function BatchesPage({ selectedCenter }: { selectedCenter?: string }) {
                     </td>
                     <td className="py-4 px-6">
                       <button
-                        onClick={() => { setManageLearnersId(b.id); setSelectedStudentId(''); }}
+                        onClick={() => setManageLearnersId(b.id)}
                         title="Quản lý học viên trong lớp"
                         className={cn(
                           "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all border cursor-pointer",
@@ -345,6 +232,18 @@ export function BatchesPage({ selectedCenter }: { selectedCenter?: string }) {
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setAttendanceBatchId(b.id)}
+                          title="Điểm danh lớp"
+                          className={cn(
+                            "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black border transition-all cursor-pointer",
+                            darkMode
+                              ? "bg-slate-800 hover:bg-brand-primary/20 text-brand-primary border-transparent"
+                              : "bg-brand-primary/10 hover:bg-brand-primary/15 text-brand-primary border-brand-primary/15"
+                          )}
+                        >
+                          <CalendarRange className="w-3.5 h-3.5" /> Điểm danh
+                        </button>
                         <button
                           onClick={() => openEditModal(b)}
                           title="Chỉnh sửa lớp"
@@ -394,280 +293,36 @@ export function BatchesPage({ selectedCenter }: { selectedCenter?: string }) {
       )}
 
       {/* Create / Edit Batch Modal */}
-      {showFormModal && (
-        <ErpModal title={editingId ? 'Chỉnh sửa lớp học' : 'Mở lớp mới'} onClose={() => setShowFormModal(false)} maxWidth="max-w-lg">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Section 1: Thông tin lớp học */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                <div className="w-1.5 h-4 bg-brand-primary rounded-full"></div>
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                  <School className="w-4 h-4 text-brand-primary" />
-                  Thông tin lớp học
-                </h4>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <ErpField label="Mã lớp">
-                  <div className="relative">
-                    <ErpInput
-                      type="text"
-                      required
-                      placeholder="Ví dụ: K32"
-                      value={form.code}
-                      onChange={(e) => setForm({ ...form, code: e.target.value })}
-                      className="pl-10"
-                    />
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-                      <Tag className="w-4 h-4" />
-                    </div>
-                  </div>
-                </ErpField>
-                <ErpField label="Khóa học">
-                  <div className="relative">
-                    <ErpSelect
-                      required
-                      value={form.courseId}
-                      onChange={(e) => setForm({ ...form, courseId: e.target.value })}
-                      className="pl-10"
-                    >
-                      <option value="" disabled>-- Chọn khóa học --</option>
-                      {courses.map((c) => (
-                        <option key={c.id} value={c.id}>{c.code} — {c.title}</option>
-                      ))}
-                    </ErpSelect>
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400 z-10">
-                      <BookOpen className="w-4 h-4" />
-                    </div>
-                  </div>
-                </ErpField>
-              </div>
-
-              <ErpField label="Giảng viên phụ trách">
-                <div className="relative">
-                  <ErpSelect
-                    value={form.instructorId}
-                    onChange={(e) => setForm({ ...form, instructorId: e.target.value })}
-                    className="pl-10"
-                  >
-                    <option value="">— Chưa gán giảng viên —</option>
-                    {instructors.map((i) => (
-                      <option key={i.uid} value={i.uid}>{i.displayName} (Nhân viên)</option>
-                    ))}
-                  </ErpSelect>
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400 z-10">
-                    <GraduationCap className="w-4 h-4" />
-                  </div>
-                </div>
-              </ErpField>
-            </div>
-
-            {/* Section 2: Lịch học & Khung giờ */}
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                <div className="w-1.5 h-4 bg-brand-primary rounded-full"></div>
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-brand-primary" />
-                  Lịch học & Khung giờ
-                </h4>
-              </div>
-
-              <ErpField label="Ngày học trong tuần">
-                <div className="grid grid-cols-7 gap-1.5 mt-1">
-                  {DAY_OPTIONS.map((d) => (
-                    <button
-                      key={d.value}
-                      type="button"
-                      onClick={() => toggleDay(d.value)}
-                      className={cn(
-                        "py-3 rounded-xl text-[11px] font-black transition-all border cursor-pointer text-center",
-                        form.daysOfWeek.includes(d.value)
-                          ? "bg-brand-primary text-white border-brand-primary shadow-sm shadow-brand-primary/25 scale-[1.02]"
-                          : "bg-slate-50 text-slate-550 border-slate-200 hover:bg-slate-100 hover:border-slate-300 active:scale-95"
-                      )}
-                    >
-                      {d.label}
-                    </button>
-                  ))}
-                </div>
-              </ErpField>
-
-              <div className="grid grid-cols-2 gap-4">
-                <ErpField label="Giờ bắt đầu">
-                  <div className="relative">
-                    <ErpInput
-                      type="time"
-                      required
-                      value={form.startTime}
-                      onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-                      className="pl-10"
-                    />
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-                      <Clock className="w-4 h-4" />
-                    </div>
-                  </div>
-                </ErpField>
-                <ErpField label="Giờ kết thúc">
-                  <div className="relative">
-                    <ErpInput
-                      type="time"
-                      required
-                      value={form.endTime}
-                      onChange={(e) => setForm({ ...form, endTime: e.target.value })}
-                      className="pl-10"
-                    />
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-                      <Clock className="w-4 h-4" />
-                    </div>
-                  </div>
-                </ErpField>
-              </div>
-            </div>
-
-            {/* Section 3: Thời gian & Địa điểm */}
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                <div className="w-1.5 h-4 bg-brand-primary rounded-full"></div>
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                  <CalendarRange className="w-4 h-4 text-brand-primary" />
-                  Thời gian & Địa điểm
-                </h4>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <ErpField label="Ngày khai giảng">
-                  <div className="relative">
-                    <ErpInput
-                      type="date"
-                      required
-                      value={form.startDate}
-                      onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                      className="pl-10"
-                    />
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-                      <Calendar className="w-4 h-4" />
-                    </div>
-                  </div>
-                </ErpField>
-                <ErpField label="Ngày kết thúc">
-                  <div className="relative">
-                    <ErpInput
-                      type="date"
-                      required
-                      value={form.endDate}
-                      onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                      className="pl-10"
-                    />
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-                      <Calendar className="w-4 h-4" />
-                    </div>
-                  </div>
-                </ErpField>
-              </div>
-
-              <ErpField label="Địa điểm (tùy chọn)">
-                <div className="relative">
-                  <ErpInput
-                    type="text"
-                    placeholder="Ví dụ: Phòng 201 / Sân tập số 2"
-                    value={form.location}
-                    onChange={(e) => setForm({ ...form, location: e.target.value })}
-                    className="pl-10"
-                  />
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                </div>
-              </ErpField>
-            </div>
-
-            {/* Custom submit button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-4 bg-gradient-to-r from-brand-primary to-sky-600 hover:from-brand-primary/95 hover:to-sky-700 text-white rounded-2xl text-xs font-black uppercase tracking-wider shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-              ) : (
-                <School className="w-4.5 h-4.5" />
-              )}
-              {isSubmitting ? 'Đang lưu...' : editingId ? 'Lưu thay đổi' : 'Khai giảng lớp'}
-            </button>
-          </form>
-        </ErpModal>
-      )}
+      <BatchFormModal
+        isOpen={showFormModal}
+        editingId={editingId}
+        batchToEdit={batches.find(b => b.id === editingId)}
+        onClose={() => setShowFormModal(false)}
+        courses={courses}
+        instructors={instructors}
+        onSuccess={handleMutationSuccess}
+      />
 
       {/* Manage Learners Modal */}
       {manageBatch && (
-        <ErpModal
-          title={`Học viên lớp ${manageBatch.code}`}
+        <ManageLearnersModal
+          isOpen={!!manageBatch}
+          batch={manageBatch}
           onClose={() => setManageLearnersId(null)}
-          maxWidth="max-w-lg"
-        >
-          <div className="space-y-6">
-            <p className={cn("text-xs font-bold", darkMode ? "text-slate-400" : "text-slate-500")}>
-              {manageBatch.courseTitle} • Sĩ số: {manageBatch.learnerIds.length}
-              {manageBatch.maxLearners ? `/${manageBatch.maxLearners}` : ''} học viên
-            </p>
+          students={students}
+          onSuccess={handleMutationSuccess}
+        />
+      )}
 
-            {/* Add learner */}
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <ErpSelect
-                  value={selectedStudentId}
-                  onChange={(e) => setSelectedStudentId(e.target.value)}
-                >
-                  <option value="">-- Chọn học viên để thêm vào lớp --</option>
-                  {availableStudents.map((s) => (
-                    <option key={s.id} value={s.id}>{s.fullName} ({s.phone})</option>
-                  ))}
-                </ErpSelect>
-              </div>
-              <button
-                type="button"
-                onClick={handleAddLearner}
-                disabled={!selectedStudentId}
-                className="px-4 py-2 bg-brand-primary text-white rounded-xl text-xs font-bold transition-all hover:bg-brand-primary/95 disabled:opacity-50 flex items-center gap-1.5 shrink-0 cursor-pointer"
-              >
-                <UserPlus className="w-4 h-4" /> Thêm
-              </button>
-            </div>
-
-            {/* Enrolled learners */}
-            <div className="space-y-2">
-              <h5 className={cn("text-xs font-black uppercase tracking-wider", darkMode ? "text-slate-400" : "text-slate-500")}>
-                Danh sách học viên trong lớp
-              </h5>
-              {enrolledStudents.length === 0 ? (
-                <p className="text-xs text-slate-400">Lớp chưa có học viên nào.</p>
-              ) : (
-                <div className={cn("border rounded-2xl p-2 max-h-72 overflow-y-auto divide-y", darkMode ? "border-slate-800 divide-slate-800/40" : "border-slate-100 divide-slate-100/60")}>
-                  {enrolledStudents.map((s) => (
-                    <div key={s.id} className="flex items-center justify-between py-2.5 px-3">
-                      <div>
-                        <p className={cn("text-xs font-bold", darkMode ? "text-slate-200" : "text-slate-700")}>{s.fullName}</p>
-                        <p className="text-[10px] text-slate-400">{s.phone}{s.rank ? ` • Hạng ${s.rank}` : ''}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveLearner(s.id)}
-                        title="Bỏ khỏi lớp"
-                        className={cn(
-                          "p-1.5 rounded-lg transition-all border cursor-pointer",
-                          darkMode
-                            ? "bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 border-transparent"
-                            : "bg-slate-50 hover:bg-rose-50 text-slate-450 hover:text-rose-600 border-slate-200/60"
-                        )}
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </ErpModal>
+      {/* Attendance Modal */}
+      {attendanceBatch && (
+        <AttendanceModal
+          isOpen={!!attendanceBatch}
+          batch={attendanceBatch}
+          onClose={() => setAttendanceBatchId(null)}
+          students={students}
+          onSuccess={handleMutationSuccess}
+        />
       )}
 
       {/* Confirm Delete Modal */}
