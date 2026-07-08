@@ -212,7 +212,7 @@ export function AttendanceModal({
               }
 
               return (
-                <div className="border border-slate-100 rounded-2xl p-2 divide-y divide-slate-100/60 max-h-96 overflow-y-auto">
+                <div className="border border-slate-100 rounded-2xl p-2 divide-y divide-slate-100/60 max-h-72 overflow-y-auto">
                   {allDates.map((date) => {
                     const session = batch.attendanceSessions?.find(s => s.date === date);
                     const isTaken = !!session;
@@ -369,7 +369,7 @@ export function AttendanceModal({
           </div>
 
           {/* Student list */}
-          <div className="border border-slate-100 rounded-2xl divide-y divide-slate-100/60 max-h-96 overflow-y-auto">
+          <div className="border border-slate-100 rounded-2xl divide-y divide-slate-100/60 max-h-72 overflow-y-auto">
             {batch.learnerIds.length === 0 ? (
               <p className="text-center py-6 text-xs text-slate-400">Lớp học hiện tại chưa có học viên nào.</p>
             ) : (
