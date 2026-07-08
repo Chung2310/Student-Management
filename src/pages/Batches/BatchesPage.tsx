@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import {
-  School, Trash2, Pencil, Users, CalendarRange, GraduationCap
+  School, Trash2, Pencil, Users, CalendarRange, GraduationCap, BarChart2
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { apiFetch } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
 import { useBatches } from '../../hooks/useBatches';
 import { useCourses } from '../../hooks/useCourses';
 import { useManagedUsers } from '../../hooks/useManagedUsers';
@@ -18,6 +19,7 @@ import { Pagination } from '../../components/ui/Pagination';
 import { BatchFormModal } from '../../components/Batches/BatchFormModal';
 import { ManageLearnersModal } from '../../components/Batches/ManageLearnersModal';
 import { AttendanceModal } from '../../components/Batches/AttendanceModal';
+import { AttendanceViewModal } from '../../components/Batches/AttendanceViewModal';
 
 const BATCH_STATUSES: BatchStatus[] = ['Sắp khai giảng', 'Đang học', 'Đã kết thúc'];
 
@@ -51,6 +53,8 @@ const notifyBatchMutation = () => {
 export function BatchesPage({ selectedCenter }: { selectedCenter?: string }) {
   const darkMode = false;
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isManager = user?.role === 'admin' || user?.role === 'superadmin';
   const resolvedCenter = selectedCenter === 'all' ? undefined : selectedCenter;
   const { batches, loading, refetch } = useBatches(resolvedCenter);
   const { courses } = useCourses(resolvedCenter);
@@ -72,6 +76,7 @@ export function BatchesPage({ selectedCenter }: { selectedCenter?: string }) {
   });
 
   const [attendanceBatchId, setAttendanceBatchId] = useState<string | null>(null);
+  const [viewAttendanceBatchId, setViewAttendanceBatchId] = useState<string | null>(null);
 
   const manageBatch = manageLearnersId ? batches.find(b => b.id === manageLearnersId) : undefined;
   const attendanceBatch = attendanceBatchId ? batches.find(b => b.id === attendanceBatchId) : undefined;
@@ -244,6 +249,20 @@ export function BatchesPage({ selectedCenter }: { selectedCenter?: string }) {
                         >
                           <CalendarRange className="w-3.5 h-3.5" /> Điểm danh
                         </button>
+                        {isManager && (
+                          <button
+                            onClick={() => setViewAttendanceBatchId(b.id)}
+                            title="Xem thống kê điểm danh"
+                            className={cn(
+                              "p-1.5 rounded-lg transition-all border cursor-pointer",
+                              darkMode
+                                ? "bg-slate-800 hover:bg-sky-900/30 text-slate-450 hover:text-sky-400 border-transparent"
+                                : "bg-slate-50 hover:bg-sky-50 text-slate-450 hover:text-sky-600 border-slate-200/60"
+                            )}
+                          >
+                            <BarChart2 className="w-3 h-3" />
+                          </button>
+                        )}
                         <button
                           onClick={() => openEditModal(b)}
                           title="Chỉnh sửa lớp"
@@ -324,6 +343,19 @@ export function BatchesPage({ selectedCenter }: { selectedCenter?: string }) {
           onSuccess={handleMutationSuccess}
         />
       )}
+
+      {/* Attendance View Modal (admin/superadmin only) */}
+      {isManager && viewAttendanceBatchId && (() => {
+        const viewBatch = batches.find(b => b.id === viewAttendanceBatchId);
+        return viewBatch ? (
+          <AttendanceViewModal
+            isOpen
+            batch={viewBatch}
+            onClose={() => setViewAttendanceBatchId(null)}
+            students={students}
+          />
+        ) : null;
+      })()}
 
       {/* Confirm Delete Modal */}
       <ErpConfirmModal
