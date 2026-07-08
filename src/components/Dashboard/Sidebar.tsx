@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard, Users, Calendar, Wallet, MessageSquare, Settings,
-  Shield, LogOut, LogIn, RefreshCcw, X, BookOpen, Warehouse, School, LucideIcon, Handshake
+  Shield, LogOut, LogIn, RefreshCcw, X, BookOpen, Warehouse, School, LucideIcon, Handshake, HelpCircle
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
@@ -40,6 +40,7 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
     { icon: Handshake, label: 'Đối tác & CTV', view: 'Partners' },
     { icon: Warehouse, label: 'Thiết bị', view: 'Resources' },
     { icon: Shield, label: user?.role === 'superadmin' ? 'Quản lý người dùng' : 'Quản lý giảng viên', view: 'UserManagement' },
+    { icon: HelpCircle, label: 'Hướng dẫn sử dụng', view: 'Guide' },
     { icon: Settings, label: 'Cài đặt & Quản trị', view: 'SettingsAdmin' },
   ];
 
@@ -49,13 +50,18 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
       return false;
     }
     if (item.view === 'SettingsAdmin') return true;
-    // Restrict other views for user role based on permissions
-    if (user?.role === 'user') {
-      // Dashboard is always visible
+    // Restrict other views for user and admin role based on permissions
+    if (user?.role === 'user' || user?.role === 'admin') {
+      // Dashboard is always visible for admin & user (SettingsAdmin is handled above)
       if (item.view === 'Dashboard') return true;
+      if (item.view === 'UserManagement' && user?.role === 'admin') return true;
+
       // If user.permissions exists, filter by it
-      if (user.permissions && Array.isArray(user.permissions) && user.permissions.length > 0) {
-        return user.permissions.includes(item.view);
+      if (user.permissions && Array.isArray(user.permissions)) {
+        if (user.permissions.length > 0) {
+          return user.permissions.includes(item.view);
+        }
+        return true;
       }
       // If permissions array is missing/legacy, default to true
       return true;
@@ -102,7 +108,7 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
               <X className="w-5 h-5" />
             </button>
           </div>
- 
+
           <nav className="space-y-1">
             {visibleMenuItems.map((item, idx) => (
               <button
@@ -131,7 +137,7 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
             ))}
           </nav>
         </div>
- 
+
         <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/80">
           {user ? (
             <div className="flex items-center justify-between gap-2">

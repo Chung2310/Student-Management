@@ -58,6 +58,8 @@ const ResourcesPage = lazyWithRetry(() => import('./pages/Resources/ResourcesPag
 const UserManagementPage = lazyWithRetry(() => import('./pages/UserManagement/UserManagementPage').then(m => ({ default: m.UserManagementPage })));
 const SettingsPage = lazyWithRetry(() => import('./pages/Settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const PartnersPage = lazyWithRetry(() => import('./pages/Partners/PartnersPage').then(m => ({ default: m.PartnersPage })));
+const GuidePage = lazyWithRetry(() => import('./pages/Guide/GuidePage').then(m => ({ default: m.GuidePage })));
+
 
 // Lazy load modals and heavy widgets
 const AddStudentModal = lazyWithRetry(() => import('./components/Student/AddStudentModal').then(m => ({ default: m.AddStudentModal })));
@@ -71,7 +73,7 @@ const PageLoader = () => (
   </div>
 );
 
-export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'Courses' | 'Batches' | 'Resources' | 'UserManagement' | 'SettingsAdmin' | 'Partners';
+export type ViewType = 'Dashboard' | 'Students' | 'Exams' | 'Fees' | 'Bot' | 'Courses' | 'Batches' | 'Resources' | 'UserManagement' | 'SettingsAdmin' | 'Partners' | 'Guide';
 
 // Map đường dẫn của bản demo ERP (đã gỡ) về route chính thức để bookmark cũ không chết
 const LEGACY_ERP_PATH_MAP: Record<string, string> = {
@@ -130,6 +132,7 @@ export default function App() {
     if (path.startsWith('/user-management')) return 'UserManagement';
     if (path.startsWith('/partners')) return 'Partners';
     if (path.startsWith('/settings')) return 'SettingsAdmin';
+    if (path.startsWith('/dashboard/huongdan') || path.startsWith('/huongdan')) return 'Guide';
     if (path.startsWith('/dashboard')) return 'Dashboard';
     return 'Dashboard';
   };
@@ -165,6 +168,7 @@ export default function App() {
     else if (view === 'UserManagement') path = '/user-management';
     else if (view === 'Partners') path = '/partners';
     else if (view === 'SettingsAdmin') path = '/settings';
+    else if (view === 'Guide') path = '/dashboard/huongdan';
     else if (view === 'Dashboard') path = '/dashboard';
 
     if (window.location.pathname !== path) {
@@ -231,7 +235,7 @@ export default function App() {
   // Synchronize document title for SEO & UX (Clean title on logout)
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+
     if (!user) {
       document.title = "IGEN Quản lý học viên - Hệ thống Quản trị & Đào tạo chuyên nghiệp";
       return;
@@ -249,6 +253,7 @@ export default function App() {
       UserManagement: "Quản lý người dùng",
       SettingsAdmin: "Cấu hình hệ thống",
       Partners: "Quản lý đối tác",
+      Guide: "Hướng dẫn sử dụng",
     };
 
     const currentViewName = viewNames[currentView] || "Hệ thống";
@@ -339,11 +344,16 @@ export default function App() {
 
   const hasPermission = (view: ViewType): boolean => {
     if (!user) return false;
-    if (user.role === 'superadmin' || user.role === 'admin') return true;
-    if (view === 'Dashboard' || view === 'SettingsAdmin') return true;
-    if (view === 'UserManagement') return false;
-    if (user.permissions && Array.isArray(user.permissions) && user.permissions.length > 0) {
-      return user.permissions.includes(view);
+    if (user.role === 'superadmin') return true;
+    if (view === 'Dashboard' || view === 'SettingsAdmin' || view === 'Guide') return true;
+    if (view === 'UserManagement') {
+      return user.role === 'admin';
+    }
+    if (user.role === 'admin' || user.role === 'user') {
+      if (user.permissions && Array.isArray(user.permissions) && user.permissions.length > 0) {
+        return user.permissions.includes(view);
+      }
+      return true;
     }
     return true;
   };
@@ -395,6 +405,8 @@ export default function App() {
         return <PartnersPage selectedCenter={selectedCenter} />;
       case 'SettingsAdmin':
         return <SettingsPage />;
+      case 'Guide':
+        return <GuidePage selectedCenter={selectedCenter} onNavigate={handleViewChange} />;
       default:
         return (
           <div className="flex flex-col items-center justify-center h-[60vh] text-slate-400">
