@@ -71,11 +71,11 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
 
   // Nếu phân loại đang chọn bị xóa khỏi danh mục thì quay về "Tất cả"
   React.useEffect(() => {
-    if (category !== TAB_ALL && category !== TAB_UNASSIGNED && categories.length > 0 && !categories.some(c => c.name === category)) {
+    if (businessType !== 'driving' && category !== TAB_ALL && category !== TAB_UNASSIGNED && categories.length > 0 && !categories.some(c => c.name === category)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategory(TAB_ALL);
     }
-  }, [categories, category]);
+  }, [categories, category, businessType]);
 
   // Reset to first page when filtering
   React.useEffect(() => {
@@ -160,6 +160,30 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
     return map;
   }, [students, batches, courses, categories, businessType]);
 
+  const primaryTabs = useMemo(() => {
+    if (businessType === 'driving') {
+      const ranks = new Set<string>();
+      for (const s of students) {
+        if (s.rank) {
+          ranks.add(s.rank.toUpperCase());
+        }
+      }
+      const sortedRanks = Array.from(ranks).sort();
+      return [
+        { id: TAB_ALL, icon: Users },
+        ...sortedRanks.map(rank => ({ id: rank, icon: Car })),
+        { id: TAB_UNASSIGNED, icon: UserX }
+      ];
+    } else {
+      return [
+        { id: TAB_ALL, icon: Users },
+        ...Array.from(new Map(categories.map((cat) => [cat.name, cat])).values())
+          .map((cat: CourseCategoryItem) => ({ id: cat.name, icon: categoryIcon(cat.name) })),
+        { id: TAB_UNASSIGNED, icon: UserX }
+      ];
+    }
+  }, [businessType, categories, students]);
+
   // Hạng bằng là dữ liệu riêng ngành lái xe — chỉ hiện filter/cột khi còn học viên có hạng
   const hasRankData = useMemo(() => students.some(s => s.rank), [students]);
   const rankOptions = [
@@ -170,13 +194,23 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
   ];
 
   const filteredStudents = students.filter(student => {
-    // 1. Category Filter (theo phân loại khóa học của lớp học viên đang tham gia)
+    // 1. Primary Tab Filter (theo phân loại khóa học hoặc hạng bằng lái xe)
     if (category !== TAB_ALL) {
-      const cats = studentCategories.get(student.id);
-      if (category === TAB_UNASSIGNED) {
-        if (cats && cats.size > 0) return false;
-      } else if (!cats || !cats.has(category)) {
-        return false;
+      if (businessType === 'driving') {
+        if (category === TAB_UNASSIGNED) {
+          if (student.rank) return false;
+          const cats = studentCategories.get(student.id);
+          if (cats && cats.size > 0) return false;
+        } else {
+          if (student.rank?.toUpperCase() !== category.toUpperCase()) return false;
+        }
+      } else {
+        const cats = studentCategories.get(student.id);
+        if (category === TAB_UNASSIGNED) {
+          if (cats && cats.size > 0) return false;
+        } else if (!cats || !cats.has(category)) {
+          return false;
+        }
       }
     }
 
@@ -191,10 +225,8 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
       if (!(studentStatuses as string[]).includes(dbStatus)) return false;
     }
 
-    // 3. Rank / Course Filter
-    if (businessType === 'driving') {
-      if (hasRankData && rankFilter !== 'Tất cả hạng' && rankFilter !== 'Tất cả khóa học' && student.rank !== rankFilter) return false;
-    } else {
+    // 3. Rank / Course Filter (chỉ lọc theo khóa học khi không phải ngành lái xe vì lái xe đã dùng tabs)
+    if (businessType !== 'driving') {
       if (rankFilter !== 'Tất cả hạng' && rankFilter !== 'Tất cả khóa học') {
         const selectedCourse = courses.find(c => c.id === rankFilter);
         const matchesCourseId = student.courseId === rankFilter;
@@ -513,15 +545,9 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
         </div>
       </div>
 
-      {/* Primary Tabs — sinh động từ phân loại khóa học */}
+      {/* Primary Tabs — sinh động từ phân loại khóa học hoặc hạng bằng lái */}
       <div className="flex items-center gap-2 sm:gap-6 border-b border-slate-200 overflow-x-auto no-scrollbar">
-        {[
-          { id: TAB_ALL, icon: Users },
-          // dedup by name — superadmin thấy categories từ nhiều trung tâm, tránh tab trùng
-          ...Array.from(new Map(categories.map((cat) => [cat.name, cat])).values())
-            .map((cat: CourseCategoryItem) => ({ id: cat.name, icon: categoryIcon(cat.name) })),
-          { id: TAB_UNASSIGNED, icon: UserX },
-        ].map((item) => (
+        {primaryTabs.map((item) => (
           <button
             key={item.id}
             onClick={() => setCategory(item.id)}
@@ -569,7 +595,10 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
       </div>
 
       {/* Filters Bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm filters-bar">
+      <div className={cn(
+        "grid grid-cols-2 gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm filters-bar",
+        businessType === 'driving' ? "lg:grid-cols-4" : "lg:grid-cols-5"
+      )}>
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Từ ngày</label>
           <div className="relative">
@@ -596,23 +625,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
             <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
-        {businessType === 'driving' ? (
-          hasRankData && (
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Hạng bằng (lái xe)</label>
-              <div className="relative">
-                <select
-                  value={rankFilter}
-                  onChange={(e) => setRankFilter(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:border-cyan-600"
-                >
-                  {rankOptions.map(opt => <option key={opt}>{opt}</option>)}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-              </div>
-            </div>
-          )
-        ) : (
+        {businessType !== 'driving' && (
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Khóa học</label>
             <div className="relative">
