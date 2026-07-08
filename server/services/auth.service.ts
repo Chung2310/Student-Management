@@ -57,10 +57,10 @@ export class AuthService {
   }
 
   static async register(data: RegisterData): Promise<IUser> {
-    const existingUser = await User.findOne({ email: data.email });
+    const existingUser = await User.findOne({ email: data.email.toLowerCase().trim(), role: { $in: ["admin", "superadmin"] } });
     if (existingUser) {
       logger.warn(`[Auth] Registration failed - Email already exists: ${data.email}`);
-      throw new Error("Email này đã được sử dụng cho một tài khoản khác.");
+      throw new Error("Email này đã được sử dụng cho một tài khoản admin khác.");
     }
     const hashedPassword = await bcrypt.hash(data.password, 10);
     const newUser = new User({
@@ -75,35 +75,50 @@ export class AuthService {
   }
 
   static async login(data: LoginData) {
-    const user = await User.findOne({ email: data.email });
-    if (!user) {
+    const users = await User.find({ email: data.email.toLowerCase().trim() });
+    if (users.length === 0) {
       logger.warn(`[Auth] Login failed - User not found: ${data.email}`);
       throw new Error("Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.");
     }
-    if (user.isActive === false) {
-      logger.warn(`[Auth] Login failed - Account locked: ${data.email}`);
-      throw new Error("Tài khoản của bạn đã bị khoá. Vui lòng liên hệ quản trị viên.");
+
+    let authenticatedUser = null;
+    let isActive = true;
+
+    for (const u of users) {
+      const isPasswordValid = await bcrypt.compare(data.password, u.password!);
+      if (isPasswordValid) {
+        if (u.isActive === false) {
+          isActive = false;
+          continue;
+        }
+        authenticatedUser = u;
+        break;
+      }
     }
-    const isPasswordValid = await bcrypt.compare(data.password, user.password!);
-    if (!isPasswordValid) {
-      logger.warn(`[Auth] Login failed - Invalid password for email: ${data.email}`);
+
+    if (!authenticatedUser) {
+      if (!isActive) {
+        logger.warn(`[Auth] Login failed - Account locked: ${data.email}`);
+        throw new Error("Tài khoản của bạn đã bị khoá. Vui lòng liên hệ quản trị viên.");
+      }
+      logger.warn(`[Auth] Login failed - Invalid password or no matching active user for email: ${data.email}`);
       throw new Error("Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.");
     }
 
     const accessToken = jwt.sign(
-      { uid: user._id, email: user.email, role: user.role, centerId: user.centerId },
+      { uid: authenticatedUser._id, email: authenticatedUser.email, role: authenticatedUser.role, centerId: authenticatedUser.centerId },
       ACCESS_SECRET,
       { expiresIn: "15m" }
     );
 
     const refreshToken = jwt.sign(
-      { uid: user._id, email: user.email, role: user.role, centerId: user.centerId },
+      { uid: authenticatedUser._id, email: authenticatedUser.email, role: authenticatedUser.role, centerId: authenticatedUser.centerId },
       REFRESH_SECRET,
       { expiresIn: "7d" }
     );
 
     return {
-      user: this.serializeUser(user),
+      user: this.serializeUser(authenticatedUser),
       accessToken,
       refreshToken,
     };
@@ -222,9 +237,21 @@ export class AuthService {
       }
     }
 
-    const existingUser = await User.findOne({ email: data.email });
+    const targetCenterId = requester.role === "admin" ? (requester.centerId || requester.uid) : (data.centerId || "");
+    let existingUser;
+    if (data.role === "admin") {
+      existingUser = await User.findOne({
+        email: data.email.toLowerCase().trim(),
+        role: { $in: ["admin", "superadmin"] },
+      });
+    } else {
+      existingUser = await User.findOne({
+        email: data.email.toLowerCase().trim(),
+        centerId: targetCenterId,
+      });
+    }
     if (existingUser) {
-      throw new Error("Email nay da duoc su dung cho mot tai khoan khac.");
+      throw new Error("Email này đã được sử dụng cho một tài khoản khác trong cùng trung tâm.");
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -295,10 +322,26 @@ export class AuthService {
     const updates: Record<string, unknown> = {};
     if (data.displayName !== undefined) updates.displayName = data.displayName;
     if (data.email !== undefined) {
-      // Check if email already taken
-      const existing = await User.findOne({ email: data.email, _id: { $ne: userId } });
+      let existing;
+      const targetRole = data.role !== undefined ? data.role : userToEdit.role;
+      const targetCenterId = data.centerId !== undefined ? data.centerId : userToEdit.centerId;
+
+      if (targetRole === "admin") {
+        existing = await User.findOne({
+          email: data.email.toLowerCase().trim(),
+          role: { $in: ["admin", "superadmin"] },
+          _id: { $ne: userId }
+        });
+      } else {
+        existing = await User.findOne({
+          email: data.email.toLowerCase().trim(),
+          centerId: targetCenterId,
+          _id: { $ne: userId }
+        });
+      }
+
       if (existing) {
-        throw new Error("Email này đã được sử dụng bởi người dùng khác.");
+        throw new Error("Email này đã được sử dụng bởi người dùng khác trong cùng trung tâm.");
       }
       updates.email = data.email;
     }
@@ -379,6 +422,14 @@ export class AuthService {
   }
 
   static async seedAdmin() {
+    // Drop the old global unique index on email if it exists
+    try {
+      await User.collection.dropIndex("email_1");
+      logger.info(">>> Dropped unique 'email_1' index to support multi-center emails.");
+    } catch {
+      // Ignore if index doesn't exist
+    }
+
     // 1. Seed Superadmin
     const superadminEmail = process.env.SUPERADMIN_EMAIL || "superadmin@studentmanagement.com";
     const superadminPassword = process.env.SUPERADMIN_PASSWORD || "SuperAdminPass123";

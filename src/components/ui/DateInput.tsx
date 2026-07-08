@@ -58,7 +58,14 @@ export function DateInput({
           value={localVal}
           onChange={handleChange}
           onBlur={handleBlurEvent}
-          className={`w-full py-3.5 pl-11 pr-4 rounded-xl bg-slate-50 border outline-none transition-all font-medium text-slate-900 text-sm ${
+          onClick={(e) => {
+            try {
+              e.currentTarget.showPicker();
+            } catch {
+              // ignore
+            }
+          }}
+          className={`w-full py-3.5 pl-11 pr-4 rounded-xl bg-slate-50 border outline-none transition-all font-medium text-slate-900 text-sm cursor-pointer select-none ${
             error 
               ? 'border-rose-300 bg-rose-50/10 focus:border-rose-500' 
               : 'border-slate-100 focus:border-cyan-600 focus:bg-white'

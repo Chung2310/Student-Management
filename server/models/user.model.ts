@@ -6,7 +6,6 @@ const userSchema = new Schema<IUser>(
     email: {
       type: String,
       required: true,
-      unique: true,
       lowercase: true,
       trim: true,
       index: true,
@@ -124,5 +123,7 @@ userSchema.pre("validate", function () {
     this.centerId = "superadmin";
   }
 });
+
+userSchema.index({ email: 1, centerId: 1 }, { unique: true });
 
 export const User = model<IUser>("User", userSchema);
