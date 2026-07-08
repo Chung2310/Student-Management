@@ -457,12 +457,14 @@ code, kbd, samp, pre {
   }
 }
 
-/* Hide native date picker icon to avoid conflict with Lucide icons */
-input[type="date"] {
+/* Hide native date and time picker icons to avoid conflict with Lucide icons */
+input[type="date"],
+input[type="time"] {
   position: relative;
 }
 
-input[type="date"]::-webkit-calendar-picker-indicator {
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
   background: transparent;
   bottom: 0;
   color: transparent;
@@ -474,6 +476,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   top: 0;
   width: auto;
 }
+
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;

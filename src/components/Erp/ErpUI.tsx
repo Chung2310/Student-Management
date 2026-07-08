@@ -186,7 +186,31 @@ export const erpInputClass = (darkMode: boolean) => cn(
 
 export function ErpInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   const { darkMode } = useErpTheme();
-  return <input {...props} className={cn(erpInputClass(darkMode), props.className)} />;
+  
+  const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
+    if (props.type === 'date' || props.type === 'time') {
+      try {
+        e.currentTarget.showPicker();
+      } catch (err) {
+        // ignore if not supported
+      }
+    }
+    if (props.onClick) {
+      props.onClick(e);
+    }
+  };
+
+  return (
+    <input
+      {...props}
+      onClick={handleClick}
+      className={cn(
+        erpInputClass(darkMode),
+        (props.type === 'date' || props.type === 'time') && "cursor-pointer select-none",
+        props.className
+      )}
+    />
+  );
 }
 
 export function ErpSelect({ className, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
