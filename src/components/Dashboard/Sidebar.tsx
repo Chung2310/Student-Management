@@ -52,8 +52,8 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
     if (item.view === 'SettingsAdmin') return true;
     // Restrict other views for user and admin role based on permissions
     if (user?.role === 'user' || user?.role === 'admin') {
-      // Dashboard is always visible for admin & user (SettingsAdmin is handled above)
-      if (item.view === 'Dashboard') return true;
+      // Dashboard and Guide are always visible for admin & user (SettingsAdmin is handled above)
+      if (item.view === 'Dashboard' || item.view === 'Guide') return true;
       if (item.view === 'UserManagement' && user?.role === 'admin') return true;
 
       // If user.permissions exists, filter by it
