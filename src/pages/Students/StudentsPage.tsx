@@ -4,7 +4,7 @@ import {
   Search, Download, Printer, Plus,
   Eye, Trash2, Pencil,
   X, Calendar as CalendarIcon, ChevronDown,
-  Users, Car, Upload, Languages, Lightbulb, BookOpen, UserX
+  Users, Car, Upload, Languages, Lightbulb, BookOpen, UserX, Settings
 } from 'lucide-react';
 import { cn, formatVND, formatDisplayDate } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
@@ -16,6 +16,8 @@ import { Student } from '../../types';
 import { apiFetch } from '../../lib/api';
 import { EditStudentModal } from '../../components/Student/EditStudentModal';
 import { ImportStudentModal } from '../../components/Student/ImportStudentModal';
+import { ManageLicenseRanksModal } from '../../components/Student/ManageLicenseRanksModal';
+import { useLicenseRanks } from '../../hooks/useLicenseRanks';
 import { Pagination } from '../../components/ui/Pagination';
 import { useAuth } from '../../hooks/useAuth';
 import * as XLSX from 'xlsx';
@@ -50,6 +52,8 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
   const { courses } = useCourses(resolvedCenter);
   const { categories } = useCourseCategories(resolvedCenter);
   const { toast } = useToast();
+  const { ranks: licenseRanks } = useLicenseRanks(resolvedCenter);
+  const [isManageRanksOpen, setIsManageRanksOpen] = useState(false);
   const [category, setCategory] = useState<string>(TAB_ALL);
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('Tất cả');
   const [searchQuery, setSearchQuery] = useState('');
@@ -162,13 +166,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
 
   const primaryTabs = useMemo(() => {
     if (businessType === 'driving') {
-      const ranks = new Set<string>();
-      for (const s of students) {
-        if (s.rank) {
-          ranks.add(s.rank.toUpperCase());
-        }
-      }
-      const sortedRanks = Array.from(ranks).sort();
+      const sortedRanks = licenseRanks.map(r => r.name.toUpperCase()).sort();
       return [
         { id: TAB_ALL, icon: Users },
         ...sortedRanks.map(rank => ({ id: rank, icon: Car })),
@@ -182,7 +180,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
         { id: TAB_UNASSIGNED, icon: UserX }
       ];
     }
-  }, [businessType, categories, students]);
+  }, [businessType, categories, licenseRanks]);
 
 
 
@@ -529,6 +527,14 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
           >
             <Upload className="w-4 h-4" /> Nhập Excel
           </button>
+          {businessType === 'driving' && (
+            <button
+              onClick={() => setIsManageRanksOpen(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all"
+            >
+              <Settings className="w-4 h-4" /> Quản lý hạng bằng
+            </button>
+          )}
           <button
             onClick={onAddStudent}
             className="flex items-center gap-2 px-6 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-cyan-100 hover:bg-brand-primary/95 transition-all"
@@ -945,6 +951,12 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
         onSuccess={() => setIsImportOpen(false)}
+      />
+
+      {/* Manage License Ranks Modal */}
+      <ManageLicenseRanksModal
+        isOpen={isManageRanksOpen}
+        onClose={() => setIsManageRanksOpen(false)}
       />
     </div>
   );

@@ -112,7 +112,13 @@ export default function App() {
 
   const { user, loading } = useAuth();
   useRealtimePayment();
-  const { students } = useStudents(selectedCenter === 'all' ? undefined : selectedCenter);
+
+  const resolvedCenter = React.useMemo(() => {
+    if (!user || user.role !== 'superadmin') return undefined;
+    return selectedCenter === 'all' ? undefined : selectedCenter;
+  }, [user, selectedCenter]);
+
+  const { students } = useStudents(resolvedCenter);
 
   const [currentPath, setCurrentPath] = React.useState(() => typeof window !== 'undefined' ? window.location.pathname : '/');
 
@@ -376,7 +382,7 @@ export default function App() {
             onAddStudent={() => setIsAddModalOpen(true)}
             onSelectStudent={handleOpenProfile}
             onNavigate={handleViewChange}
-            selectedCenter={selectedCenter}
+            selectedCenter={resolvedCenter}
           />
         );
       case 'Students':
@@ -384,29 +390,29 @@ export default function App() {
           <StudentsPage
             onSelectStudent={handleOpenProfile}
             onAddStudent={() => setIsAddModalOpen(true)}
-            selectedCenter={selectedCenter}
+            selectedCenter={resolvedCenter}
           />
         );
       case 'Exams':
-        return <ExamsPage selectedCenter={selectedCenter} />;
+        return <ExamsPage selectedCenter={resolvedCenter} />;
       case 'Fees':
-        return <FeesPage onSelectStudent={handleOpenProfile} selectedCenter={selectedCenter} />;
+        return <FeesPage onSelectStudent={handleOpenProfile} selectedCenter={resolvedCenter} />;
       case 'Bot':
         return <NotificationsPage />;
       case 'Courses':
-        return <CoursesPage selectedCenter={selectedCenter} />;
+        return <CoursesPage selectedCenter={resolvedCenter} />;
       case 'Batches':
-        return <BatchesPage selectedCenter={selectedCenter} />;
+        return <BatchesPage selectedCenter={resolvedCenter} />;
       case 'Resources':
         return <ResourcesPage />;
       case 'UserManagement':
         return <UserManagementPage />;
       case 'Partners':
-        return <PartnersPage selectedCenter={selectedCenter} />;
+        return <PartnersPage selectedCenter={resolvedCenter} />;
       case 'SettingsAdmin':
         return <SettingsPage />;
       case 'Guide':
-        return <GuidePage selectedCenter={selectedCenter} onNavigate={handleViewChange} />;
+        return <GuidePage selectedCenter={resolvedCenter} onNavigate={handleViewChange} />;
       default:
         return (
           <div className="flex flex-col items-center justify-center h-[60vh] text-slate-400">
@@ -458,7 +464,7 @@ export default function App() {
             onClose={() => setIsAddModalOpen(false)}
             students={students}
             onSuccess={handleOpenProfile}
-            selectedCenter={selectedCenter}
+            selectedCenter={resolvedCenter}
           />
         </Suspense>
       )}

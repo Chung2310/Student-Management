@@ -44,6 +44,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
 
   const [courses, setCourses] = useState<{ id: string; title: string; fee: string; code: string }[]>([]);
   const [courseId, setCourseId] = useState('');
+  const [licenseRanks, setLicenseRanks] = useState<{ id: string; name: string }[]>([]);
 
   // Field-specific validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -70,6 +71,21 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
                 }
               })
               .catch(err => console.error("Lỗi lấy danh sách khóa học:", err));
+          } else {
+            apiFetch(`/auth/teacher/${teacherId}/ranks`)
+              .then(rRes => {
+                if (rRes.success && rRes.data) {
+                  const fetchedRanks = rRes.data.map((r: { _id?: string; id?: string; name: string }) => ({
+                    id: r._id || r.id || '',
+                    name: r.name,
+                  }));
+                  setLicenseRanks(fetchedRanks);
+                  if (fetchedRanks.length > 0) {
+                    setRank(fetchedRanks[0].name);
+                  }
+                }
+              })
+              .catch(err => console.error("Lỗi lấy danh sách hạng bằng:", err));
           }
         }
       })
@@ -427,40 +443,8 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
                         label="Hạng bằng (lái xe)"
                         value={rank}
                         onChange={(val) => updateField('rank', val)}
-                        groups={[
-                          {
-                            label: "Xe máy (Mô tô)",
-                            options: [
-                              { value: "A1", label: "A1" },
-                              { value: "A2", label: "A2" }
-                            ]
-                          },
-                          {
-                            label: "Ô tô / Xe tải",
-                            options: [
-                              { value: "B1", label: "B1" },
-                              { value: "B2", label: "B2" },
-                              { value: "C", label: "C" }
-                            ]
-                          },
-                          {
-                            label: "Xe khách / Nâng hạng",
-                            options: [
-                              { value: "D", label: "D" },
-                              { value: "E", label: "E" }
-                            ]
-                          },
-                          {
-                            label: "Xe đầu kéo / Rơ-moóc",
-                            options: [
-                              { value: "FB2", label: "FB2" },
-                              { value: "FC", label: "FC" },
-                              { value: "FD", label: "FD" },
-                              { value: "FE", label: "FE" }
-                            ]
-                          }
-                        ]}
-                        placeholder="Không (ngành khác)"
+                        options={licenseRanks.map(r => ({ value: r.name, label: r.name }))}
+                        placeholder="Chọn hạng bằng..."
                         theme="register"
                       />
                       <DateInput

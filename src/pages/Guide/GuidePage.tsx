@@ -128,7 +128,7 @@ export function GuidePage({ selectedCenter = 'all', onNavigate }: GuidePageProps
 
   // Quick Start step definitions for Driving
   const drivingSteps = [
-    { step: 1, title: 'Tạo khóa học', icon: BookOpen, desc: 'Tạo khóa học lái xe và hạng bằng đào tạo.', view: 'Courses' as ViewType },
+    { step: 1, title: 'Quản lý hạng bằng', icon: Settings, desc: 'Cấu hình các hạng bằng đào tạo (A1, B2, C...).', view: 'Students' as ViewType },
     { step: 2, title: 'Tiếp nhận hồ sơ', icon: Users, desc: 'Nhập học viên mới, tải ảnh CCCD 2 mặt.', view: 'Students' as ViewType },
     { step: 3, title: 'Khám sức khỏe', icon: Stethoscope, desc: 'Cập nhật giấy khám sức khỏe đạt tiêu chuẩn.', view: 'Students' as ViewType },
     { step: 4, title: 'Tiến độ học', icon: TrendingUp, desc: 'Theo dõi số km DAT và cabin mô phỏng.', view: 'Students' as ViewType },

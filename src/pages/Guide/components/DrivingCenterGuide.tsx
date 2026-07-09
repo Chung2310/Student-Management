@@ -33,8 +33,8 @@ export function DrivingCenterGuide({ activeSection, searchQuery }: DrivingCenter
             <div className="relative border-l-2 border-emerald-100 ml-4 pl-6 space-y-8 my-6">
               <div className="relative">
                 <div className="absolute -left-10 top-0 w-8 h-8 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-emerald-100">1</div>
-                <h4 className="font-bold text-slate-800 text-sm">{highlightText("Tạo Khóa học lái xe")}</h4>
-                <p className="text-slate-400 text-xs mt-1">Truy cập menu <strong>Khóa học</strong> ➜ Bấm <strong>+ Tạo khóa học</strong> ➜ Điền các thông tin: Hạng đào tạo (B1, B2, C...), Tên khóa học (ví dụ: Khóa B2 K68), Học phí trọn gói và số học viên tối đa.</p>
+                <h4 className="font-bold text-slate-800 text-sm">{highlightText("Quản lý hạng bằng lái xe")}</h4>
+                <p className="text-slate-400 text-xs mt-1">Truy cập menu <strong>Học viên</strong> ➜ Bấm nút <strong>Quản lý hạng bằng</strong> ➜ Thêm các hạng đào tạo tương ứng (A1, A2, B2, C...). Hệ thống sẽ dùng các hạng bằng này để hiển thị tab phân loại và kiểm tra tính hợp lệ khi thêm học viên.</p>
               </div>
 
               <div className="relative">
