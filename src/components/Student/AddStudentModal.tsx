@@ -11,6 +11,7 @@ import { DrivingStudent, Student, UploadedFile, Partner } from '../../types';
 import { findDuplicateStudentField } from '../../lib/studentUniqueness';
 import { FormInput, UploadCard } from './components/StudentFormFields';
 import { CustomSelect } from '../ui/CustomSelect';
+import { useLicenseRanks } from '../../hooks/useLicenseRanks';
 
 interface AddStudentModalProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
     return selectedCenter && selectedCenter !== 'all' ? selectedCenter : '';
   });
   const { courses } = useCourses(user?.role === 'superadmin' ? selectedCenterId : undefined);
+  const { ranks: licenseRanks } = useLicenseRanks(user?.role === 'superadmin' ? selectedCenterId : undefined);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -538,39 +540,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
                         });
                       }
                     }}
-                    groups={[
-                      {
-                        label: "Xe máy (Mô tô)",
-                        options: [
-                          { value: "A1", label: "A1" },
-                          { value: "A2", label: "A2" }
-                        ]
-                      },
-                      {
-                        label: "Ô tô / Xe tải",
-                        options: [
-                          { value: "B1", label: "B1" },
-                          { value: "B2", label: "B2" },
-                          { value: "C", label: "C" }
-                        ]
-                      },
-                      {
-                        label: "Xe khách / Nâng hạng",
-                        options: [
-                          { value: "D", label: "D" },
-                          { value: "E", label: "E" }
-                        ]
-                      },
-                      {
-                        label: "Xe đầu kéo / Rơ-moóc",
-                        options: [
-                          { value: "FB2", label: "FB2" },
-                          { value: "FC", label: "FC" },
-                          { value: "FD", label: "FD" },
-                          { value: "FE", label: "FE" }
-                        ]
-                      }
-                    ]}
+                    options={licenseRanks.map(r => ({ value: r.name, label: r.name }))}
                     placeholder="-- Chọn hạng bằng --"
                     error={errors.rank}
                     theme="modal"

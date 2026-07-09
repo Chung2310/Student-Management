@@ -5,6 +5,7 @@ import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { ExamSession } from '../../types';
 import { useToast } from '../../hooks/useToast';
+import { useLicenseRanks } from '../../hooks/useLicenseRanks';
 
 interface AddExamModalProps {
   isOpen: boolean;
@@ -13,16 +14,12 @@ interface AddExamModalProps {
   initialData?: ExamSession | null;
 }
 
-const DRIVING_EXAM_OPTIONS = [
-  { value: 'A1', label: 'Xe máy' },
-  { value: 'B2', label: 'Ô tô' },
-];
-
 export function AddExamModal({ isOpen, onClose, onSuccess, initialData }: AddExamModalProps) {
   const { user } = useAuth();
   const businessType = user?.businessType || 'driving';
   const isDriving = businessType === 'driving';
   const { toast } = useToast();
+  const { ranks: licenseRanks } = useLicenseRanks();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -60,14 +57,25 @@ export function AddExamModal({ isOpen, onClose, onSuccess, initialData }: AddExa
       } else {
         setFormData({
           name: '',
-          rank: isDriving ? DRIVING_EXAM_OPTIONS[0].value : '',
+          rank: isDriving ? (licenseRanks[0]?.name || '') : '',
           tentativeDate: '',
           location: '',
         });
       }
     }, 0);
     return () => clearTimeout(timer);
-  }, [initialData, isDriving, isOpen]);
+  }, [initialData, isDriving, isOpen, licenseRanks]);
+
+  // Sync default rank if licenseRanks are loaded after component mount
+  useEffect(() => {
+    if (!initialData && isDriving && licenseRanks.length > 0 && !formData.rank) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFormData(prev => ({
+        ...prev,
+        rank: licenseRanks[0].name
+      }));
+    }
+  }, [licenseRanks, initialData, isDriving, formData.rank]);
 
   if (!isOpen) return null;
 
@@ -130,7 +138,7 @@ export function AddExamModal({ isOpen, onClose, onSuccess, initialData }: AddExa
       onClose();
       setFormData({
         name: '',
-        rank: isDriving ? DRIVING_EXAM_OPTIONS[0].value : '',
+        rank: isDriving ? (licenseRanks[0]?.name || '') : '',
         tentativeDate: '',
         location: '',
       });
@@ -209,9 +217,9 @@ export function AddExamModal({ isOpen, onClose, onSuccess, initialData }: AddExa
                         onChange={handleInputChange}
                         className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all pr-10"
                       >
-                        {DRIVING_EXAM_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
+                        {licenseRanks.map((option) => (
+                          <option key={option.id} value={option.name}>
+                            Hạng {option.name}
                           </option>
                         ))}
                       </select>

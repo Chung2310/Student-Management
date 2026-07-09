@@ -15,6 +15,7 @@ import resourceRoutes from "./resource.routes";
 import batchRoutes from "./batch.routes";
 import scheduleRoutes from "./schedule.routes";
 import partnerRoutes from "./partner.routes";
+import licenseRankRoutes from "./license-rank.routes";
 import { logger } from "../config/logger";
 
 const router = Router();
@@ -33,6 +34,7 @@ router.use("/resources", resourceRoutes);
 router.use("/batches", batchRoutes);
 router.use("/schedule", scheduleRoutes);
 router.use("/partners", partnerRoutes);
+router.use("/license-ranks", licenseRankRoutes);
 
 import { authMiddleware, AuthRequest } from "../middlewares/auth.middleware";
 import { EmailService } from "../services/email.service";
