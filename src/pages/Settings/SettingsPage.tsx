@@ -800,6 +800,7 @@ export function SettingsPage() {
       <div className="space-y-6">
         {currentTab === 'Cấu hình hệ thống' && (
           <SystemSettingsPanel
+            businessType={user?.businessType}
             isAdmin={isAdmin}
             vietqrEnabled={vietqrEnabled}
             setVietqrEnabled={setVietqrEnabled}

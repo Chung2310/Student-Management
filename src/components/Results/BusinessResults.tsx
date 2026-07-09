@@ -9,10 +9,12 @@ import { useStudents } from '../../hooks/useStudents';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { FeePayment } from '../../types';
+import { useLicenseRanks } from '../../hooks/useLicenseRanks';
 
 export function BusinessResults() {
   const { students } = useStudents();
   const { user } = useAuth();
+  const { ranks: licenseRanks } = useLicenseRanks();
   const [payments, setPayments] = useState<FeePayment[]>([]);
   
   const [reportPeriod, setReportPeriod] = useState('Tháng này');
@@ -183,7 +185,7 @@ export function BusinessResults() {
             label="Hạng bằng" 
             value={rankFilter} 
             onChange={setRankFilter}
-            options={['Mọi hạng', 'A1', 'A2', 'A3', 'A4', 'B1', 'B2', 'C', 'D', 'E', 'FB2', 'FC', 'FD', 'FE']}
+            options={['Mọi hạng', ...licenseRanks.map(r => r.name)]}
           />
         </div>
 

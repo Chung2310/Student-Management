@@ -9,6 +9,7 @@ import { apiFetch } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
 import { useCourses } from '../../hooks/useCourses';
+import { useLicenseRanks } from '../../hooks/useLicenseRanks';
 
 interface ImportStudentModalProps {
   isOpen: boolean;
@@ -61,6 +62,7 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
   const businessType = user?.businessType || 'driving';
   const { toast } = useToast();
   const { courses } = useCourses();
+  const { ranks: licenseRanks } = useLicenseRanks();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isDragging, setIsDragging] = useState(false);
@@ -207,28 +209,39 @@ export function ImportStudentModal({ isOpen, onClose, onSuccess }: ImportStudent
 
           let resolvedCourseId = '';
           let finalFee = feeNum > 0 ? feeNum.toLocaleString('vi-VN') : '0';
+          let resolvedRank = '';
 
           const excelRank = getCellValue('rank');
-          if (businessType !== 'driving' && excelRank) {
+          if (businessType === 'driving' && excelRank) {
+            const matchedRank = licenseRanks.find(r => r.name.toLowerCase() === excelRank.toLowerCase());
+            if (matchedRank) {
+              resolvedRank = matchedRank.name;
+            } else {
+              errors.push(`Hạng bằng "${excelRank}" không tồn tại trong cấu hình hệ thống`);
+              resolvedRank = excelRank.toUpperCase();
+            }
+          } else if (businessType !== 'driving' && excelRank) {
             const matchedCourse = courses.find(c => 
               c.code.toLowerCase() === excelRank.toLowerCase() || 
               c.title.toLowerCase() === excelRank.toLowerCase()
             );
             if (matchedCourse) {
               resolvedCourseId = matchedCourse.id;
+              resolvedRank = excelRank;
               if (feeNum === 0 && matchedCourse.fee) {
                 const matchedFeeNum = parseInt(String(matchedCourse.fee).replace(/\D/g, ''), 10) || 0;
                 finalFee = matchedFeeNum.toLocaleString('vi-VN');
               }
             } else {
               errors.push(`Mã/Tên khóa học "${excelRank}" không tồn tại trong hệ thống`);
+              resolvedRank = excelRank;
             }
           }
 
           const studentData: ParsedStudent = {
             fullName: getCellValue('fullName'),
             phone: formatExcelPhone(getCellValue('phone')),
-            rank: businessType === 'driving' ? getCellValue('rank').toUpperCase() : getCellValue('rank'),
+            rank: resolvedRank,
             courseId: resolvedCourseId,
             fee: finalFee,
             paidAmount,
