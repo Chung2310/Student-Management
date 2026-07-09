@@ -4,6 +4,7 @@ import { cn, getVietQRBankCode } from '../../../lib/utils';
 import { PrimaryButton, SecondaryButton, SettingsInput, SettingsPanel } from './SettingsShared';
 
 interface SystemSettingsPanelProps {
+  businessType?: 'driving' | 'language' | 'general';
   isAdmin: boolean;
   vietqrEnabled: boolean;
   setVietqrEnabled: (value: boolean) => void;
