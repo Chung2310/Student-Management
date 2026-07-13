@@ -106,7 +106,7 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
     if (isOpen && student) {
       const timer = setTimeout(() => {
         const totalFee = parseInt(student.fee.replace(/\D/g, ''));
-        const remaining = totalFee - (student.paidAmount || 0);
+        const remaining = Math.max(0, totalFee - (student.paidAmount || 0));
         if (remaining > 0) {
           setAmount(new Intl.NumberFormat('vi-VN').format(remaining));
         } else {
@@ -144,7 +144,7 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
       const payAmount = parseInt(rawAmount, 10);
       const totalFee = parseInt(rawFee, 10);
       const paidSoFar = student.paidAmount || 0;
-      const remaining = totalFee - paidSoFar;
+      const remaining = Math.max(0, totalFee - paidSoFar);
       
       if (isNaN(payAmount) || payAmount <= 0) {
         toast.warning('Vui lòng nhập số tiền hợp lệ');
@@ -225,7 +225,7 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
                   <p className="text-[10px] font-bold text-cyan-500 uppercase tracking-wider">Học phí: {student.fee}đ</p>
                   <div className="hidden sm:block w-1 h-1 rounded-full bg-slate-300" />
                   <p className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">
-                    Còn nợ: {new Intl.NumberFormat('vi-VN').format(parseInt(student.fee.replace(/\D/g, '')) - (student.paidAmount || 0))}đ
+                    Còn nợ: {new Intl.NumberFormat('vi-VN').format(Math.max(0, (parseInt(student.fee.replace(/\D/g, ''), 10) || 0) - (student.paidAmount || 0)))}đ
                   </p>
                 </div>
               </div>

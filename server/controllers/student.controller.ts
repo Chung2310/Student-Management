@@ -198,7 +198,7 @@ export class StudentController {
       if (!result.success) {
         return res.status(400).json({ success: false, error: result.error });
       }
-      res.json({ success: true, message: `Đã đánh dấu đã thu đợt ${installmentNo}.` });
+      res.json({ success: true, message: `Đã ghi nhận thanh toán đợt ${installmentNo}.` });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Lỗi không xác định.";
       res.status(400).json({ success: false, error: msg });

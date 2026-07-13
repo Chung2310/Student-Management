@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { IStudent } from "../interfaces/student.interface";
+import { IStudent, STUDENT_STATUSES } from "../interfaces/student.interface";
 
 const uploadedFileSchema = new Schema({
   name: { type: String, required: true },
@@ -89,7 +89,7 @@ const studentSchema = new Schema<IStudent>(
     address: { type: String, default: "" },
     status: {
       type: [String],
-      enum: ["Chờ KSK", "Đã KSK", "Đã nộp HS", "Đang học", "Đang thi", "Đã đậu", "Thi lại", "Nghỉ học", "Nợ học phí"],
+      enum: STUDENT_STATUSES,
       default: ["Chờ KSK"],
       required: true,
       index: true,
@@ -100,6 +100,7 @@ const studentSchema = new Schema<IStudent>(
     healthCheckFiles: [uploadedFileSchema],
     idCardFrontFile: { type: uploadedFileSchema, default: undefined },
     idCardBackFile: { type: uploadedFileSchema, default: undefined },
+    vneidIdCardFile: { type: uploadedFileSchema, default: undefined },
     portraitFile: { type: uploadedFileSchema, default: undefined },
     progress: { type: progressSchema, default: () => ({}) },
     exams: [studentExamSchema],

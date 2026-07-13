@@ -12,7 +12,7 @@ import { useBatches } from '../../hooks/useBatches';
 import { useCourses } from '../../hooks/useCourses';
 import { useCourseCategories, CourseCategoryItem } from '../../hooks/useCourseCategories';
 import { useToast } from '../../hooks/useToast';
-import { Student } from '../../types';
+import { DRIVING_TRAINING_STATUSES, Student, StudentStatus } from '../../types';
 import { apiFetch } from '../../lib/api';
 import { EditStudentModal } from '../../components/Student/EditStudentModal';
 import { ImportStudentModal } from '../../components/Student/ImportStudentModal';
@@ -28,7 +28,7 @@ interface StudentsPageProps {
   selectedCenter?: string;
 }
 
-type StatusFilter = 'Tất cả' | 'KSK' | 'Đã KSK' | 'Nộp HS' | 'Đang học' | 'Đang thi' | 'Đã đậu' | 'Thi lại' | 'Nghỉ học';
+type StatusFilter = 'Tất cả' | 'KSK' | 'Nộp HS' | StudentStatus;
 
 // Tab phân loại ảo, luôn có bên cạnh các phân loại khóa học động
 const TAB_ALL = 'Tất cả';
@@ -286,6 +286,10 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
       { label: 'KSK' as StatusFilter, count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Chờ KSK') : s.status === 'Chờ KSK').length },
       { label: 'Đã KSK' as StatusFilter, count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đã KSK') : s.status === 'Đã KSK').length },
       { label: 'Nộp HS' as StatusFilter, count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đã nộp HS') : s.status === 'Đã nộp HS').length },
+      ...DRIVING_TRAINING_STATUSES.map((status) => ({
+        label: status as StatusFilter,
+        count: students.filter(s => Array.isArray(s.status) ? s.status.includes(status) : s.status === status).length,
+      })),
     ] : []),
     { label: 'Đang học', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đang học') : s.status === 'Đang học').length },
     { label: 'Đang thi', count: students.filter(s => Array.isArray(s.status) ? s.status.includes('Đang thi') : s.status === 'Đang thi').length },
@@ -306,6 +310,14 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
       'Đã nộp HS': 'bg-cyan-100 text-cyan-700 border-cyan-200',
       'Nợ học phí': 'bg-orange-100 text-orange-700 border-orange-200',
       'Nghỉ học': 'bg-slate-200 text-slate-600 border-slate-300',
+      'Ghi danh': 'bg-indigo-100 text-indigo-700 border-indigo-200',
+      'Khai giảng': 'bg-cyan-100 text-cyan-700 border-cyan-200',
+      'Học lí thuyết online': 'bg-blue-100 text-blue-700 border-blue-200',
+      'Học cabin điện tử': 'bg-violet-100 text-violet-700 border-violet-200',
+      'Học lái thực hành đường trường DAT': 'bg-sky-100 text-sky-700 border-sky-200',
+      'Thi tốt nghiệp': 'bg-amber-100 text-amber-700 border-amber-200',
+      'Thi sát hạch': 'bg-orange-100 text-orange-700 border-orange-200',
+      'Thi đỗ': 'bg-emerald-100 text-emerald-700 border-emerald-200',
     };
     return map[status] || 'bg-slate-100 text-slate-700 border-slate-200';
   };
@@ -338,7 +350,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
       'Học phí', 'Đã đóng', 'Còn nợ',
       'Ngày đăng ký', 'Trạng thái học phí', 'Trạng thái học tập',
       'Ngày sinh', 'CCCD / CMND', 'Email', 'Người giới thiệu', 'Địa chỉ', 'Ngày nhập học',
-      'Ảnh CCCD mặt trước', 'Ảnh CCCD mặt sau', 'Ảnh chân dung'
+      'Ảnh CCCD mặt trước', 'Ảnh CCCD mặt sau', 'Ảnh CCCD trên VNeID', 'Ảnh chân dung'
     ];
 
     const getCommonRowDataAfter = (student: Student) => {
@@ -368,6 +380,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
         student.enrollmentDate || '',
         student.idCardFrontFile?.url || '',
         student.idCardBackFile?.url || '',
+        student.vneidIdCardFile?.url || '',
         student.portraitFile?.url || ''
       ];
     };
@@ -387,7 +400,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
         { wch: 20 }, { wch: 15 }, { wch: 15 },
         { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 18 },
         { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 35 }, { wch: 16 },
-        { wch: 30 }, { wch: 30 }, { wch: 30 }
+        { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 }
       ];
     } else if (businessType === 'language' || businessType === 'general') {
       headers = ['Họ và tên', 'Số điện thoại', 'Khóa học', ...commonHeadersAfter];
@@ -405,7 +418,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
         { wch: 20 }, { wch: 15 }, { wch: 25 },
         { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 18 },
         { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 35 }, { wch: 16 },
-        { wch: 30 }, { wch: 30 }, { wch: 30 }
+        { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 }
       ];
     }
 
