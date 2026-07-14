@@ -81,6 +81,20 @@ export class StudentController {
     }
   }
 
+  static async bulkDelete(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const ownerId = await getAllowedOwnerIds(req.user!);
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ success: false, error: "Vui lòng chọn ít nhất một học viên để xóa." });
+      }
+      const deletedCount = await StudentService.bulkDeleteStudents(ownerId, ids);
+      res.json({ success: true, message: `Đã xóa thành công ${deletedCount} học viên.`, deletedCount });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
   static async bulkCreate(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const creatorId = req.user!.uid;
