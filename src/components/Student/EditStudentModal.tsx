@@ -3,14 +3,15 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Save, Loader2, ChevronDown } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
-import { Student, UploadedFile, Partner } from '../../types';
-import { cn, toInputDate, toDisplayDate, compressImage, formatVND } from '../../lib/utils';
+import { DRIVING_TRAINING_STATUSES, Student, UploadedFile, Partner } from '../../types';
+import { cn, toDisplayDate, compressImage, formatVND, isPastDate, isValidDate } from '../../lib/utils';
 import { findDuplicateStudentField } from '../../lib/studentUniqueness';
 import { useAuth } from '../../hooks/useAuth';
 import { useCourses } from '../../hooks/useCourses';
 import { FormInput, UploadCard } from './components/StudentFormFields';
 import { CustomSelect } from '../ui/CustomSelect';
 import { useLicenseRanks } from '../../hooks/useLicenseRanks';
+import { DateInput } from '../ui/DateInput';
 
 interface EditStudentModalProps {
   student: Student | null;
@@ -20,7 +21,7 @@ interface EditStudentModalProps {
   students: Student[];
 }
 
-type FileField = 'idCardFrontFile' | 'idCardBackFile' | 'portraitFile';
+type FileField = 'idCardFrontFile' | 'idCardBackFile' | 'vneidIdCardFile' | 'portraitFile';
 
 export function EditStudentModal({ student, isOpen, onClose, onSuccess, students }: EditStudentModalProps) {
   const { user } = useAuth();
@@ -70,9 +71,10 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
     address: '',
     email: '',
     status: [] as string[],
-    idCardFrontFile: undefined as UploadedFile | undefined,
-    idCardBackFile: undefined as UploadedFile | undefined,
-    portraitFile: undefined as UploadedFile | undefined,
+    idCardFrontFile: undefined as UploadedFile | null | undefined,
+    idCardBackFile: undefined as UploadedFile | null | undefined,
+    vneidIdCardFile: undefined as UploadedFile | null | undefined,
+    portraitFile: undefined as UploadedFile | null | undefined,
   });
 
   useEffect(() => {
@@ -110,6 +112,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
           status: Array.isArray(student.status) ? student.status : (student.status ? [student.status] : []),
           idCardFrontFile: student.idCardFrontFile,
           idCardBackFile: student.idCardBackFile,
+          vneidIdCardFile: student.vneidIdCardFile,
           portraitFile: student.portraitFile,
         });
       }, 0);
@@ -160,7 +163,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
-    const fieldsToValidate = ['fullName', 'phone', 'email', 'birthday', 'idCard', 'rank'];
+    const fieldsToValidate = ['fullName', 'phone', 'email', 'birthday', 'enrollmentDate', 'idCard', 'rank'];
     fieldsToValidate.forEach(field => {
       const val = formData[field as keyof typeof formData];
       if (typeof val === 'string') {
@@ -257,6 +260,14 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
       }
     }
 
+    if ((name === 'birthday' || name === 'enrollmentDate') && value && !isValidDate(value)) {
+      return 'Ngày không hợp lệ. Vui lòng nhập đúng định dạng DD/MM/YYYY.';
+    }
+
+    if (name === 'birthday' && value && !isPastDate(value)) {
+      return 'Ngày sinh phải là một ngày trong quá khứ.';
+    }
+
     if (name === 'email' && value) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(value)) {
@@ -297,6 +308,17 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
       [name]: errorMsg
     }));
   };
+
+  const isDrivingCenter = (user?.businessType || 'driving') === 'driving';
+  const statusGroups = isDrivingCenter
+    ? [
+        { label: 'Hồ sơ', statuses: ['Chờ KSK', 'Đã KSK', 'Đã nộp HS'], columns: 'sm:grid-cols-3' },
+        { label: 'Quy trình đào tạo', statuses: [...DRIVING_TRAINING_STATUSES], columns: 'sm:grid-cols-2' },
+        { label: 'Trạng thái khác', statuses: ['Đang học', 'Đang thi', 'Đã đậu', 'Thi lại', 'Nghỉ học', 'Nợ học phí'], columns: 'sm:grid-cols-3' },
+      ]
+    : [
+        { label: 'Trạng thái học viên', statuses: ['Đang học', 'Đã đậu', 'Thi lại', 'Nghỉ học', 'Nợ học phí'], columns: 'sm:grid-cols-3' },
+      ];
 
   return (
     <AnimatePresence>
@@ -421,13 +443,15 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
                     )}
                   </div>
                 </div>
-                <FormInput
+                <DateInput
                   label="Ngày sinh"
-                  name="birthday"
-                  type="date"
-                  value={toInputDate(formData.birthday)}
-                  onChange={handleInputChange}
-                  onBlur={handleInputBlur}
+                  variant="modal"
+                  value={formData.birthday}
+                  onChange={(value) => {
+                    setFormData(prev => ({ ...prev, birthday: value }));
+                    if (errors.birthday) setErrors(prev => ({ ...prev, birthday: '' }));
+                  }}
+                  onBlur={(value) => setErrors(prev => ({ ...prev, birthday: validateField('birthday', value) }))}
                   required={requiredFields.birthday}
                   error={errors.birthday}
                 />
@@ -499,13 +523,17 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
                   placeholder="DD/MM/YYYY"
                   readOnly
                 />
-                <FormInput
+                <DateInput
                   label="Ngày nhập học"
-                  name="enrollmentDate"
-                  type="date"
-                  value={toInputDate(formData.enrollmentDate)}
-                  onChange={handleInputChange}
-                  onBlur={handleInputBlur}
+                  variant="modal"
+                  value={formData.enrollmentDate}
+                  onChange={(value) => {
+                    setFormData(prev => ({ ...prev, enrollmentDate: value }));
+                    if (errors.enrollmentDate) setErrors(prev => ({ ...prev, enrollmentDate: '' }));
+                  }}
+                  onBlur={(value) => setErrors(prev => ({ ...prev, enrollmentDate: validateField('enrollmentDate', value) }))}
+                  required={false}
+                  error={errors.enrollmentDate}
                 />
                 <FormInput
                   label={(user?.businessType || 'driving') === 'driving' ? 'Học phí (VND)' : 'Học phí đã chốt (VND)'}
@@ -530,49 +558,55 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
                   <label className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
                     Trạng thái (Chọn nhiều)
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                    {(user?.businessType === 'language' || user?.businessType === 'general'
-                      ? ['Đang học', 'Đã đậu', 'Thi lại', 'Nghỉ học', 'Nợ học phí']
-                      : ['Chờ KSK', 'Đã KSK', 'Đã nộp HS', 'Đang học', 'Đang thi', 'Đã đậu', 'Thi lại', 'Nghỉ học', 'Nợ học phí']
-                    ).map((st) => {
-                      const isChecked = formData.status.includes(st);
-                      return (
-                        <label
-                          key={st}
-                          className={cn(
-                            "flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-semibold cursor-pointer transition-all select-none",
-                            isChecked
-                              ? "bg-cyan-50 border-cyan-200 text-cyan-700 shadow-sm"
-                              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-                          )}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => {
-                              setFormData(prev => {
-                                const current = prev.status || [];
-                                const next = current.includes(st)
-                                  ? current.filter(x => x !== st)
-                                  : [...current, st];
-                                return { ...prev, status: next };
-                              });
-                            }}
-                            className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500 w-3.5 h-3.5"
-                          />
-                          {st}
-                        </label>
-                      );
-                    })}
+                  <div className="space-y-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    {statusGroups.map((group) => (
+                      <div key={group.label} className="space-y-2">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          {group.label}
+                        </p>
+                        <div className={cn("grid grid-cols-1 gap-2", group.columns)}>
+                          {group.statuses.map((st) => {
+                            const isChecked = formData.status.includes(st);
+                            return (
+                              <label
+                                key={st}
+                                className={cn(
+                                  "flex min-h-9 items-center gap-2 px-3 py-2 rounded-lg border text-xs font-semibold cursor-pointer transition-all select-none",
+                                  isChecked
+                                    ? "bg-cyan-50 border-cyan-200 text-cyan-700 shadow-sm"
+                                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                                )}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => {
+                                    setFormData(prev => {
+                                      const current = prev.status || [];
+                                      const next = current.includes(st)
+                                        ? current.filter(x => x !== st)
+                                        : [...current, st];
+                                      return { ...prev, status: next };
+                                    });
+                                  }}
+                                  className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                                />
+                                <span>{st}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
 
               {(user?.businessType || 'driving') === 'driving' && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <UploadCard
                     label="CCCD mặt trước"
-                    file={formData.idCardFrontFile}
+                    file={formData.idCardFrontFile || undefined}
                     isUploading={uploadingField === 'idCardFrontFile'}
                     onFileChange={(file) => {
                       handleUploadFile('idCardFrontFile', file);
@@ -584,12 +618,12 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
                         });
                       }
                     }}
-                    onRemove={() => setFormData(prev => ({ ...prev, idCardFrontFile: undefined }))}
+                    onRemove={() => setFormData(prev => ({ ...prev, idCardFrontFile: null }))}
                     error={errors.idCardFrontFile}
                   />
                   <UploadCard
                     label="CCCD mặt sau"
-                    file={formData.idCardBackFile}
+                    file={formData.idCardBackFile || undefined}
                     isUploading={uploadingField === 'idCardBackFile'}
                     onFileChange={(file) => {
                       handleUploadFile('idCardBackFile', file);
@@ -601,12 +635,19 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
                         });
                       }
                     }}
-                    onRemove={() => setFormData(prev => ({ ...prev, idCardBackFile: undefined }))}
+                    onRemove={() => setFormData(prev => ({ ...prev, idCardBackFile: null }))}
                     error={errors.idCardBackFile}
                   />
                   <UploadCard
+                    label="Ảnh CCCD trên VNeID"
+                    file={formData.vneidIdCardFile || undefined}
+                    isUploading={uploadingField === 'vneidIdCardFile'}
+                    onFileChange={(file) => handleUploadFile('vneidIdCardFile', file)}
+                    onRemove={() => setFormData(prev => ({ ...prev, vneidIdCardFile: null }))}
+                  />
+                  <UploadCard
                     label="Ảnh chân dung"
-                    file={formData.portraitFile}
+                    file={formData.portraitFile || undefined}
                     isUploading={uploadingField === 'portraitFile'}
                     onFileChange={(file) => {
                       handleUploadFile('portraitFile', file);
@@ -618,7 +659,7 @@ export function EditStudentModal({ student, isOpen, onClose, onSuccess, students
                         });
                       }
                     }}
-                    onRemove={() => setFormData(prev => ({ ...prev, portraitFile: undefined }))}
+                    onRemove={() => setFormData(prev => ({ ...prev, portraitFile: null }))}
                     error={errors.portraitFile}
                   />
                 </div>

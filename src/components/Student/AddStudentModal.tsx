@@ -6,12 +6,13 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { useAdminCenters } from '../../hooks/useAdminCenters';
 import { useCourses } from '../../hooks/useCourses';
-import { formatVND, toInputDate, toDisplayDate, compressImage } from '../../lib/utils';
+import { formatVND, toDisplayDate, compressImage, isPastDate, isValidDate } from '../../lib/utils';
 import { DrivingStudent, Student, UploadedFile, Partner } from '../../types';
 import { findDuplicateStudentField } from '../../lib/studentUniqueness';
 import { FormInput, UploadCard } from './components/StudentFormFields';
 import { CustomSelect } from '../ui/CustomSelect';
 import { useLicenseRanks } from '../../hooks/useLicenseRanks';
+import { DateInput } from '../ui/DateInput';
 
 interface AddStudentModalProps {
   isOpen: boolean;
@@ -21,7 +22,7 @@ interface AddStudentModalProps {
   selectedCenter?: string;
 }
 
-type FileField = 'idCardFrontFile' | 'idCardBackFile' | 'portraitFile';
+type FileField = 'idCardFrontFile' | 'idCardBackFile' | 'vneidIdCardFile' | 'portraitFile';
 
 export function AddStudentModal({ isOpen, onClose, onSuccess, students, selectedCenter }: AddStudentModalProps) {
   const { user, login } = useAuth();
@@ -82,6 +83,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
     email: '',
     idCardFrontFile: undefined as UploadedFile | undefined,
     idCardBackFile: undefined as UploadedFile | undefined,
+    vneidIdCardFile: undefined as UploadedFile | undefined,
     portraitFile: undefined as UploadedFile | undefined,
   });
 
@@ -144,7 +146,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
     }
 
     const newErrors: Record<string, string> = {};
-    const fieldsToValidate = ['fullName', 'phone', 'email', 'birthday', 'idCard', 'rank'];
+    const fieldsToValidate = ['fullName', 'phone', 'email', 'birthday', 'enrollmentDate', 'idCard', 'rank'];
     fieldsToValidate.forEach(field => {
       const val = formData[field as keyof typeof formData];
       if (typeof val === 'string') {
@@ -219,6 +221,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
           email: '',
           idCardFrontFile: undefined,
           idCardBackFile: undefined,
+          vneidIdCardFile: undefined,
           portraitFile: undefined,
         });
         setReferralMode('none');
@@ -281,6 +284,14 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
       if (!phoneRegex.test(value)) {
         return 'Số điện thoại không hợp lệ (phải gồm 10 chữ số bắt đầu bằng 03, 05, 07, 08 hoặc 09).';
       }
+    }
+
+    if ((name === 'birthday' || name === 'enrollmentDate') && value && !isValidDate(value)) {
+      return 'Ngày không hợp lệ. Vui lòng nhập đúng định dạng DD/MM/YYYY.';
+    }
+
+    if (name === 'birthday' && value && !isPastDate(value)) {
+      return 'Ngày sinh phải là một ngày trong quá khứ.';
     }
 
     if (name === 'email' && value) {
@@ -479,13 +490,15 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
                   </div>
                 </div>
 
-                <FormInput
+                <DateInput
                   label="Ngày sinh"
-                  name="birthday"
-                  type="date"
-                  value={toInputDate(formData.birthday)}
-                  onChange={handleInputChange}
-                  onBlur={handleInputBlur}
+                  variant="modal"
+                  value={formData.birthday}
+                  onChange={(value) => {
+                    setFormData(prev => ({ ...prev, birthday: value }));
+                    if (errors.birthday) setErrors(prev => ({ ...prev, birthday: '' }));
+                  }}
+                  onBlur={(value) => setErrors(prev => ({ ...prev, birthday: validateField('birthday', value) }))}
                   required={requiredFields.birthday}
                   error={errors.birthday}
                 />
@@ -554,13 +567,17 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
                   onChange={handleInputChange}
                   readOnly
                 />
-                <FormInput
+                <DateInput
                   label="Ngày nhập học"
-                  name="enrollmentDate"
-                  type="date"
-                  value={toInputDate(formData.enrollmentDate)}
-                  onChange={handleInputChange}
-                  onBlur={handleInputBlur}
+                  variant="modal"
+                  value={formData.enrollmentDate}
+                  onChange={(value) => {
+                    setFormData(prev => ({ ...prev, enrollmentDate: value }));
+                    if (errors.enrollmentDate) setErrors(prev => ({ ...prev, enrollmentDate: '' }));
+                  }}
+                  onBlur={(value) => setErrors(prev => ({ ...prev, enrollmentDate: validateField('enrollmentDate', value) }))}
+                  required={false}
+                  error={errors.enrollmentDate}
                 />
                 <FormInput
                   label="Học phí (VND)"
@@ -583,7 +600,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
               </div>
 
               {(user?.businessType || 'driving') === 'driving' && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <UploadCard
                     label="CCCD mặt trước"
                     file={formData.idCardFrontFile}
@@ -617,6 +634,13 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, students, selected
                     }}
                     onRemove={() => setFormData(prev => ({ ...prev, idCardBackFile: undefined }))}
                     error={errors.idCardBackFile}
+                  />
+                  <UploadCard
+                    label="Ảnh CCCD trên VNeID"
+                    file={formData.vneidIdCardFile}
+                    isUploading={uploadingField === 'vneidIdCardFile'}
+                    onFileChange={(file) => handleUploadFile('vneidIdCardFile', file)}
+                    onRemove={() => setFormData(prev => ({ ...prev, vneidIdCardFile: undefined }))}
                   />
                   <UploadCard
                     label="Ảnh chân dung"

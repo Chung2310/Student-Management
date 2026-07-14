@@ -45,9 +45,10 @@ export function ProfileTab({ student }: ProfileTabProps) {
       {businessType === 'driving' && (
         <div className="bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-100 shadow-sm shadow-slate-200/50">
           <h3 className="text-sm font-bold text-slate-800 mb-4">Giấy tờ & Ảnh hồ sơ</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <DocumentCard label="CCCD mặt trước" file={student.idCardFrontFile} />
             <DocumentCard label="CCCD mặt sau" file={student.idCardBackFile} />
+            <DocumentCard label="CCCD trên VNeID" file={student.vneidIdCardFile} />
             <DocumentCard label="Ảnh chân dung" file={student.portraitFile} />
           </div>
         </div>

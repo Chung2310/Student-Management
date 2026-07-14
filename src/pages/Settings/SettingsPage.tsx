@@ -517,6 +517,10 @@ export function SettingsPage() {
               fee: cleanData.fee,
               address: cleanData.address || '',
               status: cleanData.status,
+              idCardFrontFile: cleanData.idCardFrontFile,
+              idCardBackFile: cleanData.idCardBackFile,
+              vneidIdCardFile: cleanData.vneidIdCardFile,
+              portraitFile: cleanData.portraitFile,
             }),
           });
 
@@ -698,6 +702,10 @@ export function SettingsPage() {
                 fee: cleanData.fee,
                 address: cleanData.address || '',
                 status: cleanData.status,
+                idCardFrontFile: cleanData.idCardFrontFile,
+                idCardBackFile: cleanData.idCardBackFile,
+                vneidIdCardFile: cleanData.vneidIdCardFile,
+                portraitFile: cleanData.portraitFile,
               }),
             });
 

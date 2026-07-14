@@ -39,10 +39,14 @@ export class PaymentService {
       throw new Error("Không tìm thấy học viên.");
     }
 
-    const payAmount = parseInt(String(data.amount));
-    const totalFee = parseInt(student.fee.replace(/\D/g, ""));
+    const payAmount = Number(data.amount);
+    const totalFee = parseInt(String(student.fee || "0").replace(/\D/g, ""), 10) || 0;
     const paidSoFar = student.paidAmount || 0;
-    const remaining = totalFee - paidSoFar;
+    const remaining = Math.max(0, totalFee - paidSoFar);
+
+    if (!Number.isSafeInteger(payAmount) || payAmount <= 0) {
+      throw new Error("Số tiền thanh toán không hợp lệ.");
+    }
 
     if (payAmount > remaining) {
       logger.warn(`[Payment] Create payment failed - Amount ${payAmount} exceeds remaining debt ${remaining} for student ${data.studentId}`);
@@ -67,7 +71,7 @@ export class PaymentService {
       id: savedPayment._id.toString(),
       amount: payAmount,
       date: data.date,
-      method: "Chuyển khoản",
+      method: data.method === "Tiền mặt" ? "Tiền mặt" : "Chuyển khoản",
       note: data.note,
       recipient: "Hệ thống",
     });
@@ -75,10 +79,13 @@ export class PaymentService {
     // Tự động phân bổ số tiền thanh toán vào các đợt đóng học phí (installmentStatus) nếu có
     if (student.installmentStatus && student.installmentStatus.length > 0) {
       let allocated = payAmount;
+      const requestedInstallmentNo = Number(data.installmentNo);
 
       // Chiến lược 1: Khớp chính xác số tiền đợt chưa thu (ưu tiên quét QR)
       const exactMatch = student.installmentStatus.find(
-        (inst) => inst.status !== 'Đã thu' && Math.abs(inst.amountDue - allocated) <= 1000
+        (inst) => Number.isInteger(requestedInstallmentNo)
+          ? inst.installmentNo === requestedInstallmentNo
+          : inst.status !== 'Đã thu' && Math.abs(inst.amountDue - allocated) <= 1000
       );
 
       if (exactMatch) {
@@ -107,7 +114,12 @@ export class PaymentService {
       student.markModified('installmentStatus');
     }
 
-    await student.save();
+    try {
+      await student.save();
+    } catch (error) {
+      await Payment.deleteOne({ _id: savedPayment._id });
+      throw error;
+    }
 
     return savedPayment;
   }

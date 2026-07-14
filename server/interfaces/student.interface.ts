@@ -1,6 +1,13 @@
 import { Document } from "mongoose";
 
-export type StudentStatus = 'Chờ KSK' | 'Đã KSK' | 'Đã nộp HS' | 'Đang học' | 'Đang thi' | 'Đã đậu' | 'Thi lại' | 'Nghỉ học' | 'Nợ học phí';
+export const STUDENT_STATUSES = [
+  "Chờ KSK", "Đã KSK", "Đã nộp HS", "Đang học", "Đang thi", "Đã đậu",
+  "Thi lại", "Nghỉ học", "Nợ học phí", "Ghi danh", "Khai giảng",
+  "Học lí thuyết online", "Học cabin điện tử", "Học lái thực hành đường trường DAT",
+  "Thi tốt nghiệp", "Thi sát hạch", "Thi đỗ",
+] as const;
+
+export type StudentStatus = typeof STUDENT_STATUSES[number];
 
 export interface IInstallmentStatus {
   installmentNo: number;     // Số thứ tự đợt (1, 2, 3...)
@@ -80,6 +87,7 @@ export interface IStudent extends Document {
   healthCheckFiles?: IHealthCheckFile[];
   idCardFrontFile?: IUploadedFile;
   idCardBackFile?: IUploadedFile;
+  vneidIdCardFile?: IUploadedFile;
   portraitFile?: IUploadedFile;
   progress?: IStudentProgress;
   exams?: IStudentExam[];

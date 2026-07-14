@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, AlertTriangle, ArrowRight, Loader2 } from 'lucide-react';
-import { Student, StudentStatus } from '../../types';
+import { DRIVING_TRAINING_STATUSES, Student, StudentStatus } from '../../types';
 import { apiFetch } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
 
 interface StatusTransitionModalProps {
   student: Student | null;
@@ -11,7 +12,7 @@ interface StatusTransitionModalProps {
   onClose: () => void;
 }
 
-const statusWorkflow: StudentStatus[] = [
+const generalStatusWorkflow: StudentStatus[] = [
   'Chờ KSK',
   'Đã KSK',
   'Đã nộp HS',
@@ -26,6 +27,7 @@ export function StatusTransitionModal({ student, isOpen, onClose }: StatusTransi
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [feeError, setFeeError] = React.useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -35,6 +37,10 @@ export function StatusTransitionModal({ student, isOpen, onClose }: StatusTransi
   }, [student, isOpen]);
 
   if (!student || !isOpen) return null;
+
+  const statusWorkflow: StudentStatus[] = (user?.businessType || 'driving') === 'driving'
+    ? ['Chờ KSK', 'Đã KSK', 'Đã nộp HS', ...DRIVING_TRAINING_STATUSES]
+    : generalStatusWorkflow;
 
   const studentStatuses = Array.isArray(student.status) ? student.status : [student.status];
   const workflowIndices = studentStatuses
@@ -48,12 +54,12 @@ export function StatusTransitionModal({ student, isOpen, onClose }: StatusTransi
   const handleConfirm = async () => {
     if (!nextStatus) return;
 
-    // Kiểm tra học phí nếu chuyển sang "Đang thi"
-    if (nextStatus === 'Đang thi') {
+    // Kiểm tra học phí trước bước thi sát hạch
+    if (nextStatus === 'Đang thi' || nextStatus === 'Thi sát hạch') {
       const totalFee = parseInt(student.fee.replace(/\D/g, ''), 10) || 0;
       const paidAmount = student.paidAmount || 0;
       if (paidAmount < totalFee) {
-        setFeeError("Học viên chưa hoàn tất học phí, không thể chuyển sang trạng thái Đang thi!");
+        setFeeError(`Học viên chưa hoàn tất học phí, không thể chuyển sang trạng thái ${nextStatus}!`);
         return;
       }
     }
@@ -119,7 +125,7 @@ export function StatusTransitionModal({ student, isOpen, onClose }: StatusTransi
                     <ArrowRight className="w-3.5 h-3.5 text-slate-300" />
                     <span className="text-xs font-bold text-cyan-600">{nextStatus}</span>
                   </div>
-                  {feeError && nextStatus === 'Đang thi' && (
+                  {feeError && (nextStatus === 'Đang thi' || nextStatus === 'Thi sát hạch') && (
                     <p className="text-[11px] font-bold text-rose-500 bg-rose-50 px-3 py-2 rounded-lg">{feeError}</p>
                   )}
                 </div>
