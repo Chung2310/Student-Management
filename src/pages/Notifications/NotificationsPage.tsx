@@ -782,11 +782,13 @@ export function NotificationsPage() {
       await apiFetch(`/students/${result.student.id}/installment/${result.installmentNo}/mark-paid`, {
         method: 'PATCH',
       });
+      window.dispatchEvent(new Event('student-mutation'));
+      window.dispatchEvent(new Event('payment-mutation'));
       setSendProgress(prev => ({
         ...prev,
         results: prev.results.map((r, i) => i === resultIdx ? { ...r, markingPaid: false, markedPaid: true } : r)
       }));
-      toast.success(`Đã đánh dấu đã thu đợt ${result.installmentNo} cho ${result.student.fullName}!`);
+      toast.success(`Đã ghi nhận thu đợt ${result.installmentNo} cho ${result.student.fullName}!`);
     } catch (error) {
       setSendProgress(prev => ({
         ...prev,

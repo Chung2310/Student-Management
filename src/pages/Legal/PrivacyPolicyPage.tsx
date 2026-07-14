@@ -47,7 +47,7 @@ export function PrivacyPolicyPage({ onBack }: PrivacyPolicyPageProps) {
             <ul className="list-disc pl-5 space-y-1.5 font-medium text-slate-700">
               <li>Thông tin định danh: Họ và tên, Ngày sinh, Số CCCD/CMND.</li>
               <li>Thông tin liên hệ: Số điện thoại, địa chỉ Email, địa chỉ cư trú hiện tại.</li>
-              <li>Tệp đính kèm: Ảnh chân dung cá nhân, ảnh CCCD mặt trước, ảnh CCCD mặt sau.</li>
+              <li>Tệp đính kèm: Ảnh chân dung cá nhân, ảnh CCCD mặt trước, ảnh CCCD mặt sau và ảnh CCCD trên VNeID.</li>
               <li>Thông tin học tập: Hạng bằng/Lớp học đăng ký, ngày nhập học, giáo viên hướng dẫn.</li>
             </ul>
           </section>

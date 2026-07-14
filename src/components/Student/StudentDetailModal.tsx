@@ -338,6 +338,16 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
       return;
     }
 
+    const totalFee = parseInt(String(student.fee || '0').replace(/\D/g, ''), 10) || 0;
+    const otherPayments = student.paymentHistory.reduce(
+      (sum, payment, index) => index === editingPayment.index ? sum : sum + (Number(payment.amount) || 0),
+      0
+    );
+    if (otherPayments + parsedAmount > totalFee) {
+      toast.warning('Tổng số tiền đã đóng không được vượt quá học phí.');
+      return;
+    }
+
     try {
       const updatedHistory = [...student.paymentHistory];
       updatedHistory[editingPayment.index] = {
@@ -673,6 +683,14 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
       'Đã nộp HS': 'bg-blue-100 text-blue-700 border-blue-200',
       'Nợ học phí': 'bg-orange-100 text-orange-700 border-orange-200',
       'Nghỉ học': 'bg-slate-200 text-slate-600 border-slate-300',
+      'Ghi danh': 'bg-indigo-100 text-indigo-700 border-indigo-200',
+      'Khai giảng': 'bg-cyan-100 text-cyan-700 border-cyan-200',
+      'Học lí thuyết online': 'bg-blue-100 text-blue-700 border-blue-200',
+      'Học cabin điện tử': 'bg-violet-100 text-violet-700 border-violet-200',
+      'Học lái thực hành đường trường DAT': 'bg-sky-100 text-sky-700 border-sky-200',
+      'Thi tốt nghiệp': 'bg-amber-100 text-amber-700 border-amber-200',
+      'Thi sát hạch': 'bg-orange-100 text-orange-700 border-orange-200',
+      'Thi đỗ': 'bg-emerald-100 text-emerald-700 border-emerald-200',
     };
     return map[status] || 'bg-slate-100 text-slate-700 border-slate-200';
   };

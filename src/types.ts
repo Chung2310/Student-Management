@@ -9,7 +9,28 @@ export interface UploadedFile {
   uploadedAt: string;
 }
 
-export type StudentStatus = 'Chờ KSK' | 'Đã KSK' | 'Đã nộp HS' | 'Đang học' | 'Đang thi' | 'Đã đậu' | 'Thi lại' | 'Nghỉ học' | 'Nợ học phí';
+export const DRIVING_TRAINING_STATUSES = [
+  'Ghi danh',
+  'Khai giảng',
+  'Học lí thuyết online',
+  'Học cabin điện tử',
+  'Học lái thực hành đường trường DAT',
+  'Thi tốt nghiệp',
+  'Thi sát hạch',
+  'Thi đỗ',
+] as const;
+
+export type StudentStatus =
+  | 'Chờ KSK'
+  | 'Đã KSK'
+  | 'Đã nộp HS'
+  | 'Đang học'
+  | 'Đang thi'
+  | 'Đã đậu'
+  | 'Thi lại'
+  | 'Nghỉ học'
+  | 'Nợ học phí'
+  | typeof DRIVING_TRAINING_STATUSES[number];
 
 export interface DrivingStudent {
   id: string;
@@ -39,6 +60,7 @@ export interface DrivingStudent {
   healthCheckFiles?: UploadedFile[];
   idCardFrontFile?: UploadedFile;
   idCardBackFile?: UploadedFile;
+  vneidIdCardFile?: UploadedFile;
   portraitFile?: UploadedFile;
   
   // Progress tracking

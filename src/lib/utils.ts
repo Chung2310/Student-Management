@@ -74,6 +74,32 @@ export function toDisplayDate(dateStr: string | undefined): string {
   return dateStr;
 }
 
+/** Checks DD/MM/YYYY or YYYY-MM-DD values without letting Date auto-correct them. */
+export function isValidDate(value: string | undefined): boolean {
+  if (!value) return false;
+  const displayValue = toDisplayDate(value);
+  const match = displayValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) return false;
+
+  const [, dayText, monthText, yearText] = match;
+  const day = Number(dayText);
+  const month = Number(monthText);
+  const year = Number(yearText);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year
+    && date.getMonth() === month - 1
+    && date.getDate() === day;
+}
+
+export function isPastDate(value: string | undefined): boolean {
+  if (!isValidDate(value)) return false;
+  const [day, month, year] = toDisplayDate(value).split('/').map(Number);
+  const date = new Date(year, month - 1, day);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return date < today;
+}
+
 /**
  * Converts a Vietnamese string into a clean URL-friendly slug.
  */

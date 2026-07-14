@@ -7,11 +7,11 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { UploadedFile } from '../../types';
-import { toDisplayDate, compressImage } from '../../lib/utils';
+import { toDisplayDate, compressImage, isPastDate, isValidDate } from '../../lib/utils';
 import { DateInput } from '../../components/ui/DateInput';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 
-type PublicFileField = 'idCardFrontFile' | 'idCardBackFile' | 'portraitFile';
+type PublicFileField = 'idCardFrontFile' | 'idCardBackFile' | 'vneidIdCardFile' | 'portraitFile';
 
 interface RegisterPageProps {
   onNavigateToPath: (path: string) => void;
@@ -40,6 +40,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
   const [referral, setReferral] = useState('');
   const [idCardFrontFile, setIdCardFrontFile] = useState<UploadedFile | undefined>();
   const [idCardBackFile, setIdCardBackFile] = useState<UploadedFile | undefined>();
+  const [vneidIdCardFile, setVneidIdCardFile] = useState<UploadedFile | undefined>();
   const [portraitFile, setPortraitFile] = useState<UploadedFile | undefined>();
 
   const [courses, setCourses] = useState<{ id: string; title: string; fee: string; code: string }[]>([]);
@@ -128,6 +129,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
   const updateFileField = (field: PublicFileField, val: UploadedFile | undefined) => {
     if (field === 'idCardFrontFile') setIdCardFrontFile(val);
     if (field === 'idCardBackFile') setIdCardBackFile(val);
+    if (field === 'vneidIdCardFile') setVneidIdCardFile(val);
     if (field === 'portraitFile') setPortraitFile(val);
 
     if (errors[field]) {
@@ -139,7 +141,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
     }
   };
 
-  const handleBlur = (field: string) => {
+  const handleBlur = (field: string, fieldValue?: string) => {
     const newErrors = { ...errors };
     if (field === 'phone') {
       const phoneRegex = /^(0[35789]\d{8})$/;
@@ -189,6 +191,28 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
         newErrors.email = 'Định dạng email không hợp lệ (ví dụ: name@example.com).';
       } else {
         delete newErrors.email;
+      }
+    }
+    if (field === 'birthday') {
+      const value = fieldValue ?? birthday;
+      if (!value) {
+        newErrors.birthday = 'Ngày sinh không được để trống.';
+      } else if (!isValidDate(value)) {
+        newErrors.birthday = 'Ngày không hợp lệ. Vui lòng nhập đúng định dạng DD/MM/YYYY.';
+      } else if (!isPastDate(value)) {
+        newErrors.birthday = 'Ngày sinh phải là một ngày trong quá khứ.';
+      } else {
+        delete newErrors.birthday;
+      }
+    }
+    if (field === 'enrollmentDate') {
+      const value = fieldValue ?? enrollmentDate;
+      if (!value) {
+        newErrors.enrollmentDate = 'Ngày nhập học không được để trống.';
+      } else if (!isValidDate(value)) {
+        newErrors.enrollmentDate = 'Ngày không hợp lệ. Vui lòng nhập đúng định dạng DD/MM/YYYY.';
+      } else {
+        delete newErrors.enrollmentDate;
       }
     }
     setErrors(newErrors);
@@ -268,19 +292,18 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
     if (!birthday) {
       newErrors.birthday = 'Ngày sinh không được để trống.';
     } else {
-      const birthDate = new Date(birthday);
-      const today = new Date();
-      if (isNaN(birthDate.getTime()) || birthDate >= today) {
-        newErrors.birthday = 'Ngày sinh không hợp lệ (phải là ngày trong quá khứ).';
+      if (!isValidDate(birthday)) {
+        newErrors.birthday = 'Ngày không hợp lệ. Vui lòng nhập đúng định dạng DD/MM/YYYY.';
+      } else if (!isPastDate(birthday)) {
+        newErrors.birthday = 'Ngày sinh phải là một ngày trong quá khứ.';
       }
     }
 
     if (!enrollmentDate) {
       newErrors.enrollmentDate = 'Ngày nhập học không được để trống.';
     } else {
-      const enrollDate = new Date(enrollmentDate);
-      if (isNaN(enrollDate.getTime())) {
-        newErrors.enrollmentDate = 'Ngày nhập học không hợp lệ.';
+      if (!isValidDate(enrollmentDate)) {
+        newErrors.enrollmentDate = 'Ngày không hợp lệ. Vui lòng nhập đúng định dạng DD/MM/YYYY.';
       }
     }
 
@@ -328,6 +351,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
           enrollmentDate: toDisplayDate(enrollmentDate),
           idCardFrontFile,
           idCardBackFile,
+          vneidIdCardFile,
           portraitFile,
           teacherId,
           referral,
@@ -355,6 +379,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
     setCourseId('');
     setIdCardFrontFile(undefined);
     setIdCardBackFile(undefined);
+    setVneidIdCardFile(undefined);
     setPortraitFile(undefined);
     setRegSuccess(false);
     setErrors({});
@@ -432,7 +457,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
                     value={birthday}
                     onChange={(val) => updateField('birthday', val)}
                     error={errors.birthday}
-                    onBlur={() => handleBlur('birthday')}
+                    onBlur={(value) => handleBlur('birthday', value)}
                   />
                 </div>
 
@@ -452,7 +477,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
                         value={enrollmentDate}
                         onChange={(val) => updateField('enrollmentDate', val)}
                         error={errors.enrollmentDate}
-                        onBlur={() => handleBlur('enrollmentDate')}
+                        onBlur={(value) => handleBlur('enrollmentDate', value)}
                       />
                     </>
                   ) : (
@@ -475,7 +500,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
                         value={enrollmentDate}
                         onChange={(val) => updateField('enrollmentDate', val)}
                         error={errors.enrollmentDate}
-                        onBlur={() => handleBlur('enrollmentDate')}
+                        onBlur={(value) => handleBlur('enrollmentDate', value)}
                       />
                       {courseId && (() => {
                         const selectedCourse = courses.find(c => c.id === courseId);
@@ -538,7 +563,7 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
                 {businessType === 'driving' && (
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Hình ảnh đính kèm *</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <PublicUploadCard
                         label="CCCD mặt trước *"
                         file={idCardFrontFile}
@@ -554,6 +579,13 @@ export function RegisterPage({ onNavigateToPath }: RegisterPageProps) {
                         onUpload={(file) => handleUploadFile('idCardBackFile', file)}
                         onRemove={() => updateFileField('idCardBackFile', undefined)}
                         error={errors.idCardBackFile}
+                      />
+                      <PublicUploadCard
+                        label="CCCD trên VNeID"
+                        file={vneidIdCardFile}
+                        isUploading={uploadingField === 'vneidIdCardFile'}
+                        onUpload={(file) => handleUploadFile('vneidIdCardFile', file)}
+                        onRemove={() => updateFileField('vneidIdCardFile', undefined)}
                       />
                       <PublicUploadCard
                         label="Ảnh chân dung *"

@@ -30,7 +30,7 @@ export function FeesPage({ onSelectStudent, selectedCenter }: FeesPageProps) {
   // Helper to parse currency string "12.000.000" to number 12000000
   const parseCurrency = (val: string) => {
     if (!val) return 0;
-    return parseInt(val.replace(/\D/g, ''), 10);
+    return parseInt(val.replace(/\D/g, ''), 10) || 0;
   };
 
   // Helper to format number to VN currency
@@ -55,7 +55,7 @@ export function FeesPage({ onSelectStudent, selectedCenter }: FeesPageProps) {
     const rows = filteredStudents.map(student => {
       const total = parseCurrency(student.fee || '0');
       const paid = student.paidAmount || 0;
-      const debt = total - paid;
+      const debt = Math.max(0, total - paid);
       
       return [
         student.fullName,
@@ -88,7 +88,7 @@ export function FeesPage({ onSelectStudent, selectedCenter }: FeesPageProps) {
   const stats = students.reduce((acc, student) => {
     const total = parseCurrency(student.fee || '0');
     const paid = student.paidAmount || 0;
-    const debt = total - paid;
+    const debt = Math.max(0, total - paid);
 
     acc.totalFee += total;
     acc.totalPaid += paid;
@@ -101,7 +101,7 @@ export function FeesPage({ onSelectStudent, selectedCenter }: FeesPageProps) {
   const filteredStudents = students.filter(student => {
     const total = parseCurrency(student.fee || '0');
     const paid = student.paidAmount || 0;
-    const debt = total - paid;
+    const debt = Math.max(0, total - paid);
 
     if (debtFilter === 'Còn nợ' && debt <= 0) return false;
     if (debtFilter === 'Đã hoàn thành' && debt > 0) return false;
@@ -234,7 +234,7 @@ export function FeesPage({ onSelectStudent, selectedCenter }: FeesPageProps) {
               ) : paginatedStudents.map((student) => {
                 const total = parseCurrency(student.fee || '0');
                 const paid = student.paidAmount || 0;
-                const debt = total - paid;
+                const debt = Math.max(0, total - paid);
 
                 return (
                   <tr key={student.id} className="group hover:bg-slate-50/50 transition-colors">

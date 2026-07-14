@@ -5,6 +5,7 @@ import { Student, slugify } from "../models/student.model";
 import { Payment } from "../models/payment.model";
 import { User } from "../models/user.model";
 import { Partner } from "../models/partner.model";
+import { PaymentService } from "./payment.service";
 
 interface StudentFilters {
   page?: number | string;
@@ -234,7 +235,19 @@ export class StudentService {
 
     if (data.paymentHistory && Array.isArray(data.paymentHistory)) {
       const history = data.paymentHistory as Record<string, unknown>[];
-      data.paidAmount = history.reduce((sum: number, item) => sum + (Number(item?.amount) || 0), 0);
+      const amounts = history.map((item) => Number(item?.amount));
+      if (amounts.some((amount) => !Number.isSafeInteger(amount) || amount <= 0)) {
+        throw new Error("Lịch sử thanh toán có số tiền không hợp lệ.");
+      }
+
+      const paidAmount = amounts.reduce((sum, amount) => sum + amount, 0);
+      const currentStudent = await Student.findOne(query).select("fee");
+      const effectiveFee = typeof data.fee !== "undefined" ? data.fee : currentStudent?.fee;
+      const totalFee = parseInt(String(effectiveFee || "0").replace(/\D/g, ""), 10) || 0;
+      if (paidAmount > totalFee) {
+        throw new Error("Tổng số tiền đã đóng không được vượt quá học phí.");
+      }
+      data.paidAmount = paidAmount;
 
       try {
         const oldStudent = await Student.findOne(query);
@@ -490,11 +503,29 @@ export class StudentService {
       return { success: false, error: `Không tìm thấy đợt ${installmentNo} cho học viên này.` };
     }
 
-    entries[idx].status = "Đã thu";
-    entries[idx].paidAt = new Date().toISOString();
+    const installment = entries[idx];
+    if (installment.status === "Đã thu" && installment.amountDue <= 0) {
+      return { success: true };
+    }
 
-    student.markModified("installmentStatus");
-    await student.save();
+    const totalFee = parseInt(String(student.fee || "0").replace(/\D/g, ""), 10) || 0;
+    const remaining = Math.max(0, totalFee - (student.paidAmount || 0));
+    const amount = Math.min(Math.max(0, installment.amountDue || 0), remaining);
+
+    if (amount <= 0) {
+      return { success: false, error: "Đợt thu này không còn số tiền cần ghi nhận." };
+    }
+
+    const now = new Date();
+    const date = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+    await PaymentService.createPayment(ownerId, {
+      studentId,
+      amount,
+      date,
+      note: `Thu học phí đợt ${installmentNo}`,
+      method: "Chuyển khoản",
+      installmentNo,
+    });
 
     return { success: true };
   }
