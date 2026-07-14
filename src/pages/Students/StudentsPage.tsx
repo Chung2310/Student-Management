@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Search, Download, Printer, Plus,
   Eye, Trash2, Pencil,
   X, Calendar as CalendarIcon, ChevronDown,
-  Users, Car, Upload, Languages, Lightbulb, BookOpen, UserX, Settings
+  Users, Car, Upload, Languages, Lightbulb, BookOpen, UserX, Settings,
+  Loader2
 } from 'lucide-react';
 import { cn, formatVND, formatDisplayDate } from '../../lib/utils';
 import { useStudents } from '../../hooks/useStudents';
@@ -72,6 +73,17 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isConfirmBulkDeleteOpen, setIsConfirmBulkDeleteOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+  // Reset selection when filtering/pagination changes
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedIds([]);
+  }, [category, selectedStatus, searchQuery, startDate, endDate, rankFilter, feeStatusFilter, selectedCenter, currentPage]);
+
+  const headerCheckboxRef = React.useRef<HTMLInputElement>(null);
 
   // Nếu phân loại đang chọn bị xóa khỏi danh mục thì quay về "Tất cả"
   React.useEffect(() => {
@@ -275,7 +287,14 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
     currentPage * pageSize
   );
 
-    // businessType is already declared at the top of the component
+  const isAllOnPageSelected = paginatedStudents.length > 0 && paginatedStudents.every(s => selectedIds.includes(s.id));
+  const isSomeOnPageSelected = paginatedStudents.length > 0 && paginatedStudents.some(s => selectedIds.includes(s.id)) && !isAllOnPageSelected;
+
+  React.useEffect(() => {
+    if (headerCheckboxRef.current) {
+      headerCheckboxRef.current.indeterminate = isSomeOnPageSelected;
+    }
+  }, [isSomeOnPageSelected]);
 
   // Nhóm trạng thái riêng quy trình lái xe — ẩn tab khi không có học viên nào mang trạng thái đó
   const DRIVING_STATUS_TABS: StatusFilter[] = ['KSK', 'Đã KSK', 'Nộp HS'];
@@ -333,6 +352,45 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
       toast.error('Có lỗi xảy ra khi xóa học viên.');
     } finally {
       setIsDeleting(null);
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const pageIds = paginatedStudents.map(s => s.id);
+      setSelectedIds(prev => Array.from(new Set([...prev, ...pageIds])));
+    } else {
+      const pageIds = paginatedStudents.map(s => s.id);
+      setSelectedIds(prev => prev.filter(id => !pageIds.includes(id)));
+    }
+  };
+
+  const handleSelectRow = (studentId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => [...prev, studentId]);
+    } else {
+      setSelectedIds(prev => prev.filter(id => id !== studentId));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      await apiFetch('/students/bulk-delete', {
+        method: 'POST',
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+      toast.success(`Đã xóa thành công ${selectedIds.length} học viên.`);
+      setSelectedIds([]);
+      setIsConfirmBulkDeleteOpen(false);
+      window.dispatchEvent(new Event("student-mutation"));
+    } catch (error) {
+      console.error("Error bulk deleting students:", error);
+      const msg = error instanceof Error ? error.message : 'Có lỗi xảy ra khi xóa học viên hàng loạt.';
+      toast.error(msg);
+    } finally {
+      setIsBulkDeleting(false);
     }
   };
 
@@ -522,6 +580,14 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
           <p className="text-slate-400 text-sm font-medium mt-1">{loading ? '...' : `${filteredStudents.length} / ${students.length}`} học viên</p>
         </div>
         <div className="flex items-center gap-2">
+          {selectedIds.length > 0 && (
+            <button
+              onClick={() => setIsConfirmBulkDeleteOpen(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-rose-100 hover:bg-rose-700 transition-all mr-2"
+            >
+              <Trash2 className="w-4 h-4" /> Xóa hàng loạt ({selectedIds.length})
+            </button>
+          )}
           <button
             onClick={handleExport}
             className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all"
@@ -717,7 +783,13 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
                 <th className="px-6 py-4 w-10 no-print">
-                  <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-600" />
+                  <input
+                    ref={headerCheckboxRef}
+                    type="checkbox"
+                    checked={isAllOnPageSelected}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-600 cursor-pointer"
+                  />
                 </th>
                 <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Họ và tên</th>
                 {businessType === 'driving' ? (
@@ -742,7 +814,12 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
               ) : paginatedStudents.map((student) => (
                 <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4 no-print">
-                    <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-600" />
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(student.id)}
+                      onChange={(e) => handleSelectRow(student.id, e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-600 cursor-pointer"
+                    />
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex flex-col gap-0.5">
@@ -971,6 +1048,59 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
         isOpen={isManageRanksOpen}
         onClose={() => setIsManageRanksOpen(false)}
       />
+
+      {/* Confirm Bulk Delete Modal */}
+      <AnimatePresence>
+        {isConfirmBulkDeleteOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsConfirmBulkDeleteOpen(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col z-10 p-6 text-center"
+            >
+              <div className="mx-auto w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center mb-4">
+                <Trash2 className="w-6 h-6 text-rose-600" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 mb-2">Xác nhận xóa hàng loạt?</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Bạn có chắc chắn muốn xóa <strong>{selectedIds.length}</strong> học viên đã chọn? Hành động này sẽ xóa toàn bộ lịch sử học tập và học phí liên quan và không thể khôi phục.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmBulkDeleteOpen(false)}
+                  disabled={isBulkDeleting}
+                  className="flex-1 px-5 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 text-sm font-bold text-slate-600 hover:text-slate-800 transition-all cursor-pointer bg-white disabled:opacity-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkDelete}
+                  disabled={isBulkDeleting}
+                  className="flex-1 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-sm font-bold text-white transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-md shadow-rose-100"
+                >
+                  {isBulkDeleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Đang xóa...
+                    </>
+                  ) : (
+                    'Xác nhận xóa'
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
