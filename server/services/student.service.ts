@@ -322,8 +322,11 @@ export class StudentService {
   }
 
   static async bulkDeleteStudents(ownerId: string | string[], ids: string[]): Promise<number> {
+    const validIds = ids.filter(id => Types.ObjectId.isValid(id));
+    if (validIds.length === 0) return 0;
+
     const query: Record<string, unknown> = {
-      _id: { $in: ids },
+      _id: { $in: validIds },
       ...buildOwnerScopeQuery(ownerId),
     };
     const studentsToDelete = await Student.find(query).select("_id");
