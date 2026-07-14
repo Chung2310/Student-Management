@@ -5,6 +5,7 @@ import { Student, slugify } from "../models/student.model";
 import { Payment } from "../models/payment.model";
 import { User } from "../models/user.model";
 import { Partner } from "../models/partner.model";
+import { Batch } from "../models/batch.model";
 import { PaymentService } from "./payment.service";
 
 interface StudentFilters {
@@ -309,8 +310,36 @@ export class StudentService {
     const deletedStudent = await Student.findOneAndDelete(query);
     if (!deletedStudent) {
       logger.warn(`[Student] Student delete failed/not found: id=${id}, ownerId=${ownerId}`);
+      return null;
+    }
+    try {
+      await Payment.deleteMany({ studentId: id });
+      await Batch.updateMany({ learnerIds: id }, { $pull: { learnerIds: id } });
+    } catch (err) {
+      logger.error(`[Student] Failed to clean up associated records for deleted student: %o`, err);
     }
     return deletedStudent;
+  }
+
+  static async bulkDeleteStudents(ownerId: string | string[], ids: string[]): Promise<number> {
+    const query: Record<string, unknown> = {
+      _id: { $in: ids },
+      ...buildOwnerScopeQuery(ownerId),
+    };
+    const studentsToDelete = await Student.find(query).select("_id");
+    const resolvedIds = studentsToDelete.map(s => s._id.toString());
+    if (resolvedIds.length === 0) return 0;
+
+    try {
+      await Payment.deleteMany({ studentId: { $in: resolvedIds } });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await Batch.updateMany({ learnerIds: { $in: resolvedIds } }, { $pull: { learnerIds: { $in: resolvedIds } } } as any);
+    } catch (err) {
+      logger.error(`[Student] Failed to clean up associated records for bulk deleted students: %o`, err);
+    }
+
+    const result = await Student.deleteMany({ _id: { $in: resolvedIds } });
+    return result.deletedCount || 0;
   }
 
   static async bulkCreateStudents(creatorId: string, ownerId: string | string[], studentsData: BulkStudentInput[], targetOwnerId?: string) {
