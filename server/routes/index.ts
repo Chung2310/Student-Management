@@ -39,10 +39,36 @@ router.use("/license-ranks", licenseRankRoutes);
 import { authMiddleware, AuthRequest } from "../middlewares/auth.middleware";
 import { EmailService } from "../services/email.service";
 import { AuthService } from "../services/auth.service";
+import { Student } from "../models/student.model";
+import { getCenterOwnerIds } from "../utils/auth.util";
 
 router.post("/send-email", authMiddleware as unknown as RequestHandler, async (req: AuthRequest, res) => {
   try {
     const { to, subject, html, check } = req.body;
+
+    // Security: this endpoint must not act as a general-purpose open relay.
+    // Only allow sending to a recipient that is actually a student belonging to
+    // the caller's own center/scope (this endpoint is only used by the app to
+    // email students/fee reminders, never arbitrary third parties).
+    if (!check) {
+      if (!to || typeof to !== "string") {
+        return res.status(400).json({ success: false, error: "Thiếu thông tin (to, subject, html)" });
+      }
+      const ownerScope = await getCenterOwnerIds(req.user!);
+      const recipientQuery: Record<string, unknown> = {
+        email: to.trim().toLowerCase(),
+      };
+      if (ownerScope !== "ALL") {
+        recipientQuery.ownerId = Array.isArray(ownerScope) ? { $in: ownerScope } : ownerScope;
+      }
+      const recipientStudent = await Student.findOne(recipientQuery).select("_id");
+      if (!recipientStudent) {
+        return res.status(403).json({
+          success: false,
+          error: "Chỉ được phép gửi email cho học viên thuộc trung tâm của bạn.",
+        });
+      }
+    }
 
     const user = await AuthService.getUserProfile(req.user.uid);
     const smtpOwner = user && user.role === "user" && user.centerId

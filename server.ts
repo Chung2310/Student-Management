@@ -15,6 +15,7 @@ import { swaggerSpec } from "./server/swagger";
 import { errorMiddleware } from "./server/middlewares/error.middleware";
 import { requestLoggerMiddleware } from "./server/middlewares/logger.middleware";
 import { authMiddleware, AuthRequest } from "./server/middlewares/auth.middleware";
+import { ACCESS_SECRET } from "./server/config/jwt-secrets";
 import { AuthService } from "./server/services/auth.service";
 import { SmsSettingsService } from "./server/services/sms-settings.service";
 import { sseManager } from "./server/services/sse.manager";
@@ -175,10 +176,7 @@ async function startServer() {
     }
 
     try {
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_ACCESS_SECRET || "your_jwt_access_secret_key_should_be_long_and_secure_12345"
-      ) as { uid: string; email: string };
+      const decoded = jwt.verify(token, ACCESS_SECRET) as { uid: string; email: string };
 
       const ownerId = decoded.uid;
 

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { ACCESS_SECRET } from "../config/jwt-secrets";
 
 export interface AuthRequest extends Request {
   user?: {
@@ -18,7 +19,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
 
   const token = authHeader.split(" ")[1];
   try {
-    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET || "your_jwt_access_secret_key_should_be_long_and_secure_12345") as {
+    const decoded = jwt.verify(token, ACCESS_SECRET) as {
       uid: string;
       email: string;
       role: "superadmin" | "admin" | "user";
