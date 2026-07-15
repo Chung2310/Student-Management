@@ -6,9 +6,17 @@ on:
   pull_request:
     branches: [ develop, production ]
 
+# Hủy các lần chạy CI cũ hơn của cùng 1 PR/nhánh khi có push mới, tránh chạy
+# chồng nhiều workflow không cần thiết (tốn phút CI).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  lint-and-typecheck:
-    name: Lint & Typecheck
+  # Gộp lint, typecheck, build vào cùng 1 job để chỉ checkout + cài dependency
+  # một lần duy nhất (trước đây 2 job riêng đều cài lại từ đầu dù chạy tuần tự).
+  lint-typecheck-build:
+    name: Lint, Typecheck & Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,19 +31,5 @@ jobs:
         run: yarn lint
       - name: Type check
         run: yarn typecheck
-
-  build-app:
-    name: Build Main App
-    runs-on: ubuntu-latest
-    needs: lint-and-typecheck
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'yarn'
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
       - name: Build Web & Server
         run: yarn build
