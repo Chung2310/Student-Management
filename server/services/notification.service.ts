@@ -3,6 +3,11 @@ import { Student } from "../models/student.model";
 import { INotification } from "../interfaces/notification.interface";
 import { IInstallmentPlan } from "../interfaces/installment.interface";
 
+function buildOwnerScopeQuery(ownerScope: string | string[]): Record<string, unknown> {
+  if (ownerScope === "ALL") return {};
+  return { ownerId: Array.isArray(ownerScope) ? { $in: ownerScope } : ownerScope };
+}
+
 interface NotificationFilters {
   page?: number | string;
   limit?: number | string;
@@ -22,7 +27,11 @@ interface NotificationCreateData {
 }
 
 export class NotificationService {
-  static async createNotification(ownerId: string, data: NotificationCreateData): Promise<INotification> {
+  static async createNotification(
+    ownerId: string,
+    data: NotificationCreateData,
+    studentOwnerScope: string | string[] = ownerId
+  ): Promise<INotification> {
     const { studentIds, ...notificationData } = data;
 
     const notification = new Notification({
@@ -41,7 +50,13 @@ export class NotificationService {
       // Xử lý tuần tự để tránh race condition
       for (const studentId of studentIds) {
         try {
-          const student = await Student.findById(studentId);
+          // Security: only allow mutating students within the caller's own center/owner scope
+          // (prevents a caller from passing arbitrary/foreign studentIds to modify another
+          // tenant's installmentStatus data).
+          const student = await Student.findOne({
+            _id: studentId,
+            ...buildOwnerScopeQuery(studentOwnerScope),
+          });
           if (!student) continue;
 
           // Tính số tiền đợt này = % × tổng học phí gốc

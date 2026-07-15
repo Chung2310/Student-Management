@@ -231,7 +231,25 @@ export class StudentController {
         return res.status(404).json({ success: false, error: "Không tìm thấy thông tin học viên với số CCCD này." });
       }
 
-      res.json({ success: true, data: student });
+      // Public self-lookup: only expose what the lookup UI actually renders
+      // (progress/exam/fee status). Never leak phone, address, email,
+      // uploaded ID/portrait files, or raw payment history entries.
+      res.json({
+        success: true,
+        data: {
+          fullName: student.fullName,
+          idCard: student.idCard,
+          birthday: student.birthday,
+          referral: student.referral,
+          rank: student.rank,
+          status: student.status,
+          progress: student.progress,
+          exams: student.exams,
+          fee: student.fee,
+          paidAmount: student.paidAmount,
+          installmentStatus: student.installmentStatus,
+        },
+      });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Lỗi không xác định.";
       res.status(400).json({ success: false, error: msg });

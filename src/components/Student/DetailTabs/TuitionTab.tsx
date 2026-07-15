@@ -123,7 +123,7 @@ export function TuitionTab({
 
   const hasValidConfig = enabled && !!accountNo && !!bankId;
   const qrCodeUrl = hasValidConfig 
-    ? `https://img.vietqr.io/image/${getVietQRBankCode(bankId)}-${accountNo}-compact2.png?amount=${paymentAmount}&addInfo=${student.id}&accountName=${encodeURIComponent(accountName)}`
+    ? `https://img.vietqr.io/image/${getVietQRBankCode(bankId)}-${accountNo}-compact2.png?amount=${Math.max(0, paymentAmount)}&addInfo=${encodeURIComponent(student.id)}&accountName=${encodeURIComponent(accountName)}`
     : '';
 
   return (

@@ -23,5 +23,5 @@ const storage = new CloudinaryStorage({
 });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const upload = multer({ storage: storage as any });
+export const upload = multer({ storage: storage as any, limits: { fileSize: 10 * 1024 * 1024 } });
 export { cloudinary };

@@ -173,6 +173,16 @@ export class AuthController {
         return res.status(404).json({ success: false, error: "Không tìm thấy người dùng." });
       }
 
+      const isSelf = req.params.id === req.user.uid;
+      const isSameCenter =
+        req.user.role === "user" &&
+        !!req.user.centerId &&
+        (req.params.id === req.user.centerId || targetUser.centerId === req.user.centerId);
+      const isSuperadmin = req.user.role === "superadmin";
+      if (!isSelf && !isSameCenter && !isSuperadmin) {
+        return res.status(403).json({ success: false, error: "Bạn không có quyền xem thông tin ngân hàng này." });
+      }
+
       let adminUser = targetUser;
       if (targetUser.role === "user" && targetUser.centerId) {
         const resolvedAdmin = await AuthService.getUserProfile(targetUser.centerId);
