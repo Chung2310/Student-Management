@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Send, History, UserCheck, 
-  ChevronDown, SendHorizontal,
+  ChevronDown, SendHorizontal, Search,
   AlertCircle, MessageCircle, Smartphone, Mail,
   Inbox, Loader2, CheckCircle2, X, Trash2, Lock,
   Plus, Minus, ToggleLeft, ToggleRight, Banknote, BadgeCheck
@@ -301,14 +301,167 @@ function InstallmentPlanEditor({
   );
 }
 
+// ─── MultiSelect Component ───
+function MultiSelect({ 
+  label, 
+  options, 
+  selected, 
+  onChange, 
+  placeholder 
+}: { 
+  label: string; 
+  options: string[]; 
+  selected: string[]; 
+  onChange: (selected: string[]) => void; 
+  placeholder: string; 
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggleOption = (opt: string) => {
+    if (selected.includes(opt)) {
+      onChange(selected.filter(item => item !== opt));
+    } else {
+      onChange([...selected, opt]);
+    }
+  };
+
+  return (
+    <div className="space-y-1.5 relative flex-1 min-w-[200px]" ref={dropdownRef}>
+      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left block">
+        {label}
+      </label>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 flex items-center justify-between cursor-pointer hover:border-cyan-500 hover:bg-white transition-all text-xs font-bold text-slate-800"
+      >
+        <span className="truncate">
+          {selected.length === 0 
+            ? placeholder 
+            : `${selected.length} đã chọn (${selected.slice(0, 2).join(', ')}${selected.length > 2 ? '...' : ''})`
+          }
+        </span>
+        <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform", isOpen && "rotate-180")} />
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto p-2 space-y-1">
+          <div className="flex items-center justify-between px-2 py-1 border-b border-slate-100 mb-1">
+            <button 
+              type="button" 
+              onClick={() => onChange([])} 
+              className="text-[10px] text-rose-500 font-extrabold hover:underline"
+            >
+              Bỏ chọn tất cả
+            </button>
+            <button 
+              type="button" 
+              onClick={() => onChange(options)} 
+              className="text-[10px] text-cyan-600 font-extrabold hover:underline"
+            >
+              Chọn tất cả
+            </button>
+          </div>
+          {options.map(opt => (
+            <div 
+              key={opt}
+              onClick={() => toggleOption(opt)}
+              className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors text-xs font-semibold text-slate-700"
+            >
+              <input 
+                type="checkbox" 
+                checked={selected.includes(opt)}
+                onChange={() => {}} // handled by click parent
+                className="w-3.5 h-3.5 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+              />
+              <span className="truncate">{opt}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export function NotificationsPage() {
-  const { students } = useStudents();
+interface NotificationsPageProps {
+  selectedCenter?: string;
+}
+
+export function NotificationsPage({ selectedCenter }: NotificationsPageProps = {}) {
+  const { students } = useStudents(selectedCenter);
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [recipientFilter, setRecipientFilter] = useState('Tất cả học viên đang học');
+  
+  // New advanced filtering states
+  const [recipientMode, setRecipientMode] = useState<'filter' | 'manual'>('filter');
+
+  // Filter mode states
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedRanks, setSelectedRanks] = useState<string[]>([]);
+  const [tuitionFilter, setTuitionFilter] = useState<'all' | 'debt' | 'paid'>('all');
+  const [emailFilter, setEmailFilter] = useState<'all' | 'hasEmail'>('all');
+  const [registrationDateFrom, setRegistrationDateFrom] = useState('');
+  const [registrationDateTo, setRegistrationDateTo] = useState('');
+
+  // Excluded students list in filter mode
+  const [excludedStudentIds, setExcludedStudentIds] = useState<Set<string>>(new Set());
+
+  // Manual select mode states
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+  const [manualSearchQuery, setManualSearchQuery] = useState('');
+
+  // Collapsible preview list state
+  const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
+
+  // Dynamic rank options derived from students list
+  const rankOptions = React.useMemo(() => {
+    const ranks = new Set(students.map(s => s.rank).filter(Boolean));
+    return Array.from(ranks).sort();
+  }, [students]);
+
+  // Dynamic status options derived from students list
+  const statusOptions = React.useMemo(() => {
+    const statuses = new Set<string>();
+    students.forEach(s => {
+      if (Array.isArray(s.status)) {
+        s.status.forEach(st => {
+          if (st) statuses.add(st);
+        });
+      }
+    });
+    // Fallback/Default status list if students list is empty or doesn't have some statuses
+    const defaults = user?.businessType === 'driving' 
+      ? ['Chờ KSK', 'Đã KSK', 'Đã nộp HS', 'Đang học', 'Đang thi', 'Đã đậu', 'Thi lại', 'Nghỉ học', 'Nợ học phí']
+      : ['Ghi danh', 'Khai giảng', 'Đang học', 'Thi tốt nghiệp', 'Thi sát hạch', 'Thi đỗ', 'Thi lại', 'Nghỉ học', 'Nợ học phí'];
+      
+    defaults.forEach(st => statuses.add(st));
+    return Array.from(statuses).sort();
+  }, [students, user?.businessType]);
+
+  // Filter students based on query in manual selection mode
+  const filteredManualStudents = React.useMemo(() => {
+    if (!manualSearchQuery.trim()) return students;
+    const query = manualSearchQuery.toLowerCase();
+    return students.filter(s => 
+      s.fullName.toLowerCase().includes(query) ||
+      s.phone.includes(query) ||
+      (s.email && s.email.toLowerCase().includes(query))
+    );
+  }, [students, manualSearchQuery]);
+
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [channels, setChannels] = useState<string[]>(['Email']);
@@ -322,6 +475,7 @@ export function NotificationsPage() {
     { installmentNo: 2, percent: 50, label: 'Đợt 2' },
   ]);
   const [selectedInstallmentNo, setSelectedInstallmentNo] = useState(1);
+
 
   const [sendProgress, setSendProgress] = useState<{
     current: number;
@@ -365,24 +519,25 @@ export function NotificationsPage() {
   // Cache cấu hình ngân hàng theo ownerId để tránh gọi API lặp lại nhiều lần cho cùng 1 trung tâm
   const bankSettingsCacheRef = useRef<Map<string, { bankQrEnabled?: boolean; bankId?: string; bankAccountNo?: string; bankAccountName?: string }>>(new Map());
 
-  // Lấy đúng cấu hình VietQR của trung tâm sở hữu học viên (student.ownerId).
-  // Nếu không lấy được (thiếu ownerId, lỗi API, ...) thì fallback về vietqrConfig của người gửi.
+  // Lấy đúng cấu hình VietQR của trung tâm sở hữu học viên. Dữ liệu cũ dùng ownerId,
+  // còn dữ liệu mới có thể gắn trực tiếp qua centerId.
+  // Nếu không lấy được (thiếu mã trung tâm, lỗi API, ...) thì fallback về vietqrConfig của người gửi.
   const getVietqrConfigForStudent = async (student: Student) => {
-    const ownerId = (student as unknown as { ownerId?: string }).ownerId;
-    if (!ownerId) return vietqrConfig;
+    const centerId = student.centerId || (student as unknown as { ownerId?: string }).ownerId;
+    if (!centerId) return vietqrConfig;
 
     const cache = bankSettingsCacheRef.current;
-    if (!cache.has(ownerId)) {
+    if (!cache.has(centerId)) {
       try {
-        const res = await apiFetch(`/auth/users/${ownerId}/bank-settings`);
-        cache.set(ownerId, res?.success && res.data ? res.data : {});
+        const res = await apiFetch(`/auth/users/${centerId}/bank-settings`);
+        cache.set(centerId, res?.success && res.data ? res.data : {});
       } catch (error) {
         console.error("Failed to fetch center bank settings for student:", error);
-        cache.set(ownerId, {});
+        cache.set(centerId, {});
       }
     }
 
-    const owned = cache.get(ownerId) || {};
+    const owned = cache.get(centerId) || {};
     return {
       enabled: owned.bankQrEnabled !== false,
       bankId: owned.bankId || '',
@@ -492,23 +647,74 @@ export function NotificationsPage() {
     );
   };
 
-  const getTargetStudents = () => {
-    switch (recipientFilter) {
-      case 'Tất cả học viên đang học':
-        return students.filter(s => s.status.includes('Đang học'));
-      case 'Học viên sắp thi':
-        return students.filter(s => s.status.includes('Đang thi') || s.exams?.some(e => e.status === 'Sắp thi'));
-      case 'Học viên còn nợ học phí':
-        return students.filter(s => {
-          const totalFee = parseInt(parseVND(s.fee) || '0');
-          return (s.paidAmount || 0) < totalFee;
-        });
-      case 'Học viên cần thi lại':
-        return students.filter(s => s.status.includes('Thi lại'));
-      default:
-        return [];
+  const getTargetStudents = useCallback(() => {
+    if (recipientMode === 'manual') {
+      return students.filter(s => selectedStudentIds.has(s.id));
     }
+
+    // Filter mode
+    return students.filter(s => {
+      // 1. Status filter (multi-select)
+      if (selectedStatuses.length > 0) {
+        const hasStatus = s.status.some(st => selectedStatuses.includes(st));
+        if (!hasStatus) return false;
+      }
+
+      // 2. Rank filter (multi-select)
+      if (selectedRanks.length > 0) {
+        if (!s.rank || !selectedRanks.includes(s.rank)) return false;
+      }
+
+      // 3. Tuition filter
+      const totalFee = parseInt(parseVND(s.fee) || '0');
+      const isDebt = (s.paidAmount || 0) < totalFee;
+      if (tuitionFilter === 'debt' && !isDebt) return false;
+      if (tuitionFilter === 'paid' && isDebt) return false;
+
+      // 4. Email filter
+      if (emailFilter === 'hasEmail' && !s.email) return false;
+
+      // 5. Date filter
+      if (registrationDateFrom && s.registrationDate < registrationDateFrom) return false;
+      if (registrationDateTo && s.registrationDate > registrationDateTo) return false;
+
+      // 6. Exclusions
+      if (excludedStudentIds.has(s.id)) return false;
+
+      return true;
+    });
+  }, [recipientMode, students, selectedStudentIds, selectedStatuses, selectedRanks, tuitionFilter, emailFilter, registrationDateFrom, registrationDateTo, excludedStudentIds]);
+
+  const getRecipientSummary = () => {
+    if (recipientMode === 'manual') {
+      return `Chọn thủ công (${getTargetStudents().length} học viên)`;
+    }
+    const filters: string[] = [];
+    if (selectedStatuses.length > 0) {
+      filters.push(`Trạng thái: ${selectedStatuses.join(', ')}`);
+    } else {
+      filters.push('Tất cả trạng thái');
+    }
+    if (selectedRanks.length > 0) {
+      filters.push(`Hạng: ${selectedRanks.join(', ')}`);
+    }
+    if (tuitionFilter === 'debt') {
+      filters.push('Học phí: Còn nợ');
+    } else if (tuitionFilter === 'paid') {
+      filters.push('Học phí: Đã đủ');
+    }
+    if (emailFilter === 'hasEmail') {
+      filters.push('Chỉ có Email');
+    }
+    if (registrationDateFrom || registrationDateTo) {
+      filters.push(`Đăng ký: ${registrationDateFrom || '...'} đến ${registrationDateTo || '...'}`);
+    }
+    if (excludedStudentIds.size > 0) {
+      filters.push(`Loại trừ: ${excludedStudentIds.size} HV`);
+    }
+    return `Bộ lọc: ${filters.join(' | ')}`;
   };
+
 
   // Tính số tiền đợt hiện tại cho 1 học viên (dựa trên tổng học phí gốc × %),
   // nhưng không được vượt quá số tiền còn nợ thực tế (tránh yêu cầu đóng thừa
@@ -618,8 +824,10 @@ export function NotificationsPage() {
     e.preventDefault();
     if (!user || !title || !content || channels.length === 0) return;
 
+    const isDebtFilter = recipientMode === 'filter' && tuitionFilter === 'debt';
+
     // Validate installment plan nếu đang dùng
-    if (useInstallment && recipientFilter === 'Học viên còn nợ học phí') {
+    if (useInstallment && isDebtFilter) {
       const totalPercent = installmentPlan.reduce((s, p) => s + p.percent, 0);
       if (totalPercent > 100) {
         toast.error(`Tổng % các đợt đang là ${totalPercent}%, không được vượt quá 100%.`);
@@ -634,7 +842,7 @@ export function NotificationsPage() {
     }
 
     // Lấy thông tin đợt đang chọn gửi
-    const currentInstallment = useInstallment && recipientFilter === 'Học viên còn nợ học phí'
+    const currentInstallment = useInstallment && isDebtFilter
       ? installmentPlan.find(p => p.installmentNo === selectedInstallmentNo)
       : null;
 
@@ -666,7 +874,6 @@ export function NotificationsPage() {
         // Email channel
         if (channels.includes('Email') && student.email) {
           try {
-            const isDebtFilter = recipientFilter === 'Học viên còn nợ học phí';
             // Luôn lấy đúng cấu hình ngân hàng của trung tâm sở hữu học viên này,
             // không dùng chung config của người gửi (tránh gửi nhầm tài khoản ngân hàng
             // khi gửi hàng loạt cho học viên thuộc nhiều trung tâm khác nhau).
@@ -766,7 +973,7 @@ export function NotificationsPage() {
         body: JSON.stringify({
           title,
           content,
-          recipients: recipientFilter,
+          recipients: getRecipientSummary(),
           recipientCount: targetStudents.length,
           channels,
           status: 'Đã gửi',
@@ -841,17 +1048,12 @@ export function NotificationsPage() {
     }
   };
 
-  const recipientCounts = {
-    'Tất cả học viên đang học': students.filter(s => s.status.includes('Đang học')).length,
-    'Học viên sắp thi': students.filter(s => s.status.includes('Đang thi') || s.exams?.some(e => e.status === 'Sắp thi')).length,
-    'Học viên còn nợ học phí': students.filter(s => (s.paidAmount || 0) < parseInt(parseVND(s.fee) || '0')).length,
-    'Học viên cần thi lại': students.filter(s => s.status.includes('Thi lại')).length,
-  };
-
-  const currentRecipientCount = recipientCounts[recipientFilter as keyof typeof recipientCounts] || 0;
+  const isDebtFilter = recipientMode === 'filter' && tuitionFilter === 'debt';
+  const totalInstallmentPercent = installmentPlan.reduce((s, p) => s + p.percent, 0);
+  const currentRecipientCount = getTargetStudents().length;
 
   // Thông tin đợt đang chọn gửi
-  const currentInstallment = useInstallment && recipientFilter === 'Học viên còn nợ học phí'
+  const currentInstallment = useInstallment && isDebtFilter
     ? installmentPlan.find(p => p.installmentNo === selectedInstallmentNo)
     : null;
 
@@ -876,10 +1078,30 @@ export function NotificationsPage() {
   const applyTemplate = (tpl: typeof templates[0]) => {
     setTitle(tpl.title);
     setContent(tpl.content);
+    
+    // Auto-apply appropriate filters
+    setRecipientMode('filter');
+    if (tpl.name === 'Nhắc phí') {
+      setTuitionFilter('debt');
+      setSelectedStatuses(['Đang học']);
+      setSelectedRanks([]);
+      setEmailFilter('hasEmail');
+      setExcludedStudentIds(new Set());
+    } else if (tpl.name === 'Lịch thi') {
+      setTuitionFilter('all');
+      setSelectedStatuses(['Đang thi']);
+      setSelectedRanks([]);
+      setEmailFilter('all');
+      setExcludedStudentIds(new Set());
+    } else if (tpl.name === 'Thi lại') {
+      setTuitionFilter('all');
+      setSelectedStatuses(['Thi lại']);
+      setSelectedRanks([]);
+      setEmailFilter('all');
+      setExcludedStudentIds(new Set());
+    }
   };
 
-  const isDebtFilter = recipientFilter === 'Học viên còn nợ học phí';
-  const totalInstallmentPercent = installmentPlan.reduce((s, p) => s + p.percent, 0);
 
   return (
     <div className="space-y-6">
@@ -1050,22 +1272,327 @@ export function NotificationsPage() {
           </div>
 
           <form onSubmit={handleSend} className="p-8 space-y-6">
+            {/* Mode selection tabs */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left block">Đối tượng nhận</label>
-              <div className="relative group">
-                <select 
-                  value={recipientFilter}
-                  onChange={(e) => setRecipientFilter(e.target.value)}
-                  className="w-full h-12 bg-slate-50 px-5 pr-12 rounded-2xl border border-slate-200 text-sm font-bold text-slate-800 outline-none appearance-none focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/5 transition-all text-left"
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left block">
+                Phương thức chọn đối tượng
+              </label>
+              <div className="flex p-1 bg-slate-100 rounded-2xl border border-slate-200/50">
+                <button
+                  type="button"
+                  onClick={() => setRecipientMode('filter')}
+                  className={cn(
+                    "flex-1 py-2.5 text-xs font-black rounded-xl transition-all",
+                    recipientMode === 'filter' 
+                      ? "bg-white text-cyan-700 shadow-sm shadow-slate-200" 
+                      : "text-slate-500 hover:text-slate-800"
+                  )}
                 >
-                  <option>Tất cả học viên đang học</option>
-                  <option>Học viên sắp thi</option>
-                  <option>Học viên còn nợ học phí</option>
-                  <option>Học viên cần thi lại</option>
-                </select>
-                <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none transition-transform group-hover:translate-y-[-40%]" />
+                  Gửi theo bộ lọc
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRecipientMode('manual')}
+                  className={cn(
+                    "flex-1 py-2.5 text-xs font-black rounded-xl transition-all",
+                    recipientMode === 'manual' 
+                      ? "bg-white text-cyan-700 shadow-sm shadow-slate-200" 
+                      : "text-slate-500 hover:text-slate-800"
+                  )}
+                >
+                  Chọn thủ công ({selectedStudentIds.size})
+                </button>
               </div>
             </div>
+
+            {/* Filter Mode Controls */}
+            {recipientMode === 'filter' && (
+              <div className="space-y-4 bg-slate-50/50 p-5 rounded-3xl border border-slate-100/50">
+                <div className="flex flex-wrap gap-4">
+                  <MultiSelect
+                    label="Trạng thái"
+                    options={statusOptions}
+                    selected={selectedStatuses}
+                    onChange={setSelectedStatuses}
+                    placeholder="Tất cả trạng thái"
+                  />
+                  <MultiSelect
+                    label="Hạng bằng"
+                    options={rankOptions}
+                    selected={selectedRanks}
+                    onChange={setSelectedRanks}
+                    placeholder="Tất cả các hạng"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                  {/* Tuition filter - segmented control */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-left">
+                      Học phí
+                    </label>
+                    <div className="flex h-11 p-1 bg-slate-100 rounded-xl border border-slate-200/50">
+                      {(['all', 'debt', 'paid'] as const).map(t => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setTuitionFilter(t)}
+                          className={cn(
+                            "flex-1 text-[11px] font-bold rounded-lg transition-all",
+                            tuitionFilter === t 
+                              ? "bg-white text-cyan-700 shadow-sm" 
+                              : "text-slate-500 hover:text-slate-800"
+                          )}
+                        >
+                          {t === 'all' ? 'Tất cả' : t === 'debt' ? 'Còn nợ' : 'Đã đủ'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Email conditions */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-left">
+                      Điều kiện Email
+                    </label>
+                    <div className="flex h-11 p-1 bg-slate-100 rounded-xl border border-slate-200/50">
+                      {(['all', 'hasEmail'] as const).map(e => (
+                        <button
+                          key={e}
+                          type="button"
+                          onClick={() => setEmailFilter(e)}
+                          className={cn(
+                            "flex-1 text-[11px] font-bold rounded-lg transition-all",
+                            emailFilter === e 
+                              ? "bg-white text-cyan-700 shadow-sm" 
+                              : "text-slate-500 hover:text-slate-800"
+                          )}
+                        >
+                          {e === 'all' ? 'Tất cả học viên' : 'Chỉ có email'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Date range filters */}
+                <div className="grid grid-cols-2 gap-4 pt-1">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-left">
+                      Từ ngày đăng ký
+                    </label>
+                    <input
+                      type="date"
+                      value={registrationDateFrom}
+                      onChange={(e) => setRegistrationDateFrom(e.target.value)}
+                      className="w-full h-11 bg-white border border-slate-200 rounded-xl px-4 text-xs font-semibold text-slate-700 outline-none focus:border-cyan-500 transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-left">
+                      Đến ngày đăng ký
+                    </label>
+                    <input
+                      type="date"
+                      value={registrationDateTo}
+                      onChange={(e) => setRegistrationDateTo(e.target.value)}
+                      className="w-full h-11 bg-white border border-slate-200 rounded-xl px-4 text-xs font-semibold text-slate-700 outline-none focus:border-cyan-500 transition-colors"
+                    />
+                  </div>
+                </div>
+
+                {/* Reset button for filters */}
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedStatuses([]);
+                      setSelectedRanks([]);
+                      setTuitionFilter('all');
+                      setEmailFilter('all');
+                      setRegistrationDateFrom('');
+                      setRegistrationDateTo('');
+                      setExcludedStudentIds(new Set());
+                    }}
+                    className="text-[10px] text-slate-400 font-extrabold hover:text-rose-500 transition-colors"
+                  >
+                    Xóa tất cả bộ lọc
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Manual Mode Controls */}
+            {recipientMode === 'manual' && (
+              <div className="space-y-4 bg-slate-50/50 p-5 rounded-3xl border border-slate-100/50">
+                {/* Search box */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={manualSearchQuery}
+                    onChange={(e) => setManualSearchQuery(e.target.value)}
+                    placeholder="Tìm theo tên, số điện thoại, email..."
+                    className="w-full h-11 bg-white border border-slate-200 rounded-xl pl-4 pr-10 text-xs font-semibold text-slate-700 outline-none focus:border-cyan-500 transition-colors"
+                  />
+                  <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                </div>
+
+                {/* Scrollable list of students with checklist */}
+                <div className="border border-slate-200 rounded-2xl bg-white overflow-hidden">
+                  <div className="flex items-center justify-between bg-slate-50 px-4 py-2 border-b border-slate-200 text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                    <span>Kết quả tìm kiếm ({filteredManualStudents.length})</span>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newSelected = new Set(selectedStudentIds);
+                          filteredManualStudents.forEach(s => newSelected.add(s.id));
+                          setSelectedStudentIds(newSelected);
+                        }}
+                        className="text-cyan-600 hover:underline"
+                      >
+                        Chọn hết
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newSelected = new Set(selectedStudentIds);
+                          filteredManualStudents.forEach(s => newSelected.delete(s.id));
+                          setSelectedStudentIds(newSelected);
+                        }}
+                        className="text-rose-500 hover:underline"
+                      >
+                        Bỏ chọn hết
+                      </button>
+                    </div>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
+                    {filteredManualStudents.length === 0 ? (
+                      <div className="p-8 text-center text-xs font-semibold text-slate-400">
+                        Không tìm thấy học viên nào phù hợp
+                      </div>
+                    ) : (
+                      filteredManualStudents.map(student => {
+                        const isChecked = selectedStudentIds.has(student.id);
+                        return (
+                          <div
+                            key={student.id}
+                            onClick={() => {
+                              const newSelected = new Set(selectedStudentIds);
+                              if (newSelected.has(student.id)) {
+                                newSelected.delete(student.id);
+                              } else {
+                                newSelected.add(student.id);
+                              }
+                              setSelectedStudentIds(newSelected);
+                            }}
+                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 cursor-pointer transition-colors text-xs"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {}}
+                              className="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-extrabold text-slate-800 truncate">{student.fullName}</p>
+                              <p className="text-[10px] text-slate-400 font-bold flex gap-2">
+                                <span>{student.phone}</span>
+                                {student.rank && <span>· Hạng {student.rank}</span>}
+                                {student.email && <span className="truncate">· {student.email}</span>}
+                              </p>
+                            </div>
+                            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-black uppercase flex-shrink-0">
+                              {student.status[0] || 'KSK'}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Preview of target list (Collapsible) */}
+            <div className="border border-slate-200 rounded-3xl overflow-hidden bg-slate-50/20">
+              <div 
+                onClick={() => setIsPreviewExpanded(!isPreviewExpanded)}
+                className="flex items-center justify-between px-6 py-4 cursor-pointer hover:bg-slate-50 transition-colors select-none"
+              >
+                <div className="flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-cyan-600" />
+                  <span className="text-xs font-black text-slate-800">
+                    Danh sách học viên sẽ nhận ({getTargetStudents().length} HV)
+                  </span>
+                </div>
+                <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform", isPreviewExpanded && "rotate-180")} />
+              </div>
+
+              {isPreviewExpanded && (
+                <div className="border-t border-slate-200 bg-white max-h-64 overflow-y-auto divide-y divide-slate-100">
+                  {getTargetStudents().length === 0 ? (
+                    <div className="p-8 text-center text-xs font-semibold text-slate-400">
+                      Chưa chọn học viên nào hoặc không có học viên phù hợp
+                    </div>
+                  ) : (
+                    getTargetStudents().map(student => (
+                      <div 
+                        key={student.id}
+                        className="flex items-center justify-between px-6 py-3 hover:bg-slate-50 text-xs gap-4"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-extrabold text-slate-800 truncate">{student.fullName}</p>
+                          <p className="text-[10px] text-slate-400 font-bold truncate">
+                            {student.email || 'Không có email'} · {student.phone}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {student.rank && (
+                            <span className="px-2 py-0.5 bg-violet-50 border border-violet-100 text-violet-600 rounded text-[9px] font-black uppercase">
+                              {student.rank}
+                            </span>
+                          )}
+                          <span className="px-2 py-0.5 bg-cyan-50 border border-cyan-100 text-cyan-600 rounded text-[9px] font-black uppercase">
+                            {student.status[0] || 'KSK'}
+                          </span>
+                          
+                          {/* Exclude button for filter mode */}
+                          {recipientMode === 'filter' && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newExclusions = new Set(excludedStudentIds);
+                                newExclusions.add(student.id);
+                                setExcludedStudentIds(newExclusions);
+                              }}
+                              className="p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-lg transition-colors"
+                              title="Loại trừ học viên này"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+              {recipientMode === 'filter' && excludedStudentIds.size > 0 && (
+                <div className="px-6 py-2 bg-rose-50 border-t border-rose-100 flex items-center justify-between text-[10px] font-bold text-rose-700">
+                  <span>Đang loại trừ {excludedStudentIds.size} học viên khỏi bộ lọc</span>
+                  <button
+                    type="button"
+                    onClick={() => setExcludedStudentIds(new Set())}
+                    className="underline hover:no-underline font-extrabold"
+                  >
+                    Khôi phục lại tất cả
+                  </button>
+                </div>
+              )}
+            </div>
+
 
             {/* ── Installment Plan Section ── */}
             <AnimatePresence>

@@ -85,8 +85,8 @@ export function StudentDetailModal({ student: initialStudent, onClose, initialTa
     if (!initialStudent?.id) return;
     try {
       const res = await apiFetch(`/students/${initialStudent.id}`);
-      if (res.success && res.student) {
-        setStudent({ ...res.student, id: res.student._id || res.student.id });
+      if (res.success && res.data) {
+        setStudent({ ...res.data, id: res.data._id || res.data.id });
       }
     } catch (error) {
       console.error("Error fetching student detail:", error);

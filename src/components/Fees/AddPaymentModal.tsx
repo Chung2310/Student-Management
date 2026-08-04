@@ -69,10 +69,11 @@ export function AddPaymentModal({ student, isOpen, onClose, onSuccess }: AddPaym
   });
 
   React.useEffect(() => {
-    if (isOpen && student?.ownerId) {
+    const centerId = student?.centerId || student?.ownerId;
+    if (isOpen && centerId) {
       const fetchCenterBankSettings = async () => {
         try {
-          const res = await apiFetch(`/auth/users/${student.ownerId}/bank-settings`);
+          const res = await apiFetch(`/auth/users/${centerId}/bank-settings`);
           if (res.success && res.data) {
             const saved = localStorage.getItem('vietqrConfig');
             let template = '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}';

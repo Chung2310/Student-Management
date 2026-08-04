@@ -398,7 +398,7 @@ export default function App() {
       case 'Fees':
         return <FeesPage onSelectStudent={handleOpenProfile} selectedCenter={resolvedCenter} />;
       case 'Bot':
-        return <NotificationsPage />;
+        return <NotificationsPage selectedCenter={resolvedCenter} />;
       case 'Courses':
         return <CoursesPage selectedCenter={resolvedCenter} />;
       case 'Batches':

@@ -50,10 +50,11 @@ export function TuitionTab({
   });
 
   React.useEffect(() => {
-    if (student && student.ownerId) {
+    const centerId = student.centerId || student.ownerId;
+    if (centerId) {
       const fetchCenterBankSettings = async () => {
         try {
-          const res = await apiFetch(`/auth/users/${student.ownerId}/bank-settings`);
+          const res = await apiFetch(`/auth/users/${centerId}/bank-settings`);
           if (res.success && res.data) {
             setVietqrConfig({
               enabled: res.data.bankQrEnabled !== false,

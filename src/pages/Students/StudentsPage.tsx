@@ -460,7 +460,7 @@ export function StudentsPage({ onSelectStudent, onAddStudent, selectedCenter }: 
         { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 35 }, { wch: 16 },
         { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 }
       ];
-    } else if (businessType === 'language' || businessType === 'general') {
+    } else {
       headers = ['Họ và tên', 'Số điện thoại', 'Khóa học', ...commonHeadersAfter];
       getRowData = (student: Student) => {
         const course = courses.find(c => c.id === student.courseId);
