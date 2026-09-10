@@ -82,17 +82,21 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+          IMAGE_SHA: sha-${{ github.event.workflow_run.head_sha }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || '22' }}
-          envs: ENV_FILE_CONTENT
+          envs: ENV_FILE_CONTENT,GHCR_TOKEN,GHCR_USER,IMAGE_SHA
           script: |
             set -e
             TARGET_DIR="/opt/student-management/staging"
             IMAGE_TAG="develop"
             CONTAINER_NAME="student-management-staging"
+            IMAGE_NAME="ghcr.io/chung2310/student-management"
 
             # Tạo thư mục đích nếu chưa tồn tại và chuyển vào
             mkdir -p "$TARGET_DIR"
@@ -101,15 +105,19 @@ jobs:
             # Tạo/ghi nội dung cấu hình từ GitHub Secrets vào file .env cục bộ
             echo "$ENV_FILE_CONTENT" > .env
 
-            # Đăng nhập vào GHCR trên VPS
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Đăng nhập vào GHCR trên VPS (token truyền qua envs, không hardcode)
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+            # Pull tường minh bằng SHA tag để đảm bảo lấy image MỚI NHẤT (tránh cache branch tag)
+            docker pull "${IMAGE_NAME}:${IMAGE_SHA}"
+            # Tag SHA → branch tag để docker-compose dùng được
+            docker tag "${IMAGE_NAME}:${IMAGE_SHA}" "${IMAGE_NAME}:${IMAGE_TAG}"
 
             # Giải phóng container cũ có cùng tên
             docker rm -f "$CONTAINER_NAME" || true
 
-            # Kéo (pull) image mới và khởi động lại container tương ứng với env variables
+            # Khởi động container mới từ image vừa tag
             export COMPOSE_PROJECT_NAME="$CONTAINER_NAME"
-            IMAGE_TAG="$IMAGE_TAG" CONTAINER_NAME="$CONTAINER_NAME" docker compose pull
             IMAGE_TAG="$IMAGE_TAG" CONTAINER_NAME="$CONTAINER_NAME" docker compose up -d --remove-orphans
 
             # Giải phóng dung lượng ổ đĩa bằng cách xóa các image dangling/rác cũ
@@ -136,17 +144,21 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE_PROD }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+          IMAGE_SHA: sha-${{ github.event.workflow_run.head_sha }}
         with:
           host: ${{ secrets.SSH_HOST_PROD }}
           username: ${{ secrets.SSH_USER_PROD }}
           key: ${{ secrets.SSH_KEY_PROD }}
           port: ${{ secrets.SSH_PORT_PROD || '22' }}
-          envs: ENV_FILE_CONTENT
+          envs: ENV_FILE_CONTENT,GHCR_TOKEN,GHCR_USER,IMAGE_SHA
           script: |
             set -e
             TARGET_DIR="/opt/student-management/production"
             IMAGE_TAG="production"
             CONTAINER_NAME="student-management-production"
+            IMAGE_NAME="ghcr.io/chung2310/student-management"
 
             # Tạo thư mục đích nếu chưa tồn tại và chuyển vào
             mkdir -p "$TARGET_DIR"
@@ -155,15 +167,19 @@ jobs:
             # Tạo/ghi nội dung cấu hình từ GitHub Secrets vào file .env cục bộ
             echo "$ENV_FILE_CONTENT" > .env
 
-            # Đăng nhập vào GHCR trên VPS
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Đăng nhập vào GHCR trên VPS (token truyền qua envs, không hardcode)
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+            # Pull tường minh bằng SHA tag để đảm bảo lấy image MỚI NHẤT (tránh cache branch tag)
+            docker pull "${IMAGE_NAME}:${IMAGE_SHA}"
+            # Tag SHA → branch tag để docker-compose dùng được
+            docker tag "${IMAGE_NAME}:${IMAGE_SHA}" "${IMAGE_NAME}:${IMAGE_TAG}"
 
             # Giải phóng container cũ có cùng tên
             docker rm -f "$CONTAINER_NAME" || true
 
-            # Kéo (pull) image mới và khởi động lại container tương ứng với env variables
+            # Khởi động container mới từ image vừa tag
             export COMPOSE_PROJECT_NAME="$CONTAINER_NAME"
-            IMAGE_TAG="$IMAGE_TAG" CONTAINER_NAME="$CONTAINER_NAME" docker compose pull
             IMAGE_TAG="$IMAGE_TAG" CONTAINER_NAME="$CONTAINER_NAME" docker compose up -d --remove-orphans
 
             # Giải phóng dung lượng ổ đĩa bằng cách xóa các image dangling/rác cũ
