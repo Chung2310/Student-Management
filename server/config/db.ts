@@ -4,7 +4,7 @@ import { logger } from "./logger";
 
 export async function connectDB() {
   let uri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/student_management";
-  
+
   const user = process.env.MONGODB_USER;
   const password = process.env.MONGODB_PASSWORD;
   const authSource = process.env.MONGODB_AUTH_SOURCE || "admin";
@@ -17,6 +17,7 @@ export async function connectDB() {
       const querySeparator = rest.includes("?") ? "&" : "?";
       uri = `${prefix}${encodeURIComponent(user)}:${encodeURIComponent(password)}@${rest}${querySeparator}authSource=${authSource}`;
     }
+    console.log(" ");
   }
 
   // Mask credentials in logs for security
