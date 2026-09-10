@@ -11,6 +11,8 @@ on:
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+permissions:
+  contents: read
 
 jobs:
   # Mỗi bước là 1 job riêng, gate bằng `needs` để job sau CHỈ chạy khi job
@@ -26,11 +28,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'yarn'
+          cache: npm
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci --no-audit --no-fund
       - name: Run ESLint
-        run: yarn lint
+        run: npm run lint
 
   typecheck:
     name: 2) Typecheck
@@ -42,11 +44,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'yarn'
+          cache: npm
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci --no-audit --no-fund
       - name: Type check
-        run: yarn typecheck
+        run: npm run typecheck
 
   build:
     name: 3) Build
@@ -58,8 +60,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'yarn'
+          cache: npm
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci --no-audit --no-fund
       - name: Build Web & Server
-        run: yarn build
+        run: npm run build

@@ -6,6 +6,10 @@ import {defineConfig, loadEnv} from 'vite';
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
+    css: {
+      // Do not inherit a PostCSS config from outside this repository.
+      postcss: {plugins: []},
+    },
     plugins: [react(), tailwindcss()],
     define: {
       'process.env.OPENROUTER_API_KEY': JSON.stringify(env.OPENROUTER_API_KEY),

@@ -22,9 +22,14 @@ jobs:
   # job này — job deploy CHỈ chạy khi build-and-push đã hoàn thành và pass.
   build-and-push:
     name: 1) Build & Push Docker Image
-    if: github.event.workflow_run.conclusion == 'success'
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      (github.event.workflow_run.head_branch == 'develop' ||
+       github.event.workflow_run.head_branch == 'production')
     runs-on: ubuntu-latest
     permissions:
+      actions: write
       contents: read
       packages: write
     steps:
@@ -48,8 +53,8 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=ref,event=branch
-            type=sha
+            type=raw,value=${{ github.event.workflow_run.head_branch }}
+            type=raw,value=sha-${{ github.event.workflow_run.head_sha }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -82,15 +87,15 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          GHCR_USERNAME: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GHCR_USER: ${{ github.actor }}
           IMAGE_SHA: sha-${{ github.event.workflow_run.head_sha }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || '22' }}
-          envs: ENV_FILE_CONTENT,GHCR_TOKEN,GHCR_USER,IMAGE_SHA
+          envs: ENV_FILE_CONTENT,GHCR_USERNAME,GHCR_TOKEN,IMAGE_SHA
           script: |
             set -e
             TARGET_DIR="/opt/student-management/staging"
@@ -103,20 +108,20 @@ jobs:
             cd "$TARGET_DIR"
 
             # Tạo/ghi nội dung cấu hình từ GitHub Secrets vào file .env cục bộ
-            echo "$ENV_FILE_CONTENT" > .env
+            printf '%s\n' "$ENV_FILE_CONTENT" > .env
 
-            # Đăng nhập vào GHCR trên VPS (token truyền qua envs, không hardcode)
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-
-            # Pull tường minh bằng SHA tag để đảm bảo lấy image MỚI NHẤT (tránh cache branch tag)
+            # Đăng nhập vào GHCR trên VPS
+            printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GHCR_USERNAME" --password-stdin
             docker pull "${IMAGE_NAME}:${IMAGE_SHA}"
-            # Tag SHA → branch tag để docker-compose dùng được
             docker tag "${IMAGE_NAME}:${IMAGE_SHA}" "${IMAGE_NAME}:${IMAGE_TAG}"
+
+            # Ensure the external Compose network exists before deployment
+            docker network inspect default_network >/dev/null 2>&1 || docker network create default_network
 
             # Giải phóng container cũ có cùng tên
             docker rm -f "$CONTAINER_NAME" || true
 
-            # Khởi động container mới từ image vừa tag
+            # Kéo (pull) image mới và khởi động lại container tương ứng với env variables
             export COMPOSE_PROJECT_NAME="$CONTAINER_NAME"
             IMAGE_TAG="$IMAGE_TAG" CONTAINER_NAME="$CONTAINER_NAME" docker compose up -d --remove-orphans
 
@@ -144,15 +149,15 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE_PROD }}
+          GHCR_USERNAME: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GHCR_USER: ${{ github.actor }}
           IMAGE_SHA: sha-${{ github.event.workflow_run.head_sha }}
         with:
           host: ${{ secrets.SSH_HOST_PROD }}
           username: ${{ secrets.SSH_USER_PROD }}
           key: ${{ secrets.SSH_KEY_PROD }}
           port: ${{ secrets.SSH_PORT_PROD || '22' }}
-          envs: ENV_FILE_CONTENT,GHCR_TOKEN,GHCR_USER,IMAGE_SHA
+          envs: ENV_FILE_CONTENT,GHCR_USERNAME,GHCR_TOKEN,IMAGE_SHA
           script: |
             set -e
             TARGET_DIR="/opt/student-management/production"
@@ -165,20 +170,20 @@ jobs:
             cd "$TARGET_DIR"
 
             # Tạo/ghi nội dung cấu hình từ GitHub Secrets vào file .env cục bộ
-            echo "$ENV_FILE_CONTENT" > .env
+            printf '%s\n' "$ENV_FILE_CONTENT" > .env
 
-            # Đăng nhập vào GHCR trên VPS (token truyền qua envs, không hardcode)
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-
-            # Pull tường minh bằng SHA tag để đảm bảo lấy image MỚI NHẤT (tránh cache branch tag)
+            # Đăng nhập vào GHCR trên VPS
+            printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GHCR_USERNAME" --password-stdin
             docker pull "${IMAGE_NAME}:${IMAGE_SHA}"
-            # Tag SHA → branch tag để docker-compose dùng được
             docker tag "${IMAGE_NAME}:${IMAGE_SHA}" "${IMAGE_NAME}:${IMAGE_TAG}"
+
+            # Ensure the external Compose network exists before deployment
+            docker network inspect default_network >/dev/null 2>&1 || docker network create default_network
 
             # Giải phóng container cũ có cùng tên
             docker rm -f "$CONTAINER_NAME" || true
 
-            # Khởi động container mới từ image vừa tag
+            # Kéo (pull) image mới và khởi động lại container tương ứng với env variables
             export COMPOSE_PROJECT_NAME="$CONTAINER_NAME"
             IMAGE_TAG="$IMAGE_TAG" CONTAINER_NAME="$CONTAINER_NAME" docker compose up -d --remove-orphans
 
