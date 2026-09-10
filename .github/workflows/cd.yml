@@ -1,19 +1,36 @@
 name: CD (Continuous Deployment)
 
+# Chỉ deploy SAU KHI workflow CI (lint, typecheck, build) đã chạy xong và PASS
+# trên đúng nhánh develop/production — trước đây CD trigger độc lập bằng `on: push`,
+# nghĩa là code lỗi lint/type vẫn có thể bị build Docker & deploy lên VPS nếu
+# Docker build không phát hiện ra lỗi đó.
 on:
-  push:
+  workflow_run:
+    workflows: [ "CI (Integration Test)" ]
+    types: [ completed ]
     branches: [ develop, production ]
+
+# Đảm bảo các lần deploy vào cùng 1 môi trường (staging/production) chạy tuần tự,
+# không chạy chồng nhau (tránh 2 lần deploy race nhau khi có nhiều push liên tiếp).
+concurrency:
+  group: deploy-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
 
 jobs:
 
-  deploy-docker-vps:
-    name: Build Docker & Deploy VPS
+  # Bước 1: build & push image Docker. Các job deploy phía dưới đều `needs`
+  # job này — job deploy CHỈ chạy khi build-and-push đã hoàn thành và pass.
+  build-and-push:
+    name: 1) Build & Push Docker Image
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -44,8 +61,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  # Bước 2 (chỉ nhánh develop): deploy lên VPS staging. Chờ build-and-push xong mới chạy.
+  deploy-staging:
+    name: 2) Deploy Staging VPS
+    needs: build-and-push
+    if: github.event.workflow_run.head_branch == 'develop'
+    runs-on: ubuntu-latest
+    steps:
       - name: Copy docker-compose.yml to Staging VPS
-        if: github.ref_name == 'develop'
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -56,7 +79,6 @@ jobs:
           target: "/opt/student-management/staging"
 
       - name: Deploy via SSH to Staging VPS
-        if: github.ref_name == 'develop'
         uses: appleboy/ssh-action@v1.0.3
         env:
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
@@ -93,8 +115,14 @@ jobs:
             # Giải phóng dung lượng ổ đĩa bằng cách xóa các image dangling/rác cũ
             docker image prune -f
 
+  # Bước 2 (chỉ nhánh production): deploy lên VPS production. Chờ build-and-push xong mới chạy.
+  deploy-production:
+    name: 2) Deploy Production VPS
+    needs: build-and-push
+    if: github.event.workflow_run.head_branch == 'production'
+    runs-on: ubuntu-latest
+    steps:
       - name: Copy docker-compose.yml to Production VPS
-        if: github.ref_name == 'production'
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST_PROD }}
@@ -105,7 +133,6 @@ jobs:
           target: "/opt/student-management/production"
 
       - name: Deploy via SSH to Production VPS
-        if: github.ref_name == 'production'
         uses: appleboy/ssh-action@v1.0.3
         env:
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE_PROD }}

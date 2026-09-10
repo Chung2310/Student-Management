@@ -1,12 +1,14 @@
 import { Response, NextFunction } from "express";
 import { NotificationService } from "../services/notification.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
+import { getCenterOwnerIds } from "../utils/auth.util";
 
 export class NotificationController {
   static async create(req: AuthRequest, res: Response) {
     try {
       const ownerId = req.user!.uid;
-      const notification = await NotificationService.createNotification(ownerId, req.body);
+      const studentOwnerScope = await getCenterOwnerIds(req.user!);
+      const notification = await NotificationService.createNotification(ownerId, req.body, studentOwnerScope);
       res.status(201).json({ success: true, data: notification });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Lỗi không xác định.";

@@ -4,9 +4,7 @@ import { User } from "../models/user.model";
 import { IUser } from "../interfaces/user.interface";
 import { logger } from "../config/logger";
 import { SmsSettingsPayload, SmsSettingsService } from "./sms-settings.service";
-
-const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "your_jwt_access_secret_key_should_be_long_and_secure_12345";
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "your_jwt_refresh_secret_key_should_be_long_and_secure_67890";
+import { ACCESS_SECRET, REFRESH_SECRET } from "../config/jwt-secrets";
 
 interface RegisterData {
   email: string;

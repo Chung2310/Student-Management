@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Send, History, UserCheck, 
@@ -349,12 +349,47 @@ export function NotificationsPage() {
     }
   });
 
+  // Cấu hình mặc định (dùng cho preview UI) — lấy từ tài khoản người đang đăng nhập.
+  // LƯU Ý: khi GỬI THẬT (bulk send), phải lấy đúng cấu hình ngân hàng của trung tâm
+  // sở hữu từng học viên (student.ownerId), KHÔNG dùng config này trực tiếp, vì
+  // superadmin/admin quản lý nhiều trung tâm có thể gửi cho học viên của trung tâm khác,
+  // dẫn tới mã QR trỏ nhầm sang tài khoản ngân hàng của người gửi.
   const vietqrConfig = {
     enabled: user?.bankQrEnabled !== false,
     bankId: localVietqrConfig?.bankId || user?.bankId || '',
     accountNo: localVietqrConfig?.accountNo || user?.bankAccountNo || '',
     accountName: localVietqrConfig?.accountName || user?.bankAccountName || user?.displayName || '',
     template: localVietqrConfig?.template || '[Mã HV] - [Họ tên] - Nộp học phí khóa {hang}'
+  };
+
+  // Cache cấu hình ngân hàng theo ownerId để tránh gọi API lặp lại nhiều lần cho cùng 1 trung tâm
+  const bankSettingsCacheRef = useRef<Map<string, { bankQrEnabled?: boolean; bankId?: string; bankAccountNo?: string; bankAccountName?: string }>>(new Map());
+
+  // Lấy đúng cấu hình VietQR của trung tâm sở hữu học viên (student.ownerId).
+  // Nếu không lấy được (thiếu ownerId, lỗi API, ...) thì fallback về vietqrConfig của người gửi.
+  const getVietqrConfigForStudent = async (student: Student) => {
+    const ownerId = (student as unknown as { ownerId?: string }).ownerId;
+    if (!ownerId) return vietqrConfig;
+
+    const cache = bankSettingsCacheRef.current;
+    if (!cache.has(ownerId)) {
+      try {
+        const res = await apiFetch(`/auth/users/${ownerId}/bank-settings`);
+        cache.set(ownerId, res?.success && res.data ? res.data : {});
+      } catch (error) {
+        console.error("Failed to fetch center bank settings for student:", error);
+        cache.set(ownerId, {});
+      }
+    }
+
+    const owned = cache.get(ownerId) || {};
+    return {
+      enabled: owned.bankQrEnabled !== false,
+      bankId: owned.bankId || '',
+      accountNo: owned.bankAccountNo || '',
+      accountName: owned.bankAccountName || '',
+      template: vietqrConfig.template,
+    };
   };
   const [selectedStudentForPayment, setSelectedStudentForPayment] = useState<Student | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -475,10 +510,14 @@ export function NotificationsPage() {
     }
   };
 
-  // Tính số tiền đợt hiện tại cho 1 học viên (dựa trên tổng học phí gốc × %)
+  // Tính số tiền đợt hiện tại cho 1 học viên (dựa trên tổng học phí gốc × %),
+  // nhưng không được vượt quá số tiền còn nợ thực tế (tránh yêu cầu đóng thừa
+  // khi học viên đã đóng một phần học phí trước đó).
   const calcInstallmentAmount = (student: Student, percent: number) => {
     const totalFee = parseInt(parseVND(student.fee) || '0');
-    return Math.round(totalFee * percent / 100);
+    const remaining = Math.max(0, totalFee - (student.paidAmount || 0));
+    const raw = Math.round(totalFee * percent / 100);
+    return Math.min(raw, remaining);
   };
 
   const replaceVariables = (str: string, student: Student, installmentAmount?: number) => {
@@ -627,16 +666,20 @@ export function NotificationsPage() {
         // Email channel
         if (channels.includes('Email') && student.email) {
           try {
-            const hasVietQr = vietqrConfig && vietqrConfig.enabled && vietqrConfig.bankId && vietqrConfig.accountNo;
             const isDebtFilter = recipientFilter === 'Học viên còn nợ học phí';
+            // Luôn lấy đúng cấu hình ngân hàng của trung tâm sở hữu học viên này,
+            // không dùng chung config của người gửi (tránh gửi nhầm tài khoản ngân hàng
+            // khi gửi hàng loạt cho học viên thuộc nhiều trung tâm khác nhau).
+            const studentVietqrConfig = isDebtFilter ? await getVietqrConfigForStudent(student) : vietqrConfig;
+            const hasVietQr = studentVietqrConfig && studentVietqrConfig.enabled && studentVietqrConfig.bankId && studentVietqrConfig.accountNo;
 
             let emailHtml: string;
             if (isDebtFilter && hasVietQr) {
               // QR amount = installmentAmount nếu đang gửi theo đợt, ngược lại = toàn bộ nợ
               const totalFee = parseInt(parseVND(student.fee) || '0');
-              const debtAmount = totalFee - (student.paidAmount || 0);
-              const qrAmount = installmentAmount ?? debtAmount;
-              emailHtml = buildQrEmailHtml(student, vietqrConfig, personalizedContent, qrAmount);
+              const debtAmount = Math.max(0, totalFee - (student.paidAmount || 0));
+              const qrAmount = Math.max(0, installmentAmount ?? debtAmount);
+              emailHtml = buildQrEmailHtml(student, studentVietqrConfig, personalizedContent, qrAmount);
             } else {
               emailHtml = personalizedContent.replace(/\n/g, '<br/>');
             }
